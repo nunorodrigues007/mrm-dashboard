@@ -1,25 +1,38 @@
-name: Update MRM Data
+name: 🔄 Update MRM Data (FRED API)
+
 on:
   schedule:
-    - cron: '0 9 * * 6' # Corre todos os sábados às 09:00
-  workflow_dispatch: # Permite-te correr manualmente
+    - cron: '0 18 * * *'
+  workflow_dispatch:
 
 jobs:
-  build:
+  update-data:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Set up Python
-        uses: pip install fredapi pandas
-      - name: Run script
-        run: python mrm_engine.py
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Dependencies
+        run: pip install requests
+
+      - name: 📡 Fetch Live FRED Data
         env:
-          FRED_API_KEY: '846494f605a628223d8411828d97e7c6'
-      - name: Commit data
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python fetch_data.py
+
+      - name: 💾 Commit Updated data.json
         run: |
-          git config --global user.name 'GitHub Action'
-          git config --global user.email 'action@github.com'
+          git config --local user.email "action@github.com"
+          git config --local user.name "MRM Data Bot"
           git add data.json
-          git commit -m "Auto-update data" || exit 0
+          git diff --staged --quiet || git commit -m "🤖 Auto-update: MRM data $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
