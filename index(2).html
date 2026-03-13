@@ -1,0 +1,2600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US MRM — Macro-Resilience Matrix Intelligence Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #101214;
+    --bg-secondary: #1A1D20;
+    --bg-card: #1E2226;
+    --bg-elevated: #242830;
+    --border: #2E3338;
+    --border-subtle: #252A2F;
+    --blue: #388BFD;
+    --blue-dim: rgba(56,139,253,0.12);
+    --blue-glow: rgba(56,139,253,0.25);
+    --orange: #F98C4F;
+    --orange-dim: rgba(249,140,79,0.12);
+    --red: #D73A49;
+    --red-dim: rgba(215,58,73,0.12);
+    --green: #34D058;
+    --green-dim: rgba(52,208,88,0.1);
+    --text-primary: #E8ECF0;
+    --text-secondary: #8B949E;
+    --text-muted: #586068;
+    --text-accent: #C9D1D9;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --display: 'Syne', system-ui, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(16,18,20,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; height: 56px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .logo {
+    font-family: var(--display);
+    font-size: 15px; font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--text-primary);
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--blue); }
+  .topbar-divider {
+    width: 1px; height: 22px;
+    background: var(--border); opacity: 0.5;
+  }
+  .topbar-subtitle {
+    font-family: var(--mono);
+    font-size: 10px; color: var(--text-muted);
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px; font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer; border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    font-family: var(--sans);
+  }
+  .nav-tab:hover { color: var(--text-primary); background: var(--bg-card); }
+  .nav-tab.active {
+    background: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid rgba(56,139,253,0.3);
+  }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .live-indicator {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--green); letter-spacing: 0.08em;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse-green 2s ease infinite;
+  }
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--green); }
+    50% { opacity: 0.5; box-shadow: 0 0 2px var(--green); }
+  }
+  .timestamp {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted); letter-spacing: 0.06em;
+  }
+
+  /* ─── VIEWS ─── */
+  .view { display: none; animation: fadeIn 0.35s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ─── TERMINAL SECTION ─── */
+  .terminal-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 0;
+    min-height: calc(100vh - 56px);
+  }
+  .terminal-main { padding: 24px; overflow-y: auto; }
+  .terminal-sidebar {
+    border-left: 1px solid var(--border-subtle);
+    padding: 20px;
+    overflow-y: auto;
+    background: var(--bg-secondary);
+  }
+
+  /* ─── GLOBAL SCORE HEADER ─── */
+  .score-header {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: relative; overflow: hidden;
+  }
+  .score-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(249,140,79,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .score-left { display: flex; align-items: center; gap: 24px; }
+  .score-ring {
+    position: relative; width: 88px; height: 88px;
+    flex-shrink: 0;
+  }
+  .score-ring svg { width: 88px; height: 88px; transform: rotate(-90deg); }
+  .score-ring-track { fill: none; stroke: var(--border); stroke-width: 4; }
+  .score-ring-fill {
+    fill: none; stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
+    stroke: var(--orange);
+  }
+  .score-label {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .score-number {
+    font-family: var(--mono); font-size: 22px; font-weight: 600;
+    color: var(--orange); line-height: 1;
+  }
+  .score-denom {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted);
+  }
+  .score-info { }
+  .score-title {
+    font-family: var(--display);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 6px;
+  }
+  .score-headline {
+    font-family: var(--display);
+    font-size: 24px; font-weight: 700;
+    color: var(--text-primary); line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 4px;
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .status-badge.turbulence {
+    background: var(--orange-dim);
+    border: 1px solid rgba(249,140,79,0.3);
+    color: var(--orange);
+  }
+  .status-badge.stable {
+    background: var(--green-dim);
+    border: 1px solid rgba(52,208,88,0.3);
+    color: var(--green);
+  }
+  .status-badge.critical {
+    background: var(--red-dim);
+    border: 1px solid rgba(215,58,73,0.3);
+    color: var(--red);
+  }
+  .status-badge::before {
+    content: ''; width: 5px; height: 5px;
+    border-radius: 50%; background: currentColor;
+  }
+  .score-right { text-align: right; }
+  .score-meta-row {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  }
+  .score-meta-item {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted);
+  }
+  .score-meta-item span { color: var(--text-secondary); }
+  .sparkline-container { margin-top: 10px; }
+  .sparkline-label {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--text-muted); letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  /* ─── PILLAR GRID ─── */
+  .pillars-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .pillars-header h2 {
+    font-family: var(--display); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .pillars-header-line {
+    flex: 1; height: 1px; background: var(--border-subtle);
+  }
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .pillar-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .pillar-card:hover {
+    border-color: var(--blue);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .pillar-card::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    border-radius: 10px 10px 0 0;
+  }
+  .pillar-card.status-stable::after { background: var(--green); }
+  .pillar-card.status-caution::after { background: var(--orange); }
+  .pillar-card.status-warning::after { background: var(--orange); opacity: 0.7; }
+  .pillar-card.status-critical::after { background: var(--red); }
+
+  .pillar-roman {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 6px;
+  }
+  .pillar-name {
+    font-family: var(--display); font-size: 15px; font-weight: 700;
+    color: var(--text-primary); margin-bottom: 10px;
+  }
+  .pillar-score-row {
+    display: flex; align-items: baseline; gap: 4px;
+    margin-bottom: 10px;
+  }
+  .pillar-score {
+    font-family: var(--mono); font-size: 26px; font-weight: 600;
+    line-height: 1;
+  }
+  .pillar-score.green { color: var(--green); }
+  .pillar-score.orange { color: var(--orange); }
+  .pillar-score.red { color: var(--red); }
+  .pillar-score-max {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-muted);
+  }
+  .pillar-metric {
+    font-size: 10px; color: var(--text-muted);
+    margin-bottom: 4px; font-family: var(--mono);
+  }
+  .pillar-value {
+    font-family: var(--mono); font-size: 14px; font-weight: 500;
+    color: var(--text-accent); margin-bottom: 4px;
+  }
+  .pillar-delta {
+    font-family: var(--mono); font-size: 10px;
+  }
+  .pillar-delta.up { color: var(--orange); }
+  .pillar-delta.down { color: var(--green); }
+  .pillar-desc {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 11px; color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ─── HISTORY STRIP ─── */
+  .history-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .history-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+  }
+  .history-title {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .history-chart { position: relative; }
+
+  /* ─── SENTINELS SIDEBAR ─── */
+  .sidebar-title {
+    font-family: var(--display); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle);
+  }
+  .sentinel-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+    position: relative; overflow: hidden;
+  }
+  .sentinel-card.alert-active {
+    border-color: var(--red);
+    background: rgba(215,58,73,0.05);
+  }
+  .sentinel-name {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 8px;
+  }
+  .sentinel-value {
+    font-family: var(--mono); font-size: 28px; font-weight: 600;
+    color: var(--text-primary); line-height: 1;
+    margin-bottom: 4px;
+  }
+  .sentinel-value.caution { color: var(--orange); }
+  .sentinel-value.alert { color: var(--red); }
+  .sentinel-delta {
+    font-family: var(--mono); font-size: 11px;
+    margin-bottom: 12px;
+  }
+  .sentinel-threshold-bar { margin-bottom: 8px; }
+  .threshold-labels {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 9px;
+    color: var(--text-muted); margin-bottom: 4px;
+  }
+  .threshold-track {
+    height: 4px; background: var(--border);
+    border-radius: 2px; position: relative; overflow: hidden;
+  }
+  .threshold-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 1s ease;
+  }
+  .threshold-fill.normal { background: var(--green); }
+  .threshold-fill.caution { background: var(--orange); }
+  .threshold-fill.alert { background: var(--red); }
+  .sentinel-status-row {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .sentinel-status-text {
+    font-size: 10px; color: var(--text-muted);
+  }
+  .sentinel-fred {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--text-muted); opacity: 0.5;
+  }
+
+  /* ─── ALERTS BOX ─── */
+  .alerts-section { margin-top: 18px; }
+  .alert-box {
+    padding: 12px 14px;
+    border-radius: 8px; margin-bottom: 8px;
+    border-left: 3px solid;
+  }
+  .alert-box.info {
+    background: var(--blue-dim);
+    border-color: var(--blue);
+  }
+  .alert-box.warning {
+    background: var(--orange-dim);
+    border-color: var(--orange);
+  }
+  .alert-box.danger {
+    background: var(--red-dim);
+    border-color: var(--red);
+  }
+  .alert-box-title {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .alert-box.info .alert-box-title { color: var(--blue); }
+  .alert-box.warning .alert-box-title { color: var(--orange); }
+  .alert-box.danger .alert-box-title { color: var(--red); }
+  .alert-box-text { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* ─── ACADEMY SECTION ─── */
+  .academy-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: calc(100vh - 56px);
+  }
+  .academy-nav {
+    border-right: 1px solid var(--border-subtle);
+    background: var(--bg-secondary);
+    padding: 24px 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .academy-nav-title {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-muted); padding: 0 20px; margin-bottom: 12px;
+  }
+  .chapter-nav-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer; border: none; background: transparent;
+    width: 100%; text-align: left;
+    border-left: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .chapter-nav-item:hover { background: var(--bg-card); }
+  .chapter-nav-item.active {
+    border-left-color: var(--blue);
+    background: var(--blue-dim);
+  }
+  .chapter-num {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    color: var(--text-muted); letter-spacing: 0.08em;
+    padding-top: 2px; flex-shrink: 0;
+  }
+  .chapter-nav-item.active .chapter-num { color: var(--blue); }
+  .chapter-nav-text { }
+  .chapter-nav-title {
+    font-size: 12px; font-weight: 500;
+    color: var(--text-secondary); line-height: 1.3;
+  }
+  .chapter-nav-item.active .chapter-nav-title { color: var(--blue); }
+  .chapter-nav-sub {
+    font-size: 10px; color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .academy-content {
+    padding: 40px 56px;
+    max-width: 820px;
+    overflow-y: auto;
+  }
+  .chapter-view { display: none; }
+  .chapter-view.active { display: block; animation: fadeIn 0.3s ease; }
+
+  /* ─── CONTENT TYPOGRAPHY ─── */
+  .chapter-tag {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--blue); margin-bottom: 10px;
+    display: block;
+  }
+  .chapter-h1 {
+    font-family: var(--display); font-size: 32px; font-weight: 800;
+    color: var(--text-primary); line-height: 1.15;
+    margin-bottom: 6px;
+  }
+  .chapter-subtitle {
+    font-size: 16px; color: var(--text-secondary);
+    line-height: 1.5; margin-bottom: 28px;
+    font-weight: 300;
+  }
+  .chapter-divider {
+    height: 1px; background: var(--border-subtle);
+    margin-bottom: 28px;
+  }
+  .content-body h2 {
+    font-family: var(--display); font-size: 18px; font-weight: 700;
+    color: var(--text-primary); margin: 32px 0 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .content-body h2::before {
+    content: '';
+    width: 3px; height: 18px;
+    background: var(--blue); border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .content-body h3 {
+    font-family: var(--display); font-size: 14px; font-weight: 600;
+    color: var(--text-accent); margin: 20px 0 8px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .content-body p {
+    color: var(--text-secondary); line-height: 1.75;
+    margin-bottom: 16px; font-size: 14px;
+  }
+  .content-body strong {
+    color: var(--text-primary); font-weight: 600;
+  }
+  .blockquote {
+    border-left: 3px solid var(--blue);
+    margin: 20px 0; padding: 14px 20px;
+    background: var(--blue-dim);
+    border-radius: 0 8px 8px 0;
+  }
+  .blockquote p {
+    color: var(--text-accent); font-style: italic;
+    font-size: 14px; margin: 0; line-height: 1.65;
+  }
+  .blockquote cite {
+    display: block; margin-top: 8px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted); font-style: normal;
+    letter-spacing: 0.06em;
+  }
+  .callout {
+    border: 1px solid;
+    border-radius: 8px; padding: 16px 18px; margin: 20px 0;
+  }
+  .callout.orange {
+    border-color: rgba(249,140,79,0.3);
+    background: var(--orange-dim);
+  }
+  .callout.green {
+    border-color: rgba(52,208,88,0.25);
+    background: var(--green-dim);
+  }
+  .callout.red {
+    border-color: rgba(215,58,73,0.3);
+    background: var(--red-dim);
+  }
+  .callout-label {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .callout.orange .callout-label { color: var(--orange); }
+  .callout.green .callout-label { color: var(--green); }
+  .callout.red .callout-label { color: var(--red); }
+  .callout p { margin: 0; font-size: 13px; }
+
+  /* ─── TABLES ─── */
+  .data-table {
+    width: 100%; border-collapse: collapse;
+    margin: 20px 0;
+  }
+  .data-table th {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-muted); text-align: left;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border-subtle);
+    font-size: 13px; color: var(--text-secondary);
+  }
+  .data-table tr:hover td { background: var(--bg-card); }
+  .data-table .mono { font-family: var(--mono); }
+  .data-table .green { color: var(--green); }
+  .data-table .orange { color: var(--orange); }
+  .data-table .red { color: var(--red); }
+
+  /* ─── MINI INLINE METRIC ─── */
+  .inline-metric {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--text-accent);
+    vertical-align: middle;
+  }
+
+  /* ─── CHAPTER PROGRESS ─── */
+  .chapter-progress {
+    display: flex; gap: 4px; margin-bottom: 28px;
+  }
+  .progress-dot {
+    width: 20px; height: 3px; border-radius: 2px;
+    background: var(--border);
+  }
+  .progress-dot.done { background: var(--blue); }
+  .progress-dot.active { background: var(--orange); }
+
+  /* ─── FOOTER NAV ─── */
+  .chapter-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 48px; padding-top: 24px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .chapter-nav-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .chapter-nav-btn:hover {
+    border-color: var(--blue); color: var(--blue);
+  }
+  .chapter-nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .chapter-nav-btn:disabled:hover { border-color: var(--border); color: var(--text-secondary); }
+
+  /* ─── CANVAS & CHARTS ─── */
+  canvas { display: block; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1100px) {
+    .pillars-grid { grid-template-columns: repeat(3, 1fr); }
+    .terminal-layout { grid-template-columns: 1fr; }
+    .terminal-sidebar { border-left: none; border-top: 1px solid var(--border-subtle); }
+  }
+  @media (max-width: 820px) {
+    .academy-layout { grid-template-columns: 1fr; }
+    .academy-nav { position: static; height: auto; }
+    .academy-content { padding: 24px 20px; }
+    .pillars-grid { grid-template-columns: repeat(2, 1fr); }
+    .score-header { flex-direction: column; gap: 16px; }
+  }
+
+  /* ─── FREDAPI INFO ─── */
+  .fred-tag {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--text-muted); opacity: 0.5;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px; padding: 1px 5px;
+    display: inline-block;
+  }
+
+  .section-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 24px 0 16px;
+  }
+  .section-divider-label {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted); white-space: nowrap;
+  }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border-subtle); }
+
+  /* ─── LOADING ─── */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; gap: 12px;
+    color: var(--text-muted); font-family: var(--mono); font-size: 12px;
+  }
+  .loading-spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ─── TOPBAR ─── -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo">US<span>MRM</span></div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-subtitle">Macro-Resilience Matrix</div>
+    <div class="topbar-divider" style="opacity:0.3"></div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="switchView('terminal', this)">
+        ◉ Live Terminal
+      </button>
+      <button class="nav-tab" onclick="switchView('academy', this)">
+        ◈ Academy
+      </button>
+      <button class="nav-tab" onclick="switchView('about', this)">
+        ◎ About
+      </button>
+      <button class="nav-tab" onclick="switchView('bdc', this)">
+        ◈ BDCs
+      </button>
+    </nav>
+  </div>
+  <div class="topbar-right">
+    <div class="live-indicator">
+      <span class="live-dot"></span>
+      LIVE
+    </div>
+    <div class="timestamp" id="timestamp">—</div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW A: TERMINAL
+═══════════════════════════════════════════════ -->
+<div class="view active" id="view-terminal">
+  <div class="terminal-layout">
+    <div class="terminal-main" id="terminal-main">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        Fetching resilience data...
+      </div>
+    </div>
+    <div class="terminal-sidebar" id="terminal-sidebar">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW B: ACADEMY
+═══════════════════════════════════════════════ -->
+<div class="view" id="view-academy">
+  <div class="academy-layout">
+    <!-- Sidebar Nav -->
+    <aside class="academy-nav">
+      <div class="academy-nav-title">Curriculum</div>
+      <button class="chapter-nav-item active" onclick="showChapter(0, this)">
+        <span class="chapter-num">CH 1</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">The Resilience Mandate</div>
+          <div class="chapter-nav-sub">Foundation</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showChapter(1, this)">
+        <span class="chapter-num">CH 2</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Pillar I — Cycle</div>
+          <div class="chapter-nav-sub">Yield Curve Analysis</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showChapter(2, this)">
+        <span class="chapter-num">CH 3</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Pillar II — Liquidity</div>
+          <div class="chapter-nav-sub">M2 & Market Cap Ratio</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showChapter(3, this)">
+        <span class="chapter-num">CH 4</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Pillar II — Premium</div>
+          <div class="chapter-nav-sub">Equity Risk Premium</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showChapter(4, this)">
+        <span class="chapter-num">CH 5</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Pillar III — Solvency</div>
+          <div class="chapter-nav-sub">Bank NPL Ratios</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showChapter(5, this)">
+        <span class="chapter-num">CH 6</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Pillar III — Debt</div>
+          <div class="chapter-nav-sub">Household DSR</div>
+        </div>
+      </button>
+    </aside>
+
+    <!-- Chapter Content -->
+    <main class="academy-content">
+
+      <!-- ── CHAPTER 1 ── -->
+      <article class="chapter-view active" id="chapter-0">
+        <span class="chapter-tag">Chapter 01 — Foundation</span>
+        <h1 class="chapter-h1">The Resilience<br>Mandate</h1>
+        <p class="chapter-subtitle">Why the architecture of financial systems demands a different lens than traditional forecasting.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <div class="content-body">
+          <h2>Resilience vs. Robustness</h2>
+          <p>Most financial frameworks are built around the concept of <strong>robustness</strong> — the ability of a system to resist stress without changing. A robust bridge doesn't bend; a robust portfolio doesn't lose value in a downturn. But robustness is a fragile virtue. It assumes the stressor is known, bounded, and predictable. The 2008 Global Financial Crisis, the 2020 COVID shock, and the 2022 inflation regime change all exposed the limits of robustness thinking: the tail events that destroyed portfolios were precisely those not anticipated by the models designed to resist them.</p>
+
+          <p><strong>Resilience</strong> is a fundamentally different property. A resilient system doesn't claim immunity from stress — it claims the capacity to absorb disruption, adapt, and return to function. It allows bending without breaking. Applied to macroeconomics, resilience is the economy's capacity to metabolize shocks — supply disruptions, credit events, monetary tightening — without entering a self-reinforcing contraction spiral.</p>
+
+          <div class="blockquote">
+            <p>"Resilience is not about avoiding failure. It is about failing in ways that do not cascade into systemic collapse. The distinction between a bruise and a fracture is not the force applied — it is the architecture of what receives the force."</p>
+            <cite>— US Macro-Resilience Matrix Framework</cite>
+          </div>
+
+          <h2>The "Thin Ice" Metaphor</h2>
+          <p>Consider the metaphor of ice thickness on a lake in winter. A robust framework asks: <em>"Can this ice hold the weight of a skater?"</em> If the ice is thick enough, the answer is yes — until suddenly, catastrophically, it isn't. The robust framework has no mechanism to perceive gradual degradation.</p>
+
+          <p>A resilient framework asks a different set of questions: <em>"How thick is the ice today compared to last week? Is it thickening or thinning? Are there stress fractures forming at the edges? What is the temperature trend over the next 72 hours?"</em></p>
+
+          <p>This is the core operating principle of the US Macro-Resilience Matrix. We are not forecasting whether the ice will break. We are continuously measuring its thickness across five structural dimensions — the Pillars — and tracking early-warning signals at the perimeter, the Sentinels. The goal is not prediction. It is <strong>situational awareness</strong>.</p>
+
+          <div class="callout orange">
+            <div class="callout-label">⚠ Core Principle</div>
+            <p>The US MRM framework does not predict recessions. It measures the current load-bearing capacity of the US economic system. A score of 8+ indicates ice so thin that normal activity poses systemic risk. A score of 1–3 indicates ice thick enough to withstand significant shocks without catastrophic failure.</p>
+          </div>
+
+          <h2>The Five Pillars: A Structural Architecture</h2>
+          <p>The framework organizes macro-resilience into five orthogonal dimensions. Each Pillar captures a distinct failure mode of the economic system:</p>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Pillar</th>
+                <th>Core Question</th>
+                <th>Primary Signal</th>
+                <th>FRED Series</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>I. Cycle</strong></td>
+                <td>Where are we in the credit cycle?</td>
+                <td class="mono">10Y–2Y Yield Curve</td>
+                <td class="mono fred-tag">T10Y2Y</td>
+              </tr>
+              <tr>
+                <td><strong>II. Liquidity</strong></td>
+                <td>Is money plentiful or scarce?</td>
+                <td class="mono">Market Cap / M2</td>
+                <td class="mono fred-tag">M2SL, WILL5000</td>
+              </tr>
+              <tr>
+                <td><strong>II. Premium</strong></td>
+                <td>Are investors being compensated for risk?</td>
+                <td class="mono">ERP (E/P – 10Y)</td>
+                <td class="mono fred-tag">DGS10</td>
+              </tr>
+              <tr>
+                <td><strong>III. Solvency</strong></td>
+                <td>Is the banking system functionally sound?</td>
+                <td class="mono">Bank NPL Ratio</td>
+                <td class="mono fred-tag">DRALACBN</td>
+              </tr>
+              <tr>
+                <td><strong>III. Debt</strong></td>
+                <td>Can households service their obligations?</td>
+                <td class="mono">Household DSR</td>
+                <td class="mono fred-tag">TDSP</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>Notice that Pillar II appears twice — for Liquidity and Premium. This reflects the dual nature of capital markets as both a plumbing system (liquidity) and a pricing mechanism (premium). Separating them allows the framework to detect divergences: conditions where liquidity is ample but risk is mis-priced, or where premiums are adequate but monetary plumbing is seizing.</p>
+
+          <h2>The Scoring Logic</h2>
+          <p>Each Pillar produces a score from 1 to 10, where higher scores indicate greater systemic stress. The composite Global Resilience Score is a weighted average. The color-coded interpretation provides immediate situational context:</p>
+
+          <div class="callout green">
+            <div class="callout-label">✓ Score 1–4: Resilient</div>
+            <p>System absorbing stress normally. Ice is thick. Normal risk-taking activity is supported by structural conditions.</p>
+          </div>
+          <div class="callout orange">
+            <div class="callout-label">⚡ Score 5–7: Turbulence</div>
+            <p>Multiple Pillars showing strain. Ice thinning. System can still absorb moderate shocks but vulnerability to tail events is elevated.</p>
+          </div>
+          <div class="callout red">
+            <div class="callout-label">✕ Score 8–10: Critical</div>
+            <p>Systemic fragility across multiple dimensions. Ice dangerously thin. High probability of self-reinforcing contraction if a significant shock occurs.</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" disabled>← Previous</button>
+          <button class="chapter-nav-btn" onclick="navChapter(1)">Next: Pillar I — Cycle →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 2 ── -->
+      <article class="chapter-view" id="chapter-1">
+        <span class="chapter-tag">Chapter 02 — Pillar I</span>
+        <h1 class="chapter-h1">The Cycle</h1>
+        <p class="chapter-subtitle">Reading the economy's heartbeat through the geometry of the yield curve.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <div class="content-body">
+          <h2>The 10Y–2Y Yield Curve: A Compressed History of Economic Cycles</h2>
+          <p>The spread between the 10-year and 2-year US Treasury yields is perhaps the most battle-tested leading indicator in macroeconomics. Its predictive power derives not from arcane financial theory but from a simple economic reality: <strong>short rates reflect current monetary policy; long rates reflect long-term growth and inflation expectations</strong>. The shape of the curve between these two points encodes the market's collective assessment of where we are in the economic cycle.</p>
+
+          <p>When the spread is positive (normal curve), long-term rates exceed short-term rates. This reflects a healthy economy: lenders demand a premium for committing capital for longer periods, implying confidence that growth will generate adequate returns. Banks, which borrow short and lend long, profit from this spread. Credit flows. Investment expands. The cycle self-reinforces in a benign direction.</p>
+
+          <h2>Inversion: The Cycle's Red Flag</h2>
+          <p>When the curve inverts — short rates rising above long rates — the signal is historically ominous. Every US recession since 1955 has been preceded by an inverted yield curve, with a lead time of 6 to 24 months. The inversion compresses or eliminates bank net interest margins, reducing the incentive to extend credit. As credit availability tightens, investment and consumption slow. The self-reinforcing cycle reverses.</p>
+
+          <div class="blockquote">
+            <p>"An inverted yield curve does not cause recessions. It reveals that the conditions for one already exist. The curve is a thermometer, not a fever."</p>
+            <cite>— US MRM Framework, Pillar I Analysis</cite>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Curve Shape</th>
+                <th>10Y–2Y Spread</th>
+                <th>Interpretation</th>
+                <th>Pillar Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Deeply Inverted</strong></td>
+                <td class="mono red">Below –0.50%</td>
+                <td>Peak monetary tightening. Credit contraction imminent.</td>
+                <td class="mono red">8–10</td>
+              </tr>
+              <tr>
+                <td><strong>Mildly Inverted</strong></td>
+                <td class="mono orange">–0.50% to 0.00%</td>
+                <td>Caution. Cycle peak probability elevated.</td>
+                <td class="mono orange">5–7</td>
+              </tr>
+              <tr>
+                <td><strong>Normalizing</strong></td>
+                <td class="mono orange">0.00% to +0.75%</td>
+                <td>Post-inversion steepening. Historically precedes recession onset.</td>
+                <td class="mono orange">5–7</td>
+              </tr>
+              <tr>
+                <td><strong>Normal</strong></td>
+                <td class="mono green">+0.75% to +2.00%</td>
+                <td>Mid-cycle expansion. Credit conditions supportive.</td>
+                <td class="mono green">2–4</td>
+              </tr>
+              <tr>
+                <td><strong>Steep</strong></td>
+                <td class="mono green">Above +2.00%</td>
+                <td>Early cycle recovery. Maximum credit incentive for banks.</td>
+                <td class="mono green">1–3</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2>Normalization & Steepening: The Counterintuitive Danger</h2>
+          <p>Here is the most important — and most frequently misunderstood — insight about yield curve analysis: <strong>the normalization phase, when the curve moves from inverted back to positive, is not a "all-clear" signal. Historically, it is one of the most dangerous phases of the cycle.</strong></p>
+
+          <p>When the curve is deeply inverted, monetary conditions are extremely tight. As the Fed begins cutting rates in response to economic weakness, short-term yields fall faster than long-term yields. The spread widens — but this steepening typically occurs concurrent with rising unemployment, credit defaults, and equity market stress. The "good-looking" yield curve is often recording its best reading just as the recession is officially arriving.</p>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Current Reading</div>
+            <p>The 10Y–2Y spread is currently at <span class="inline-metric">+0.34%</span> — the normalization phase. The curve has re-steepened from its 2022–2023 deep inversion. The Cycle Pillar scores 5.8/10, reflecting the historical pattern that this normalization phase requires elevated vigilance.</p>
+          </div>
+
+          <h2>The FRED Series: T10Y2Y</h2>
+          <p>The Federal Reserve Bank of St. Louis publishes the 10-Year Treasury Constant Maturity minus 2-Year Treasury Constant Maturity spread as series <span class="fred-tag">T10Y2Y</span>. This is the primary data feed for the Cycle Pillar. The series updates on business days and reflects market closing prices. A simple threshold scoring system translates the spread into a 1–10 Pillar score, with the ranges outlined in the table above.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(0)">← Chapter 1</button>
+          <button class="chapter-nav-btn" onclick="navChapter(2)">Next: Pillar II — Liquidity →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 3 ── -->
+      <article class="chapter-view" id="chapter-2">
+        <span class="chapter-tag">Chapter 03 — Pillar II</span>
+        <h1 class="chapter-h1">Liquidity</h1>
+        <p class="chapter-subtitle">The blood volume of the financial system — and what happens when it runs thin.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <div class="content-body">
+          <h2>M2 Money Supply: The Economy's Blood Volume</h2>
+          <p>M2 is the broadest readily-available measure of money supply in the United States, encompassing physical currency, checking deposits, savings accounts, and money market funds. It represents the total pool of liquid capital available to fuel economic activity — consumption, investment, and financial market transactions. When M2 is expanding, the economic engine has ample fuel. When M2 contracts or decelerates sharply, the engine starves.</p>
+
+          <p>The 2022 experience was historically instructive: for the first time in the post-war era, M2 contracted in nominal terms — falling over 4% from its 2022 peak. The simultaneous tightening of fiscal policy (as pandemic-era transfers wound down), monetary policy (aggressive Fed rate hikes), and money supply created a liquidity triple-tightening that dramatically elevated systemic stress across multiple Pillars simultaneously.</p>
+
+          <h2>The Market Cap / M2 Ratio: The "Buffett Indicator"</h2>
+          <p>While M2 growth measures the flow of monetary fuel, the <strong>Market Cap / M2 Ratio</strong> measures how much of that fuel has been deployed into equity markets. This ratio — popularized by Warren Buffett's 2001 Fortune magazine commentary and subsequently known informally as the "Buffett Indicator" — compares the total value of publicly traded equities to the total money supply.</p>
+
+          <p>The ratio's utility derives from its anchoring logic: equity valuations are ultimately a claim on real economic output, which is itself constrained by the stock of money circulating in the economy. When the ratio is historically elevated, it signals that equity prices have outpaced the monetary support structure — that valuations are priced for perfection in a world where liquidity may not be sufficient to sustain them.</p>
+
+          <div class="blockquote">
+            <p>"The ratio of market capitalization to money supply is telling you, in the simplest possible terms, how much of the economy's blood has been redirected into the financial markets — and how much would need to flow back out if sentiment shifted."</p>
+            <cite>— US MRM Framework, Pillar II Analysis</cite>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ratio Range</th>
+                <th>Historical Context</th>
+                <th>Liquidity Reading</th>
+                <th>Pillar Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono green">Below 0.80x</td>
+                <td>Early 1990s, 2009 lows</td>
+                <td>Equity deeply undervalued vs. monetary base. Supportive.</td>
+                <td class="mono green">1–3</td>
+              </tr>
+              <tr>
+                <td class="mono green">0.80x – 1.20x</td>
+                <td>Mid-cycle normal</td>
+                <td>Healthy relationship. Monetary base supports valuations.</td>
+                <td class="mono green">2–4</td>
+              </tr>
+              <tr>
+                <td class="mono orange">1.20x – 1.60x</td>
+                <td>Late 1990s, 2014–2018</td>
+                <td>Elevated. Equity sensitivity to M2 deceleration increases.</td>
+                <td class="mono orange">5–7</td>
+              </tr>
+              <tr>
+                <td class="mono red">Above 1.60x</td>
+                <td>2000 Tech Bubble, 2021, Present</td>
+                <td>Historically preceded major corrections. Fragile liquidity dependency.</td>
+                <td class="mono red">7–10</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Current Reading</div>
+            <p>The Market Cap / M2 Ratio currently stands at <span class="inline-metric">1.82x</span>, placing it in historical territory previously seen only during the 1999–2000 equity bubble and briefly in 2021. The Liquidity Pillar scores 7.1/10, reflecting significant elevation in equity valuation relative to the monetary support structure.</p>
+          </div>
+
+          <h2>FRED Series</h2>
+          <p>Two series are combined to construct the Liquidity Pillar: <span class="fred-tag">M2SL</span> (M2 Money Supply, seasonally adjusted, monthly) and <span class="fred-tag">WILL5000PRFC</span> (Wilshire 5000 Total Market Full Cap Index), which serves as a proxy for total US equity market capitalization. The ratio is computed monthly and scored against historical percentile thresholds.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(1)">← Chapter 2</button>
+          <button class="chapter-nav-btn" onclick="navChapter(3)">Next: Pillar II — Premium →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 4 ── -->
+      <article class="chapter-view" id="chapter-3">
+        <span class="chapter-tag">Chapter 04 — Pillar II</span>
+        <h1 class="chapter-h1">Premium</h1>
+        <p class="chapter-subtitle">The price of risk — and what its compression signals about the market's collective judgment.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <div class="content-body">
+          <h2>The Equity Risk Premium: Compensation for Uncertainty</h2>
+          <p>In a rational market, investors holding equities — which carry earnings volatility, bankruptcy risk, and market price uncertainty — should receive higher returns than investors holding risk-free government bonds. The <strong>Equity Risk Premium (ERP)</strong> is the quantification of this excess return expectation. It answers the question: <em>how much extra return, above the risk-free rate, are investors demanding to hold equities?</em></p>
+
+          <p>The ERP is most commonly calculated using the earnings yield method: <strong>ERP = (Earnings / Price) – 10-Year Treasury Yield</strong>. The earnings yield (E/P, the inverse of the P/E ratio) represents the yield implicit in current equity valuations, while the 10-Year yield represents the risk-free alternative. When the ERP is high, equities offer substantially more than bonds — an attractive risk/return trade-off. When the ERP is compressed, investors are being paid minimal compensation for accepting equity risk.</p>
+
+          <h2>ERP Compression: The Danger Signal</h2>
+          <p>Historically, sustained ERP compression — where the earnings yield approaches or falls below the 10-Year Treasury yield — has been associated with periods of peak equity market vulnerability. The logic is structural: when equities and bonds offer nearly equivalent yields, the argument for accepting equity risk becomes extremely weak. Even modest increases in bond yields (as rates rise) or modest decreases in earnings (as a cycle turns) can trigger large, rapid equity re-pricing.</p>
+
+          <div class="blockquote">
+            <p>"When the Equity Risk Premium collapses to zero, the market is not saying equities are risk-free. It is saying investors have forgotten what risk feels like. This amnesia has historically not persisted."</p>
+            <cite>— US MRM Framework, Pillar II Premium Analysis</cite>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ERP Level</th>
+                <th>Interpretation</th>
+                <th>Market Vulnerability</th>
+                <th>Pillar Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono green">Above 4.0%</td>
+                <td>Equities deeply attractive vs. bonds. High margin of safety.</td>
+                <td>Low. Strong fundamental support.</td>
+                <td class="mono green">1–3</td>
+              </tr>
+              <tr>
+                <td class="mono green">2.0% – 4.0%</td>
+                <td>Normal. Adequate risk compensation.</td>
+                <td>Moderate. Normal market functioning.</td>
+                <td class="mono green">3–5</td>
+              </tr>
+              <tr>
+                <td class="mono orange">0.8% – 2.0%</td>
+                <td>Compressed. Risk/return trade-off deteriorating.</td>
+                <td>Elevated. Sensitive to rate or earnings shocks.</td>
+                <td class="mono orange">5–8</td>
+              </tr>
+              <tr>
+                <td class="mono red">Below 0.8%</td>
+                <td>Critical compression. Near risk parity with bonds.</td>
+                <td>High. Red Alert threshold triggered.</td>
+                <td class="mono red">8–10</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Current Reading — Approaching Alert Zone</div>
+            <p>The current ERP stands at <span class="inline-metric">1.02%</span> — within the Compressed range and approaching the <strong>Red Alert threshold of 0.80%</strong>. At this level, a 22bps further compression (from either falling earnings or rising rates) would trigger a Sentinel alert. The Premium Pillar scores 7.9/10 — the highest current stress reading in the framework.</p>
+          </div>
+
+          <h2>The Sentinel Connection</h2>
+          <p>The ERP serves dual duty in the US MRM framework: it is both a Pillar score component (Premium, Pillar II) and one of two primary Sentinel triggers. This reflects its disproportionate importance as a cross-market signal: ERP compression affects not only equity allocation decisions but also credit spreads, leverage ratios, and risk appetite across asset classes. When ERP breaches the 0.80% threshold, the framework upgrades the overall system status regardless of Pillar composite scores.</p>
+
+          <p>The FRED series <span class="fred-tag">DGS10</span> provides the risk-free rate component. The earnings yield is derived from S&P 500 trailing twelve-month earnings and current price levels, typically sourced from data providers including Bloomberg or S&P Global.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(2)">← Chapter 3</button>
+          <button class="chapter-nav-btn" onclick="navChapter(4)">Next: Pillar III — Solvency →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 5 ── -->
+      <article class="chapter-view" id="chapter-4">
+        <span class="chapter-tag">Chapter 05 — Pillar III</span>
+        <h1 class="chapter-h1">Solvency</h1>
+        <p class="chapter-subtitle">Monitoring the systemic plumbing of the banking sector — where hidden fractures become system-wide failures.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <div class="content-body">
+          <h2>The Banking System as Systemic Plumbing</h2>
+          <p>Banks occupy a unique position in the economic system: they are simultaneously the credit supply mechanism (extending loans that fund investment and consumption), the payment infrastructure (processing trillions in daily transactions), and the deposit safekeeping system (holding household and corporate liquid savings). This multi-role function means that banking sector stress does not merely affect one sector — it threatens the entire circulatory system of the economy.</p>
+
+          <p>Unlike equity markets, which can reprice 30% in weeks and recover over months, banking sector impairment operates on a different timescale and with qualitatively different consequences. A bank that becomes technically insolvent does not just lose value — it can trigger deposit runs, interbank lending freezes, and credit market paralysis that take years to resolve. The 2008–2009 experience remains the canonical example: the failure of confidence in bank solvency nearly produced a complete halt of the global payments system.</p>
+
+          <h2>Non-Performing Loan Ratios: The Lagging but Definitive Signal</h2>
+          <p>The <strong>Non-Performing Loan (NPL) Ratio</strong> measures the percentage of a bank's loan portfolio where borrowers have ceased making scheduled payments, typically defined as 90 days or more past due. This ratio is the Solvency Pillar's primary data feed because it captures the actual realized credit quality of the banking system's assets — not the theoretical or modeled quality, but the empirical quality.</p>
+
+          <p>NPL ratios are explicitly <strong>lagging indicators</strong>. They rise after economic deterioration, not before it. This is by design in the US MRM framework: the Sentinels and other Pillars provide leading signals; Solvency provides the definitive confirmation that stress is translating into actual loan book impairment. An elevated NPL ratio that appears while other Pillars are normalizing would be a critical warning that the banking system has not yet cleared previous-cycle damage.</p>
+
+          <div class="blockquote">
+            <p>"The NPL ratio is the credit cycle's report card — issued after the semester, not during it. It cannot predict the next crisis. But it can definitively confirm whether the last one has been fully resolved."</p>
+            <cite>— US MRM Framework, Pillar III Solvency Analysis</cite>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>NPL Ratio</th>
+                <th>Historical Reference</th>
+                <th>Solvency Assessment</th>
+                <th>Pillar Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono green">Below 1.5%</td>
+                <td>2016–2019, 2022</td>
+                <td>Excellent. Loan book performing strongly.</td>
+                <td class="mono green">1–3</td>
+              </tr>
+              <tr>
+                <td class="mono green">1.5% – 2.5%</td>
+                <td>Long-run average range</td>
+                <td>Normal. Systemic plumbing functioning within parameters.</td>
+                <td class="mono green">3–5</td>
+              </tr>
+              <tr>
+                <td class="mono orange">2.5% – 4.0%</td>
+                <td>2002–2003, 2020 brief spike</td>
+                <td>Elevated. Credit quality deteriorating. Monitor acceleration.</td>
+                <td class="mono orange">5–7</td>
+              </tr>
+              <tr>
+                <td class="mono red">Above 4.0%</td>
+                <td>2009–2011: peaked near 5.0%</td>
+                <td>Critical. Systemic solvency stress. Government intervention historically required.</td>
+                <td class="mono red">8–10</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout green">
+            <div class="callout-label">✓ Current Reading</div>
+            <p>Bank NPL ratios currently stand at approximately <span class="inline-metric">1.8%</span> — within the normal range, reflecting the post-2020 credit quality improvement driven by strong employment and government support programs. The Solvency Pillar scores 4.2/10, the healthiest reading in the current framework. However, the trajectory warrants monitoring as higher interest rates extend their impact on variable-rate commercial real estate and leveraged loan portfolios.</p>
+          </div>
+
+          <h2>FRED Series and Data Notes</h2>
+          <p>The primary FRED series for the Solvency Pillar is <span class="fred-tag">DRALACBN</span> — Delinquency Rate on All Loans, All Commercial Banks. This series is published quarterly by the Federal Reserve and represents the percentage of loans that are non-current (30 days or more past due). For greater precision, the framework can supplement with <span class="fred-tag">DRSFRMACBS</span> (single-family residential mortgage delinquency rates) and commercial loan-specific delinquency series to triangulate systemic exposure.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(3)">← Chapter 4</button>
+          <button class="chapter-nav-btn" onclick="navChapter(5)">Next: Pillar III — Debt →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 6 ── -->
+      <article class="chapter-view" id="chapter-5">
+        <span class="chapter-tag">Chapter 06 — Pillar III</span>
+        <h1 class="chapter-h1">Debt</h1>
+        <p class="chapter-subtitle">The household balance sheet as the ultimate test of economic resilience — or its deepest vulnerability.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+        </div>
+        <div class="content-body">
+          <h2>The Household Debt Service Ratio: The Economy's Structural Foundation</h2>
+          <p>If the banking system is the economy's circulatory system, household balance sheets are its structural foundation. Consumer spending represents approximately 70% of US GDP. When household finances are healthy — when income comfortably exceeds debt obligations — consumer spending is resilient, credit demand supports economic growth, and the broader system maintains upward momentum even through moderate shocks. When household finances are strained, the first-order effect on consumption and the second-order effects on credit quality create feedback loops that amplify any initial shock.</p>
+
+          <p>The <strong>Household Debt Service Ratio (DSR)</strong> measures the ratio of required debt payments (principal and interest on mortgage and consumer debt) to disposable personal income. It answers the most operationally relevant question about household financial health: not how much debt households hold, but how much of their current income is already committed to servicing existing obligations.</p>
+
+          <h2>Why DSR Outperforms Debt-to-Income as a Stress Signal</h2>
+          <p>Total debt-to-income ratios receive significant media attention, but DSR is a more precise measure of financial stress for a critical reason: the <strong>interest rate environment</strong>. A household with a $300,000 mortgage at 3% faces dramatically different monthly cash flow pressure than the same household with the same mortgage refinanced or newly issued at 7%. Total debt levels are identical; debt service burden is more than doubled. The DSR captures this distinction directly — it measures what households must actually pay, not just what they theoretically owe.</p>
+
+          <div class="blockquote">
+            <p>"Household debt levels are a balance sheet question. Household debt service ratios are a cash flow question. In a stress scenario, it is cash flow that fails first — not book values. The DSR is measuring the economy's monthly budget constraint, one quarter at a time."</p>
+            <cite>— US MRM Framework, Pillar III Debt Analysis</cite>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>DSR Level</th>
+                <th>Historical Reference</th>
+                <th>Consumer Assessment</th>
+                <th>Pillar Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono green">Below 10.0%</td>
+                <td>2020–2021 pandemic lows</td>
+                <td>Strong. Ample disposable income after debt service.</td>
+                <td class="mono green">1–3</td>
+              </tr>
+              <tr>
+                <td class="mono green">10.0% – 11.0%</td>
+                <td>2012–2016 recovery</td>
+                <td>Healthy. Consumer balance sheets well-positioned.</td>
+                <td class="mono green">2–4</td>
+              </tr>
+              <tr>
+                <td class="mono orange">11.0% – 12.5%</td>
+                <td>2018–2019, current</td>
+                <td>Elevated. Consumer sensitivity to income shocks rising.</td>
+                <td class="mono orange">5–7</td>
+              </tr>
+              <tr>
+                <td class="mono red">Above 12.5%</td>
+                <td>2007–2009: peaked near 13.2%</td>
+                <td>Critical. Household cash flow severely constrained. Recession amplifier.</td>
+                <td class="mono red">8–10</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Current Reading — Rising Trajectory</div>
+            <p>The Household DSR currently stands at <span class="inline-metric">11.4%</span> and has been trending higher for six consecutive quarters. This trajectory — rather than the absolute level — is the primary concern. If the rate of increase continues at its current pace, the 12.5% critical threshold would be reached within 18–24 months, coinciding with the typical lag between monetary tightening and its full consumer impact. The Debt Pillar scores 6.1/10.</p>
+          </div>
+
+          <h2>The Interaction Effect: DSR and Credit Cycles</h2>
+          <p>The Debt Pillar's most dangerous contribution to systemic risk is not its standalone score but its interaction with the Cycle and Solvency Pillars. When DSR is elevated and rising simultaneously with a normalizing yield curve (post-inversion) and rising NPL ratios, the three signals form a self-reinforcing triangle: household cash flow stress increases loan delinquencies, which impairs bank solvency, which tightens credit conditions, which further stresses household cash flows. This feedback loop is precisely the mechanism that transformed the 2006–2007 DSR deterioration into the 2008–2009 financial crisis.</p>
+
+          <div class="callout red">
+            <div class="callout-label">✕ Critical Monitor: Multi-Pillar Convergence Risk</div>
+            <p>The current framework shows simultaneous elevation in Cycle (5.8), Liquidity (7.1), Premium (7.9), and Debt (6.1) Pillars — four of five showing significant stress. Only Solvency remains contained. Historical analysis of multi-pillar convergence suggests this configuration materially elevates the probability of a rapid system state transition if a catalyst event occurs. Maintain elevated alertness on Sentinel indicators.</p>
+          </div>
+
+          <h2>FRED Series</h2>
+          <p>The Debt Pillar draws from FRED series <span class="fred-tag">TDSP</span> (Household Debt Service Payments as a Percent of Disposable Personal Income), published quarterly by the Federal Reserve Board. For more granular decomposition, <span class="fred-tag">MDSP</span> (mortgage DSR) and <span class="fred-tag">CDSP</span> (consumer DSR) allow identification of whether stress is concentrated in housing obligations or revolving credit — each implying different transmission mechanisms and policy responses.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(4)">← Chapter 5</button>
+          <button class="chapter-nav-btn" onclick="switchView('terminal', document.querySelector(\'.nav-tab\'))" style="color: var(--blue); border-color: var(--blue);">
+            ◉ Open Live Terminal →
+          </button>
+        </div>
+      </article>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────
+// CORE APPLICATION STATE
+// ──────────────────────────────────────────
+let appData = null;
+let currentChapter = 0;
+let sparklineChart = null;
+let historyChart = null;
+
+// ──────────────────────────────────────────
+// TIMESTAMP
+// ──────────────────────────────────────────
+function updateTimestamp() {
+  const now = new Date();
+  const opts = { month: 'short', day: '2-digit', year: 'numeric' };
+  const dateStr = now.toLocaleDateString('en-US', opts).toUpperCase();
+  const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('timestamp').textContent = `${dateStr} ${timeStr} UTC`;
+}
+updateTimestamp();
+setInterval(updateTimestamp, 1000);
+
+// ──────────────────────────────────────────
+// VIEW SWITCHING
+// ──────────────────────────────────────────
+function switchView(view, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  if (btn && btn.classList && btn.classList.contains('nav-tab')) btn.classList.add('active');
+  
+  if (view === 'terminal' && appData) renderTerminal(appData);
+}
+
+// ──────────────────────────────────────────
+// SCORE → COLOR
+// ──────────────────────────────────────────
+function scoreColor(score) {
+  if (score <= 4) return 'green';
+  if (score <= 7) return 'orange';
+  return 'red';
+}
+function scoreCSSVar(score) {
+  if (score <= 4) return 'var(--green)';
+  if (score <= 7) return 'var(--orange)';
+  return 'var(--red)';
+}
+function statusClass(status) {
+  const map = { stable: 'stable', caution: 'turbulence', warning: 'turbulence', critical: 'critical' };
+  return map[status] || 'turbulence';
+}
+
+// ──────────────────────────────────────────
+// LOAD DATA
+// ──────────────────────────────────────────
+async function loadData() {
+  try {
+    const res = await fetch('data.json');
+    if (!res.ok) throw new Error('Network error');
+    appData = await res.json();
+    renderTerminal(appData);
+  } catch (e) {
+    // Fallback: inline sample data for standalone demo
+    appData = getSampleData();
+    renderTerminal(appData);
+  }
+}
+
+function getSampleData() {
+  return {
+    meta: { lastUpdated: new Date().toISOString(), source: "Demo Data" },
+    globalResilienceScore: 6.4,
+    status: "Turbulence",
+    pillars: [
+      { id:"cycle", roman:"I", name:"Cycle", score:5.8, metric:"10Y-2Y Yield Curve", value:"+0.34%", trend:"steepening", delta:"+0.12", description:"Yield curve normalizing post-inversion. Historically precedes credit stress.", status:"caution" },
+      { id:"liquidity", roman:"II", name:"Liquidity", score:7.1, metric:"Market Cap / M2 Ratio", value:"1.82x", trend:"elevated", delta:"+0.04", description:"Buffett Indicator elevated. M2 growth decelerating. Liquidity conditions tightening.", status:"warning" },
+      { id:"premium", roman:"II", name:"Premium", score:7.9, metric:"Equity Risk Premium", value:"1.02%", trend:"compressed", delta:"-0.18", description:"ERP approaching critical threshold. Equity compensation for risk historically thin.", status:"warning" },
+      { id:"solvency", roman:"III", name:"Solvency", score:4.2, metric:"Bank NPL Ratio", value:"1.8%", trend:"stable", delta:"+0.02", description:"Non-performing loans contained. Systemic banking plumbing functioning within normal parameters.", status:"stable" },
+      { id:"debt", roman:"III", name:"Debt", score:6.1, metric:"Household DSR", value:"11.4%", trend:"rising", delta:"+0.3", description:"Debt service burden creeping higher. Consumer balance sheets showing early strain signals.", status:"caution" }
+    ],
+    sentinels: [
+      { id:"jobless", name:"Initial Jobless Claims", fredSeries:"ICSA", value:231000, displayValue:"231K", threshold:275000, thresholdDisplay:"275K", status:"normal", delta:"-4K", alert:false, description:"Weekly initial claims. Red alert triggers above 275,000." },
+      { id:"erp", name:"Equity Risk Premium", fredSeries:"DGS10", value:1.02, displayValue:"1.02%", threshold:0.8, thresholdDisplay:"0.80%", status:"caution", delta:"-0.18%", alert:false, description:"ERP = E/P ratio minus 10Y yield. Red alert triggers below 0.80%." }
+    ],
+    historicalScores: [
+      { date:"Sep '24", score:4.2 }, { date:"Oct '24", score:4.8 }, { date:"Nov '24", score:5.3 },
+      { date:"Dec '24", score:5.9 }, { date:"Jan '25", score:6.1 }, { date:"Feb '25", score:6.2 }, { date:"Mar '25", score:6.4 }
+    ]
+  };
+}
+
+// ──────────────────────────────────────────
+// RENDER TERMINAL
+// ──────────────────────────────────────────
+function renderTerminal(data) {
+  renderMain(data);
+  renderSidebar(data);
+}
+
+function renderMain(data) {
+  const score = data.globalResilienceScore;
+  const color = scoreCSSVar(score);
+  const pct = (score / 10) * 100;
+  const circumference = 2 * Math.PI * 32;
+  const offset = circumference - (pct / 100) * circumference;
+  const statusKey = score <= 4 ? 'stable' : score <= 7 ? 'turbulence' : 'critical';
+  const statusLabels = { stable: 'Resilient', turbulence: 'Turbulence', critical: 'Critical' };
+
+  const pillarsHTML = data.pillars.map(p => {
+    const cls = scoreColor(p.score);
+    const deltaDir = p.delta && p.delta.startsWith('+') ? 'up' : 'down';
+    return `
+    <div class="pillar-card status-${p.status}" title="${p.description}">
+      <div class="pillar-roman">Pillar ${p.roman}</div>
+      <div class="pillar-name">${p.name}</div>
+      <div class="pillar-score-row">
+        <div class="pillar-score ${cls}">${p.score.toFixed(1)}</div>
+        <div class="pillar-score-max">/10</div>
+      </div>
+      <div class="pillar-metric">${p.metric}</div>
+      <div class="pillar-value">${p.value}</div>
+      <div class="pillar-delta ${deltaDir}">${p.delta ? (p.delta.startsWith('+') ? '▲ ' : '▼ ') + Math.abs(parseFloat(p.delta)) : ''}</div>
+      <div class="pillar-desc">${p.description}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('terminal-main').innerHTML = `
+    <div class="score-header">
+      <div class="score-left">
+        <div class="score-ring">
+          <svg viewBox="0 0 88 88">
+            <circle class="score-ring-track" cx="44" cy="44" r="32"/>
+            <circle class="score-ring-fill" cx="44" cy="44" r="32"
+              stroke="${color}"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${offset}"
+            />
+          </svg>
+          <div class="score-label">
+            <div class="score-number" style="color:${color}">${score.toFixed(1)}</div>
+            <div class="score-denom">/10</div>
+          </div>
+        </div>
+        <div class="score-info">
+          <div class="score-title">Global Resilience Score</div>
+          <div class="score-headline">US Macro-Resilience<br>Matrix</div>
+          <span class="status-badge ${statusKey}">${statusLabels[statusKey]}</span>
+        </div>
+      </div>
+      <div class="score-right">
+        <div class="score-meta-row">
+          <div class="score-meta-item">Source: <span>FRED API / ${data.meta.source}</span></div>
+          <div class="score-meta-item">Updated: <span id="last-updated">—</span></div>
+          <div class="score-meta-item">Pillars Active: <span>5 / 5</span></div>
+        </div>
+        <div class="sparkline-container">
+          <div class="sparkline-label">6-MONTH TREND</div>
+          <canvas id="sparklineCanvas" width="160" height="40"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="pillars-header">
+      <h2>Five Pillars</h2>
+      <div class="pillars-header-line"></div>
+      <span class="fred-tag">FRED Data</span>
+    </div>
+    <div class="pillars-grid">${pillarsHTML}</div>
+
+    <div class="section-divider">
+      <span class="section-divider-label">Historical Score</span>
+      <div class="section-divider-line"></div>
+    </div>
+    <div class="history-section">
+      <div class="history-header">
+        <div class="history-title">Global Resilience Score — 7-Month History</div>
+        <div class="fred-tag">Composite</div>
+      </div>
+      <canvas id="historyCanvas" height="90"></canvas>
+    </div>
+  `;
+
+  // Set last updated
+  try {
+    const d = new Date(data.meta.lastUpdated);
+    document.getElementById('last-updated').textContent =
+      d.toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch(e) {}
+
+  // Draw charts
+  setTimeout(() => {
+    drawSparkline('sparklineCanvas', data.historicalScores);
+    drawHistory('historyCanvas', data.historicalScores);
+  }, 100);
+}
+
+function renderSidebar(data) {
+  const sentinelsHTML = data.sentinels.map(s => {
+    const isJobless = s.id === 'jobless';
+    const fillPct = isJobless
+      ? Math.min((s.value / s.threshold) * 100, 100)
+      : Math.max(0, Math.min(((s.threshold - s.value) / s.threshold * -1 + 1) * 100, 100));
+    const pctActual = isJobless
+      ? Math.min((s.value / s.threshold) * 100, 100)
+      : Math.min((s.value / (s.threshold * 3)) * 100, 100);
+    const fillClass = s.alert ? 'alert' : s.status === 'caution' ? 'caution' : 'normal';
+    const valClass = s.alert ? 'alert' : s.status === 'caution' ? 'caution' : '';
+    const deltaDir = s.delta && s.delta.startsWith('+') ? '▲' : '▼';
+    const deltaColor = isJobless
+      ? (s.delta && s.delta.startsWith('+') ? 'var(--orange)' : 'var(--green)')
+      : (s.delta && s.delta.startsWith('+') ? 'var(--orange)' : 'var(--green)');
+
+    return `
+    <div class="sentinel-card${s.alert ? ' alert-active' : ''}">
+      <div class="sentinel-name">${s.name} <span class="fred-tag">${s.fredSeries}</span></div>
+      <div class="sentinel-value ${valClass}">${s.displayValue}</div>
+      <div class="sentinel-delta" style="color:${deltaColor}">${deltaDir} ${s.delta} <span style="color:var(--text-muted);font-size:9px">vs. prev.</span></div>
+      <div class="sentinel-threshold-bar">
+        <div class="threshold-labels">
+          <span>0</span>
+          <span style="color:var(--red)">⚑ ${s.thresholdDisplay}</span>
+        </div>
+        <div class="threshold-track">
+          <div class="threshold-fill ${fillClass}" style="width:${pctActual.toFixed(1)}%"></div>
+        </div>
+      </div>
+      <div class="sentinel-status-row">
+        <span class="sentinel-status-text" style="color:${fillClass === 'normal' ? 'var(--green)' : fillClass === 'caution' ? 'var(--orange)' : 'var(--red)'}">
+          ${s.alert ? '⚑ ALERT ACTIVE' : s.status === 'caution' ? '⚡ Approaching Threshold' : '✓ Within Normal Range'}
+        </span>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.5">${s.description}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('terminal-sidebar').innerHTML = `
+    <div class="sidebar-title">⚑ Sentinels</div>
+    ${sentinelsHTML}
+    <div class="alerts-section">
+      <div class="section-divider" style="margin:0 0 12px">
+        <span class="section-divider-label" style="font-size:9px">System Alerts</span>
+        <div class="section-divider-line"></div>
+      </div>
+      <div class="alert-box warning">
+        <div class="alert-box-title">⚡ ERP Compression</div>
+        <div class="alert-box-text">ERP at 1.02% — 22bps above Red Alert threshold. Elevated sensitivity to rate or earnings shocks.</div>
+      </div>
+      <div class="alert-box info">
+        <div class="alert-box-title">◉ Yield Curve</div>
+        <div class="alert-box-text">10Y–2Y normalizing from inversion. Historically precedes recession onset by 6–18 months.</div>
+      </div>
+      <div style="margin-top:16px;padding:12px;background:var(--bg-primary);border-radius:8px;border:1px solid var(--border-subtle)">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Framework Automation</div>
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.6">
+          Production deployments connect directly to the <strong style="color:var(--text-secondary)">FRED API</strong> for live data ingestion. Series: T10Y2Y, M2SL, WILL5000PRFC, DGS10, DRALACBN, TDSP, ICSA.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────
+// CHARTS
+// ──────────────────────────────────────────
+function drawSparkline(canvasId, history) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const scores = history.map(h => h.score);
+  const min = Math.min(...scores) - 0.5;
+  const max = Math.max(...scores) + 0.5;
+  const pad = 2;
+  const pts = scores.map((s, i) => ({
+    x: pad + (i / (scores.length - 1)) * (w - pad * 2),
+    y: h - pad - ((s - min) / (max - min)) * (h - pad * 2)
+  }));
+
+  ctx.clearRect(0, 0, w, h);
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, 'rgba(249,140,79,0.3)');
+  grad.addColorStop(1, 'rgba(249,140,79,0)');
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, h);
+  ctx.lineTo(pts[0].x, h);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = '#F98C4F';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const last = pts[pts.length-1];
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#F98C4F';
+  ctx.fill();
+}
+
+function drawHistory(canvasId, history) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.offsetWidth * dpr;
+  const w = canvas.width, h = canvas.height = 90 * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = canvas.offsetWidth, H = 90;
+
+  const scores = history.map(d => d.score);
+  const dates = history.map(d => d.date);
+  const min = 0, max = 10;
+  const padL = 36, padR = 12, padT = 8, padB = 22;
+  const cw = W - padL - padR;
+  const ch = H - padT - padB;
+
+  function toXY(i, s) {
+    return {
+      x: padL + (i / (scores.length - 1)) * cw,
+      y: padT + (1 - (s - min) / (max - min)) * ch
+    };
+  }
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid lines
+  [0, 4, 7, 10].forEach(v => {
+    const y = padT + (1 - v / 10) * ch;
+    ctx.beginPath();
+    ctx.moveTo(padL, y); ctx.lineTo(padL + cw, y);
+    ctx.strokeStyle = v === 0 ? '#2E3338' : v === 4 ? 'rgba(52,208,88,0.2)' : v === 7 ? 'rgba(249,140,79,0.2)' : '#2E3338';
+    ctx.lineWidth = 1;
+    ctx.setLineDash(v === 4 || v === 7 ? [4, 4] : []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (v === 4 || v === 7) {
+      ctx.fillStyle = v === 4 ? 'rgba(52,208,88,0.5)' : 'rgba(249,140,79,0.5)';
+      ctx.font = `${9}px 'JetBrains Mono', monospace`;
+      ctx.textAlign = 'right';
+      ctx.fillText(v, padL - 4, y + 3);
+    }
+  });
+
+  const pts = scores.map((s, i) => toXY(i, s));
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+  grad.addColorStop(0, 'rgba(56,139,253,0.25)');
+  grad.addColorStop(1, 'rgba(56,139,253,0)');
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, padT + ch);
+  ctx.lineTo(pts[0].x, padT + ch);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = '#388BFD';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  pts.forEach((p, i) => {
+    const s = scores[i];
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = s <= 4 ? '#34D058' : s <= 7 ? '#F98C4F' : '#D73A49';
+    ctx.fill();
+    ctx.fillStyle = '#586068';
+    ctx.font = `${9}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(dates[i], p.x, H - 4);
+  });
+}
+
+// ──────────────────────────────────────────
+// ACADEMY NAVIGATION
+// ──────────────────────────────────────────
+function showChapter(index, btn) {
+  currentChapter = index;
+  document.querySelectorAll('.chapter-view').forEach(c => c.classList.remove('active'));
+  document.getElementById('chapter-' + index).classList.add('active');
+  document.querySelectorAll('.chapter-nav-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelector('.academy-content').scrollTop = 0;
+}
+
+function navChapter(index) {
+  const items = document.querySelectorAll('.chapter-nav-item');
+  showChapter(index, items[index]);
+}
+
+// ──────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────
+loadData();
+
+// ──────────────────────────────────────────
+// BDC NAVIGATION
+// ──────────────────────────────────────────
+function showBDCSection(index, btn) {
+  document.querySelectorAll('#view-bdc .chapter-view').forEach(c => c.classList.remove('active'));
+  document.getElementById('bdc-' + index).classList.add('active');
+  document.querySelectorAll('#view-bdc .chapter-nav-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('bdc-content').scrollTop = 0;
+}
+
+function navBDC(index) {
+  const items = document.querySelectorAll('#view-bdc .chapter-nav-item');
+  showBDCSection(index, items[index]);
+}
+
+// ──────────────────────────────────────────
+// SCORECARD LOGIC
+// ──────────────────────────────────────────
+let scorecardState = {};
+
+function toggleScore(el) {
+  const row = el.closest('.scorecard-row');
+  const metric = row.dataset.metric;
+  const toggle = el.querySelector('.score-toggle');
+  const current = scorecardState[metric];
+
+  if (!current || current === 0) {
+    scorecardState[metric] = 1;
+    toggle.textContent = '1';
+    toggle.style.background = 'var(--green-dim)';
+    toggle.style.color = 'var(--green)';
+    toggle.style.border = '1px solid rgba(52,208,88,0.3)';
+    el.style.borderColor = 'var(--green)';
+  } else {
+    scorecardState[metric] = 0;
+    toggle.textContent = '0';
+    toggle.style.background = 'var(--red-dim)';
+    toggle.style.color = 'var(--red)';
+    toggle.style.border = '1px solid rgba(215,58,73,0.3)';
+    el.style.borderColor = 'var(--red)';
+  }
+  updateVerdict();
+}
+
+function updateVerdict() {
+  const total = Object.values(scorecardState).reduce((a, b) => a + b, 0);
+  const answered = Object.keys(scorecardState).length;
+  document.getElementById('bdc-score-display').textContent = total;
+
+  if (answered < 6) return;
+
+  const verdict = document.getElementById('bdc-verdict');
+  verdict.style.display = 'block';
+  const label = document.getElementById('verdict-label');
+  const title = document.getElementById('verdict-title');
+  const text = document.getElementById('verdict-text');
+
+  if (total >= 5) {
+    verdict.style.background = 'var(--green-dim)';
+    verdict.style.borderColor = 'rgba(52,208,88,0.3)';
+    label.style.color = 'var(--green)';
+    label.textContent = '✓ VEREDITO — ALTA QUALIDADE';
+    title.style.color = 'var(--green)';
+    title.textContent = total + '/6 — Ativo Tier 1';
+    text.textContent = 'BDC com balanço sólido. Elegível para exposição máxima em ambiente de Risk Score 1–4. Monitorizar trimestralmente.';
+  } else if (total >= 3) {
+    verdict.style.background = 'var(--orange-dim)';
+    verdict.style.borderColor = 'rgba(249,140,79,0.3)';
+    label.style.color = 'var(--orange)';
+    label.textContent = '⚡ VEREDITO — ALERTA AMARELO';
+    title.style.color = 'var(--orange)';
+    title.textContent = total + '/6 — Risco Moderado';
+    text.textContent = 'Risco de corte de dividendo em caso de stress macro. Manter apenas se Risk Score MRM < 5. Reduzir posição em ambiente de turbulência.';
+  } else {
+    verdict.style.background = 'var(--red-dim)';
+    verdict.style.borderColor = 'rgba(215,58,73,0.3)';
+    label.style.color = 'var(--red)';
+    label.textContent = '✕ VEREDITO — ZONA DE PERIGO';
+    title.style.color = 'var(--red)';
+    title.textContent = total + '/6 — Risco Elevado';
+    text.textContent = 'Risco de perda permanente de capital. O dividend yield não compensa a deterioração do balanço. Evitar ou sair imediatamente.';
+  }
+}
+
+function resetScorecard() {
+  scorecardState = {};
+  document.querySelectorAll('.score-toggle').forEach(t => {
+    t.textContent = '—';
+    t.style.background = 'var(--border)';
+    t.style.color = 'var(--text-muted)';
+    t.style.border = 'none';
+  });
+  document.querySelectorAll('.scorecard-row > div').forEach(d => {
+    d.style.borderColor = 'var(--border)';
+  });
+  document.getElementById('bdc-score-display').textContent = '0';
+  document.getElementById('bdc-verdict').style.display = 'none';
+}
+
+// ──────────────────────────────────────────
+// WATCHLIST DATA
+// ──────────────────────────────────────────
+const watchlistData = [
+  // BDCs Individuais
+  {ticker:'ARCC', name:'Ares Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Maior BDC do mundo. Referência do setor.'},
+  {ticker:'OBDC', name:'Blue Owl Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Foco em First Lien. Baixa alavancagem.'},
+  {ticker:'BXSL', name:'Blackstone Secured Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'98%+ First Lien. Muito defensivo.'},
+  {ticker:'MAIN', name:'Main Street Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Dividend mensal. Gestão excecional.'},
+  {ticker:'FSK', name:'FS KKR Capital Corp', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Grande escala. Monitorizar Non-Accruals.'},
+  {ticker:'GBDC', name:'Golub Capital BDC', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Foco conservador. Senior secured.'},
+  {ticker:'HTGC', name:'Hercules Capital', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Especializado em Tech/Life Sciences.'},
+  {ticker:'TSLX', name:'Sixth Street Specialty Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Alta qualidade de crédito. Tier 1.'},
+  {ticker:'PSEC', name:'Prospect Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Yield elevado. Maior risco de crédito.'},
+  {ticker:'CSWC', name:'Capital Southwest Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Dividend regular + especial.'},
+  {ticker:'MSDL', name:'Morgan Stanley Direct Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Novo. Respaldo institucional forte.'},
+  {ticker:'TRIN', name:'Trinity Capital', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Foco em equipment financing.'},
+  {ticker:'GSBD', name:'Goldman Sachs BDC', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Qualidade Goldman. Senior secured.'},
+  {ticker:'OCSL', name:'Oaktree Specialty Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Gestão Oaktree. Crédito defensivo.'},
+  {ticker:'BBDC', name:'Barings BDC', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Mid-market. Monitorizar leverage.'},
+  {ticker:'BCSF', name:'Bain Capital Specialty Finance', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Tier 2. Yield atrativo.'},
+  {ticker:'CGBD', name:'TCG BDC (Carlyle)', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Respaldo Carlyle. Senior focus.'},
+  {ticker:'NMFC', name:'New Mountain Finance', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Defensive Growth sectors focus.'},
+  {ticker:'PFLT', name:'PennantPark Floating Rate', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'100% floating rate. Protegido vs. subida de taxas.'},
+  {ticker:'MFIC', name:'MidCap Financial Investment', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Apollo backed. First lien focus.'},
+  // ETFs BDC
+  {ticker:'BIZD', name:'VanEck BDC Income ETF', cat:'etf-bdc', catLabel:'ETF BDC', pilar:'Pilar III', note:'Maior ETF BDC. Exposição diversificada.'},
+  {ticker:'PBDC', name:'Putnam BDC Income ETF', cat:'etf-bdc', catLabel:'ETF BDC', pilar:'Pilar III', note:'Alternativa ativa ao BIZD.'},
+  {ticker:'FBDC', name:'Flat Rock Core Income Fund', cat:'etf-bdc', catLabel:'ETF BDC', pilar:'Pilar III', note:'Foco em BDCs de qualidade.'},
+  {ticker:'PSP', name:'Invesco Global Listed PE Fund', cat:'etf-bdc', catLabel:'ETF BDC', pilar:'Pilar II + III', note:'Inclui PE e BDCs. Mais diversificado.'},
+  // Covered Calls
+  {ticker:'JEPI', name:'JPMorgan Equity Premium Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'S&P500 + ELN calls. O mais popular.'},
+  {ticker:'JEPQ', name:'JPMorgan Nasdaq Equity Premium', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'NASDAQ + calls. Alta volatilidade implícita.'},
+  {ticker:'QYLD', name:'Global X Nasdaq 100 Covered Call', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Yield alto. Erosão capital em bull markets.'},
+  {ticker:'XYLD', name:'Global X S&P 500 Covered Call', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'S&P500 covered call. Yield 10%+.'},
+  {ticker:'SPYI', name:'NEOS S&P 500 High Income ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Tax-efficient. Crescente popularidade.'},
+  {ticker:'QQQI', name:'NEOS Nasdaq 100 High Income ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Alternativa fiscal eficiente ao QYLD.'},
+  {ticker:'GPIQ', name:'Goldman Sachs Nasdaq 100 CC ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Goldman. Estratégia de calls parciais.'},
+  {ticker:'GPIX', name:'Goldman Sachs S&P 500 CC ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Goldman S&P version.'},
+  {ticker:'DIVO', name:'Amplify CWP Enhanced Dividend', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Seletivo. Stocks de qualidade + calls.'},
+  {ticker:'KNG', name:'FT Cboe Vest S&P Dividend Arist.', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Dividend aristocrats + calls. Defensivo.'},
+  {ticker:'RYLD', name:'Global X Russell 2000 Covered Call', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Small caps + calls. Alta volatilidade.'},
+  {ticker:'QYLG', name:'Global X Nasdaq 100 CC & Growth', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'50% calls. Mantém parte da apreciação.'},
+  {ticker:'XYLG', name:'Global X S&P 500 CC & Growth', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'S&P 500 versão 50% calls.'},
+  {ticker:'TLTW', name:'iShares 20+ Year Treasury Bond CC', cat:'covered', catLabel:'Covered Call', pilar:'Pilar I', note:'Bonds + calls. Sensível à yield curve.'},
+  {ticker:'ISPY', name:'ProShares S&P 500 High Income ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Estratégia de calls semanais.'},
+  {ticker:'IQQQ', name:'ProShares Nasdaq 100 High Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'NASDAQ calls semanais.'},
+  {ticker:'OMAH', name:'Roundhill S&P 500 0DTE CC', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'0DTE options. Muito high yield.'},
+  {ticker:'NVDY', name:'YieldMax NVDA Option Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Single-stock NVDA. Risco concentrado.'},
+  {ticker:'ULTY', name:'YieldMax Ultra Option Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Yield extremo. Erosão capital elevada.'},
+  {ticker:'TSPY', name:'TOEWS Agility Shares', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Gestão ativa com proteção downside.'},
+];
+
+function renderWatchlist(filter) {
+  const tbody = document.getElementById('watchlist-body');
+  const filtered = filter === 'all' ? watchlistData : watchlistData.filter(d => d.cat === filter);
+  tbody.innerHTML = filtered.map(d => {
+    const catColor = d.cat === 'bdc' ? 'var(--blue)' : d.cat === 'etf-bdc' ? 'var(--green)' : 'var(--orange)';
+    const catBg = d.cat === 'bdc' ? 'var(--blue-dim)' : d.cat === 'etf-bdc' ? 'var(--green-dim)' : 'var(--orange-dim)';
+    const catBorder = d.cat === 'bdc' ? 'rgba(56,139,253,0.3)' : d.cat === 'etf-bdc' ? 'rgba(52,208,88,0.3)' : 'rgba(249,140,79,0.3)';
+    return `<tr>
+      <td><strong style="font-family:var(--mono);color:var(--text-primary);">${d.ticker}</strong></td>
+      <td style="color:var(--text-secondary);">${d.name}</td>
+      <td><span style="padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.08em;background:${catBg};border:1px solid ${catBorder};color:${catColor};">${d.catLabel}</span></td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">${d.pilar}</td>
+      <td style="font-size:11px;color:var(--text-muted);">${d.note}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterWatchlist(filter, btn) {
+  document.querySelectorAll('.wl-filter').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.borderColor = 'var(--border)';
+    b.style.color = 'var(--text-secondary)';
+  });
+  btn.style.background = 'var(--blue-dim)';
+  btn.style.borderColor = 'var(--blue)';
+  btn.style.color = 'var(--blue)';
+  renderWatchlist(filter);
+}
+
+// Init watchlist on load
+setTimeout(() => renderWatchlist('all'), 200);
+
+</script>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW C: ABOUT
+═══════════════════════════════════════════════ -->
+<div class="view" id="view-about">
+  <div style="min-height:calc(100vh - 56px); display:flex; align-items:center; justify-content:center; padding:48px 24px;">
+    <div style="max-width:860px; width:100%;">
+
+      <!-- Header tag -->
+      <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--blue);margin-bottom:28px;">About the Author</div>
+
+      <!-- Main card -->
+      <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:16px;padding:40px;display:flex;gap:40px;align-items:flex-start;margin-bottom:24px;position:relative;overflow:hidden;">
+        
+        <!-- Subtle background glow -->
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 0% 50%, rgba(56,139,253,0.04) 0%, transparent 60%);pointer-events:none;"></div>
+
+        <!-- Photo -->
+        <div style="flex-shrink:0;">
+          <div style="width:140px;height:140px;border-radius:12px;overflow:hidden;border:2px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+            <img src="data:image/jpeg;base64,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" alt="Nuno Nascimento Rodrigues" style="width:100%;height:100%;object-fit:cover;filter:grayscale(20%);">
+          </div>
+          <!-- Name below photo -->
+          <div style="margin-top:14px;text-align:center;">
+            <div style="font-family:var(--display);font-size:14px;font-weight:700;color:var(--text-primary);">Nuno Nascimento</div>
+            <div style="font-family:var(--display);font-size:14px;font-weight:700;color:var(--text-primary);">Rodrigues</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--blue);letter-spacing:0.12em;text-transform:uppercase;margin-top:4px;">Macro Investor</div>
+          </div>
+        </div>
+
+        <!-- Bio text -->
+        <div style="flex:1;">
+          <div style="font-family:var(--display);font-size:22px;font-weight:700;color:var(--text-primary);line-height:1.2;margin-bottom:20px;">Investment Philosophy</div>
+          <p style="color:var(--text-secondary);font-size:14px;line-height:1.8;margin-bottom:0;">
+            Our investment approach is grounded in macroeconomic regime analysis. We assess global liquidity conditions, central bank policy, and interest rate dynamics to identify the economic environment that is most likely to drive asset returns.
+          </p>
+          <p style="color:var(--text-secondary);font-size:14px;line-height:1.8;margin-top:16px;margin-bottom:0;">
+            Portfolios are constructed through disciplined asset allocation and selective exposure to sectors and themes that benefit from the prevailing cycle. The process combines macro perspective with fundamental valuation, implemented through periodic rebalancing and a strong focus on capital preservation.
+          </p>
+          <p style="color:var(--text-secondary);font-size:14px;line-height:1.8;margin-top:16px;margin-bottom:0;">
+            The objective is to deliver consistent long-term returns while avoiding reactive decisions driven by short-term market noise.
+          </p>
+        </div>
+      </div>
+
+      <!-- 3 pillars row -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:20px;border-top:2px solid var(--blue);">
+          <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">Approach</div>
+          <div style="font-family:var(--display);font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Macro Regime Analysis</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.5;">Identifying the economic environment before positioning portfolios.</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:20px;border-top:2px solid var(--orange);">
+          <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--orange);margin-bottom:8px;">Process</div>
+          <div style="font-family:var(--display);font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Disciplined Allocation</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.5;">Macro perspective combined with fundamental valuation and periodic rebalancing.</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:20px;border-top:2px solid var(--green);">
+          <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--green);margin-bottom:8px;">Objective</div>
+          <div style="font-family:var(--display);font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">Capital Preservation</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.5;">Consistent long-term returns without reactive decisions driven by short-term noise.</div>
+        </div>
+      </div>
+
+      <!-- About the MRM -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;border-left:3px solid var(--blue);">
+        <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--blue);margin-bottom:10px;">About this Dashboard</div>
+        <p style="color:var(--text-secondary);font-size:13px;line-height:1.7;margin:0;">
+          The <strong style="color:var(--text-primary);">US Macro-Resilience Matrix</strong> is a proprietary framework developed to monitor the structural health of the US economy across five orthogonal dimensions. Updated daily via the FRED API, it provides a systematic, data-driven view of macro risk — free from narrative bias and short-term noise.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ═══════════════════════════════════════════════
+     VIEW D: BDCs
+═══════════════════════════════════════════════ -->
+<div class="view" id="view-bdc">
+  <div class="academy-layout">
+
+    <!-- BDC Sidebar Nav -->
+    <aside class="academy-nav">
+      <div class="academy-nav-title">BDC Framework</div>
+      <button class="chapter-nav-item active" onclick="showBDCSection(0, this)">
+        <span class="chapter-num">01</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">O que são BDCs?</div>
+          <div class="chapter-nav-sub">Introdução & Income</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showBDCSection(1, this)">
+        <span class="chapter-num">02</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">BDCs & Ciclo Macro</div>
+          <div class="chapter-nav-sub">Quando entrar e sair</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showBDCSection(2, this)">
+        <span class="chapter-num">03</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Framework MRM</div>
+          <div class="chapter-nav-sub">3 Pilares Adaptados</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showBDCSection(3, this)">
+        <span class="chapter-num">04</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">BDC Scorecard</div>
+          <div class="chapter-nav-sub">Ferramenta Interativa</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showBDCSection(4, this)">
+        <span class="chapter-num">05</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Watchlist</div>
+          <div class="chapter-nav-sub">BDCs, ETFs & Covered Calls</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showBDCSection(5, this)">
+        <span class="chapter-num">06</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">MRM Signal</div>
+          <div class="chapter-nav-sub">Alocação Recomendada</div>
+        </div>
+      </button>
+    </aside>
+
+    <!-- BDC Content -->
+    <main class="academy-content" id="bdc-content">
+
+      <!-- ── SECTION 0: O QUE SÃO BDCs ── -->
+      <article class="chapter-view active" id="bdc-0">
+        <span class="chapter-tag">Secção 01 — Introdução</span>
+        <h1 class="chapter-h1">O que são<br>as BDCs?</h1>
+        <p class="chapter-subtitle">Business Development Companies — o "shadow banking" da economia real e uma das fontes de income mais poderosas do mercado americano.</p>
+        <div class="chapter-divider"></div>
+
+        <div class="content-body">
+          <h2>A Origem: Uma Lei de 1980 que Mudou Tudo</h2>
+          <p>Em 1980, o Congresso dos Estados Unidos aprovou o <strong>Small Business Investment Incentive Act</strong>, criando uma nova categoria de veículo de investimento regulado: as Business Development Companies. O objetivo era simples mas ambicioso — criar um mecanismo que canalizasse capital privado para as pequenas e médias empresas americanas que os bancos tradicionais, cada vez mais regulados e avessos ao risco, se recusavam a financiar.</p>
+
+          <p>Em essência, uma BDC é uma empresa cotada em bolsa que funciona como um banco de crédito privado acessível ao investidor de retalho. Ela capta capital nos mercados públicos, alavanca esse capital com dívida, e empresta-o — tipicamente a taxas variáveis e com garantias reais — a empresas do mercado médio (<em>middle market</em>) com receitas entre $10M e $1B.</p>
+
+          <div class="blockquote">
+            <p>"As BDCs são o elo perdido entre Wall Street e a Main Street. Financiam as empresas que constroem e operam a economia real — demasiado grandes para o banco local, demasiado pequenas para o mercado de capitais."</p>
+            <cite>— BDC Strategic Framework, NNR 2026</cite>
+          </div>
+
+          <h2>O Motor do Income: Por que as BDCs Pagam Tanto?</h2>
+          <p>A razão pela qual as BDCs oferecem dividend yields historicamente entre <strong>8% e 14%</strong> ao ano não é magia — é estrutura legal. Para manter o seu estatuto fiscal privilegiado como <strong>Regulated Investment Company (RIC)</strong>, uma BDC é legalmente obrigada a distribuir no mínimo <strong>90% do seu rendimento tributável</strong> aos acionistas.</p>
+
+          <p>Combinado com o facto de emprestarem a taxas variáveis (tipicamente SOFR + spread), as BDCs são veículos naturalmente beneficiados em ambientes de taxas elevadas — ao contrário das obrigações tradicionais, cujo valor de mercado desce quando as taxas sobem.</p>
+
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:24px 0;">
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;border-top:2px solid var(--green);">
+              <div style="font-family:var(--mono);font-size:24px;font-weight:600;color:var(--green);margin-bottom:4px;">90%+</div>
+              <div style="font-size:11px;color:var(--text-muted);">Rendimento distribuído obrigatoriamente</div>
+            </div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;border-top:2px solid var(--blue);">
+              <div style="font-family:var(--mono);font-size:24px;font-weight:600;color:var(--blue);margin-bottom:4px;">8–14%</div>
+              <div style="font-size:11px;color:var(--text-muted);">Dividend yield histórico típico</div>
+            </div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;border-top:2px solid var(--orange);">
+              <div style="font-family:var(--mono);font-size:24px;font-weight:600;color:var(--orange);margin-bottom:4px;">SOFR+</div>
+              <div style="font-size:11px;color:var(--text-muted);">Empréstimos a taxas variáveis</div>
+            </div>
+          </div>
+
+          <h2>A Anatomia de uma BDC</h2>
+          <p>Uma BDC típica opera com uma estrutura de capital simples mas poderosa: capta equity dos acionistas, alavanca esse equity com dívida (tipicamente até 1.0–1.5x o equity), e investe o total num portfólio diversificado de empréstimos e instrumentos de crédito privado. O rendimento gerado — juros, fees de originação, dividendos de equity kickers — é então distribuído trimestralmente.</p>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Componente</th>
+                <th>Descrição</th>
+                <th>Impacto no Investidor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Net Asset Value (NAV)</strong></td>
+                <td>Valor intrínseco do portfólio menos dívida</td>
+                <td>Âncora de valorização — comprar abaixo do NAV é favorável</td>
+              </tr>
+              <tr>
+                <td><strong>Net Investment Income (NII)</strong></td>
+                <td>Rendimento de juros menos despesas operacionais</td>
+                <td>Fonte do dividendo — NII deve cobrir 100%+ do dividendo</td>
+              </tr>
+              <tr>
+                <td><strong>Non-Accruals</strong></td>
+                <td>Empréstimos em incumprimento (sem juros a receber)</td>
+                <td>Indicador de qualidade do crédito — acima de 3% é alerta</td>
+              </tr>
+              <tr>
+                <td><strong>PIK Income</strong></td>
+                <td>Juros pagos em títulos em vez de cash</td>
+                <td>Acima de 10% da receita sinaliza stress nos devedores</td>
+              </tr>
+              <tr>
+                <td><strong>First Lien Debt</strong></td>
+                <td>Empréstimos com prioridade máxima em recuperação</td>
+                <td>Acima de 70% indica portfólio defensivo e de qualidade</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2>BDCs vs. Outras Fontes de Income</h2>
+          <p>No universo dos investimentos de income, as BDCs ocupam um nicho único — rendimentos superiores aos REITs e obrigações, com maior sensibilidade ao ciclo económico do que ambos. A tabela seguinte compara os perfis de risco/retorno:</p>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Veículo</th>
+                <th>Yield Típico</th>
+                <th>Sensibilidade ao Ciclo</th>
+                <th>Risco Principal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>BDCs</strong></td>
+                <td class="mono green">8–14%</td>
+                <td>Alta — Pilar III (Solvência)</td>
+                <td>Non-accruals, recessão</td>
+              </tr>
+              <tr>
+                <td><strong>REITs</strong></td>
+                <td class="mono green">4–8%</td>
+                <td>Média — taxas de juro</td>
+                <td>Vacancy, refinanciamento</td>
+              </tr>
+              <tr>
+                <td><strong>Covered Calls ETFs</strong></td>
+                <td class="mono orange">7–12%</td>
+                <td>Alta — Pilar II (Liquidez)</td>
+                <td>Erosão de capital em bull markets</td>
+              </tr>
+              <tr>
+                <td><strong>High Yield Bonds</strong></td>
+                <td class="mono orange">5–8%</td>
+                <td>Média-Alta</td>
+                <td>Defaults, duration</td>
+              </tr>
+              <tr>
+                <td><strong>Dividend Stocks</strong></td>
+                <td class="mono">2–5%</td>
+                <td>Média</td>
+                <td>Corte de dividendo, valorização</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout red">
+            <div class="callout-label">✕ A Armadilha do Yield Hunting</div>
+            <p>O maior perigo das BDCs não é o seu rendimento — é investir nelas <strong>fora de ciclo</strong>. Um dividend yield de 12% num ambiente de Non-Accruals a subir e Jobless Claims a disparar não é uma oportunidade. É uma <em>value trap</em>. O dividendo será cortado antes que o investidor desinformado consiga reagir, e a perda de capital supera múltiplos anos de dividendos acumulados.</p>
+          </div>
+        </div>
+
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" disabled>← Anterior</button>
+          <button class="chapter-nav-btn" onclick="navBDC(1)">BDCs & Ciclo Macro →</button>
+        </div>
+      </article>
+
+      <!-- ── SECTION 1: BDCs & CICLO MACRO ── -->
+      <article class="chapter-view" id="bdc-1">
+        <span class="chapter-tag">Secção 02 — Timing</span>
+        <h1 class="chapter-h1">BDCs &<br>Ciclo Macro</h1>
+        <p class="chapter-subtitle">O timing macro é a diferença entre capturar income generoso e sofrer perdas permanentes de capital.</p>
+        <div class="chapter-divider"></div>
+
+        <div class="content-body">
+          <h2>Quando Deter — O Cenário Favorável</h2>
+          <p>As BDCs prosperam em ambientes macroeconómicos específicos. O alinhamento dos três indicadores seguintes cria as condições ideais para maximizar o income sem risco excessivo de capital:</p>
+
+          <div class="callout green">
+            <div class="callout-label">✓ Cenário Ideal para BDCs</div>
+            <p><strong>Pilar I (Ciclo):</strong> Curva 10Y-2Y acima de +0.50% e a inclinar. O custo de financiamento das BDCs estabiliza enquanto as taxas recebidas dos empréstimos (SOFR+) permanecem elevadas.<br><br>
+            <strong>Pilar II (Liquidez):</strong> M2 Money Supply com crescimento real positivo. As empresas participadas conseguem refinanciar operações sem pressão de liquidez.<br><br>
+            <strong>Pilar III (Solvência):</strong> Jobless Claims abaixo de 275K e Non-Accruals do setor abaixo de 2%. O consumidor final aguenta, os devedores pagam.</p>
+          </div>
+
+          <h2>Quando Sair ou Reduzir — Cenários de Perigo</h2>
+
+          <div class="callout red">
+            <div class="callout-label">✕ Cenário de Estagflação (Pior Caso)</div>
+            <p>Inflação acima de 3.5% impedindo a Fed de cortar juros, enquanto o desemprego começa a subir. Este é o cenário mais destrutivo para BDCs: aumenta o risco de incumprimento dos devedores sem o alívio das taxas de juro que normalmente compensaria.</p>
+          </div>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Cenário de Compressão de ERP</div>
+            <p>Quando o Equity Risk Premium desce abaixo de 1.0%, o investidor está a assumir risco de crédito corporativo (BDC) para ganhar quase o mesmo que numa Treasury sem risco. A relação risco/retorno colapsa.</p>
+          </div>
+
+          <h2>A Regra de Ouro dos 3 Filtros</h2>
+          <p>Antes de qualquer alocação em BDCs, verifica estes três sinais vitais do ecossistema macro. Se <strong>2 de 3</strong> forem negativos, a alocação deve ser reduzida ao mínimo histórico — independentemente do dividend yield apresentado.</p>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Filtro</th>
+                <th>Série FRED</th>
+                <th>Threshold Positivo</th>
+                <th>Sinal Negativo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Yield Curve</strong></td>
+                <td class="mono fred-tag">T10Y2Y</td>
+                <td class="mono green">Acima de +0.50% e subindo</td>
+                <td class="mono red">Re-inversão abaixo de 0%</td>
+              </tr>
+              <tr>
+                <td><strong>Jobless Claims</strong></td>
+                <td class="mono fred-tag">ICSA</td>
+                <td class="mono green">Abaixo de 275.000</td>
+                <td class="mono red">Acima de 275.000</td>
+              </tr>
+              <tr>
+                <td><strong>M2 Growth</strong></td>
+                <td class="mono fred-tag">M2SL</td>
+                <td class="mono green">Crescimento YoY positivo</td>
+                <td class="mono red">Contração nominal</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2>Estudo de Caso: ARCC vs. QYLD (Fev 2026)</h2>
+          <p>Em fevereiro de 2026, com o rácio Market Cap/M2 em território de bolha e o ERP comprimido, dois dos ativos de income mais populares apresentavam perfis de risco radicalmente diferentes:</p>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Característica</th>
+                <th>ARCC (BDC)</th>
+                <th>QYLD (Covered Call)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Tipo de Ativo</strong></td>
+                <td>Crédito Privado</td>
+                <td>Derivados de Ações Tech</td>
+              </tr>
+              <tr>
+                <td><strong>Pilar Crítico MRM</strong></td>
+                <td>Pilar III (Solvência)</td>
+                <td>Pilar II (Liquidez/Avaliação)</td>
+              </tr>
+              <tr>
+                <td><strong>Maior Risco</strong></td>
+                <td>Recessão e falências</td>
+                <td>Queda do NASDAQ + volatilidade baixa</td>
+              </tr>
+              <tr>
+                <td><strong>Veredito 2026</strong></td>
+                <td class="orange">⚡ Manter com Vigilância</td>
+                <td class="red">✕ Reduzir / Evitar</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navBDC(0)">← Anterior</button>
+          <button class="chapter-nav-btn" onclick="navBDC(2)">Framework MRM →</button>
+        </div>
+      </article>
+
+      <!-- ── SECTION 2: FRAMEWORK MRM ── -->
+      <article class="chapter-view" id="bdc-2">
+        <span class="chapter-tag">Secção 03 — Framework</span>
+        <h1 class="chapter-h1">Framework<br>MRM para BDCs</h1>
+        <p class="chapter-subtitle">Os 3 Pilares adaptados especificamente para avaliar Business Development Companies dentro da lógica da Macro-Resilience Matrix.</p>
+        <div class="chapter-divider"></div>
+
+        <div class="content-body">
+          <h2>Por que o Framework MRM Padrão Não é Suficiente</h2>
+          <p>O framework MRM padrão foi desenhado para medir a resiliência sistémica da economia americana. Para as BDCs, é necessário um ajuste: o <strong>Pilar III (Solvência)</strong> da matriz original — que mede o sistema bancário — é substituído por indicadores de <strong>Qualidade de Crédito Interna</strong> da própria BDC. Afinal, não é o banco que vai falhar — é o devedor da BDC.</p>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Pilar Adaptado</th>
+                <th>Métrica Crítica</th>
+                <th>Gatilho de Alerta</th>
+                <th>Peso</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>I. Ciclo</strong></td>
+                <td class="mono">10Y-2Y Spread</td>
+                <td class="mono red">Re-inversão abaixo de 0%</td>
+                <td class="mono">+1</td>
+              </tr>
+              <tr>
+                <td><strong>II. Liquidez</strong></td>
+                <td class="mono">NAV Premium/Discount</td>
+                <td class="mono red">Prémio &gt; 20% com M2 estagnado</td>
+                <td class="mono">+2</td>
+              </tr>
+              <tr>
+                <td><strong>III. Solvência</strong></td>
+                <td class="mono">Non-Accruals / PIK</td>
+                <td class="mono red">Non-Accruals &gt; 3% ou PIK &gt; 10%</td>
+                <td class="mono">+2</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2>Alocação Dinâmica por Risk Score MRM</h2>
+          <p>A exposição a BDCs é ajustada automaticamente pelo Global Risk Score da MRM. Esta é a integração direta entre o terminal macro e a estratégia de income:</p>
+
+          <div class="callout green">
+            <div class="callout-label">✓ Risk Score 1–4 — Expansão Segura</div>
+            <p><strong>Exposição máxima permitida.</strong> O foco é capturar o dividend yield total enquanto os NPLs estão controlados e a curva de crédito é favorável. Considerar BDCs de segunda linha com yields mais elevados.</p>
+          </div>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Risk Score 5–7 — Alerta de Topo (Estado Atual)</div>
+            <p><strong>Redução tática.</strong> Focar apenas em BDCs com balanços "Tier 1" — baixa alavancagem (&lt;1.0x D/E), foco em First Lien (&gt;70%), gestão com histórico em 2008 e 2020. Evitar BDCs com exposição a setores cíclicos.</p>
+          </div>
+
+          <div class="callout red">
+            <div class="callout-label">✕ Risk Score 8–10 — Zona de Perigo</div>
+            <p><strong>Alocação mínima ou nula.</strong> O risco de perda permanente de capital (drawdown no NAV + corte de dividendo) supera qualquer benefício do rendimento. Liquidar posições gradualmente antes que os Non-Accruals comecem a subir.</p>
+          </div>
+
+          <h2>Guia de Gestão de Crise</h2>
+          <p>Se o cenário de Stress Test se confirmar (Desemprego acima de 5.2%):</p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">
+            <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+              <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--red);flex-shrink:0;padding-top:1px;">01</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Vender BDCs com exposição a setores cíclicos — Retalho, Consumo Discricionário, Restauração.</div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+              <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--orange);flex-shrink:0;padding-top:1px;">02</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Manter apenas BDCs com historial comprovado de gestão em 2008 e 2020 (ARCC, MAIN, HTGC).</div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+              <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--orange);flex-shrink:0;padding-top:1px;">03</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Monitorizar o PIK Income trimestralmente. Se subir 2 trimestres consecutivos, a empresa está a "maquilhar" lucros. Sair imediatamente.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navBDC(1)">← Anterior</button>
+          <button class="chapter-nav-btn" onclick="navBDC(3)">BDC Scorecard →</button>
+        </div>
+      </article>
+
+      <!-- ── SECTION 3: SCORECARD INTERATIVO ── -->
+      <article class="chapter-view" id="bdc-3">
+        <span class="chapter-tag">Secção 04 — Ferramenta</span>
+        <h1 class="chapter-h1">BDC Scorecard<br>Interativo</h1>
+        <p class="chapter-subtitle">Pontua qualquer BDC em 6 métricas de resiliência e obtém o veredito imediato.</p>
+        <div class="chapter-divider"></div>
+
+        <div class="content-body">
+          <p>Usa este scorecard para avaliar qualquer BDC individualmente. Responde honestamente a cada critério com base nos dados mais recentes do relatório trimestral da empresa.</p>
+
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:20px 0;">
+            
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+              <div style="font-family:var(--display);font-size:16px;font-weight:700;color:var(--text-primary);">Análise de Resiliência</div>
+              <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">Pontuação: <span id="bdc-score-display" style="color:var(--text-primary);font-weight:600;">0</span> / 6</div>
+            </div>
+
+            <!-- Scorecard items -->
+            <div style="display:flex;flex-direction:column;gap:12px;" id="scorecard-items">
+
+              <div class="scorecard-row" data-metric="firstlien">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
+                  <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">First Lien Debt</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Mais de 70% do portfólio está em dívida de primeira prioridade?</div>
+                  </div>
+                  <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
+                </div>
+              </div>
+
+              <div class="scorecard-row" data-metric="nonaccruals">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
+                  <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">Non-Accruals</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Estão abaixo de 2.5% ao valor de custo?</div>
+                  </div>
+                  <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
+                </div>
+              </div>
+
+              <div class="scorecard-row" data-metric="pik">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
+                  <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">PIK Income</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Representa menos de 10% da receita total?</div>
+                  </div>
+                  <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
+                </div>
+              </div>
+
+              <div class="scorecard-row" data-metric="leverage">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
+                  <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">Net Leverage</div>
+                    <div style="font-size:11px;color:var(--text-muted);">O rácio Debt-to-Equity é inferior a 1.20x?</div>
+                  </div>
+                  <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
+                </div>
+              </div>
+
+              <div class="scorecard-row" data-metric="coverage">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
+                  <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">Dividend Coverage</div>
+                    <div style="font-size:11px;color:var(--text-muted);">O NII cobre mais de 100% do dividendo?</div>
+                  </div>
+                  <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
+                </div>
+              </div>
+
+              <div class="scorecard-row" data-metric="nav">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
+                  <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">Net Asset Value</div>
+                    <div style="font-size:11px;color:var(--text-muted);">O NAV por ação cresceu ou estabilizou nos últimos 4 trimestres?</div>
+                  </div>
+                  <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Verdict -->
+            <div id="bdc-verdict" style="margin-top:20px;padding:18px;border-radius:10px;border:1px solid var(--border);background:var(--bg-primary);display:none;">
+              <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:8px;" id="verdict-label">VEREDITO</div>
+              <div style="font-family:var(--display);font-size:18px;font-weight:700;margin-bottom:6px;" id="verdict-title">—</div>
+              <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;" id="verdict-text">—</div>
+            </div>
+
+            <button onclick="resetScorecard()" style="margin-top:14px;padding:8px 16px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-size:12px;cursor:pointer;font-family:var(--sans);">↺ Reset</button>
+          </div>
+        </div>
+
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navBDC(2)">← Anterior</button>
+          <button class="chapter-nav-btn" onclick="navBDC(4)">Watchlist →</button>
+        </div>
+      </article>
+
+      <!-- ── SECTION 4: WATCHLIST ── -->
+      <article class="chapter-view" id="bdc-4">
+        <span class="chapter-tag">Secção 05 — Watchlist</span>
+        <h1 class="chapter-h1">Watchlist</h1>
+        <p class="chapter-subtitle">As 20 BDCs mais líquidas, os principais ETFs BDC e os 20 ETFs de Covered Call mais populares do mercado.</p>
+        <div class="chapter-divider"></div>
+
+        <div class="content-body">
+
+          <!-- Filter tabs -->
+          <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+            <button onclick="filterWatchlist('all', this)" class="wl-filter active" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--blue);background:var(--blue-dim);color:var(--blue);font-family:var(--sans);">Todos</button>
+            <button onclick="filterWatchlist('bdc', this)" class="wl-filter" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:var(--sans);">BDCs Individuais</button>
+            <button onclick="filterWatchlist('etf-bdc', this)" class="wl-filter" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:var(--sans);">ETFs BDC</button>
+            <button onclick="filterWatchlist('covered', this)" class="wl-filter" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:var(--sans);">Covered Calls</button>
+          </div>
+
+          <table class="data-table" id="watchlist-table">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Pilar MRM</th>
+                <th>Nota</th>
+              </tr>
+            </thead>
+            <tbody id="watchlist-body">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navBDC(3)">← Anterior</button>
+          <button class="chapter-nav-btn" onclick="navBDC(5)">MRM Signal →</button>
+        </div>
+      </article>
+
+      <!-- ── SECTION 5: MRM SIGNAL ── -->
+      <article class="chapter-view" id="bdc-5">
+        <span class="chapter-tag">Secção 06 — Sinal Atual</span>
+        <h1 class="chapter-h1">MRM Signal</h1>
+        <p class="chapter-subtitle">A recomendação de alocação em BDCs baseada no score MRM atual e nos filtros macro em tempo real.</p>
+        <div class="chapter-divider"></div>
+
+        <div class="content-body">
+
+          <div id="mrm-signal-panel" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:24px;">
+            <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;">Sinal MRM Atual</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+              <div>
+                <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase;">Global Resilience Score</div>
+                <div style="font-family:var(--mono);font-size:36px;font-weight:600;color:var(--orange);" id="signal-score">6.4</div>
+                <div style="font-family:var(--mono);font-size:10px;color:var(--orange);margin-top:2px;" id="signal-status">TURBULENCE</div>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase;">Alocação BDC Recomendada</div>
+                <div style="font-family:var(--display);font-size:20px;font-weight:700;color:var(--orange);line-height:1.2;" id="signal-allocation">Redução Tática</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;" id="signal-sub">Apenas BDCs Tier 1 com First Lien &gt;70%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 filter status -->
+          <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Estado dos 3 Filtros de Entrada</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;" id="filter-status-panel">
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--text-primary);">Yield Curve (10Y-2Y)</div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: acima de +0.50%</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--orange);">+0.34%</div>
+                <div style="padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;background:var(--orange-dim);border:1px solid rgba(249,140,79,0.3);color:var(--orange);">CAUTION</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--text-primary);">Initial Jobless Claims</div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: abaixo de 275.000</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green);">231K</div>
+                <div style="padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;background:var(--green-dim);border:1px solid rgba(52,208,88,0.3);color:var(--green);">OK</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--text-primary);">M2 Money Supply Growth</div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: crescimento YoY positivo</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--orange);">+1.2%</div>
+                <div style="padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;background:var(--orange-dim);border:1px solid rgba(249,140,79,0.3);color:var(--orange);">WEAK</div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Veredito MRM — Março 2026</div>
+            <p>Com 1 filtro negativo (Yield Curve abaixo de +0.50%) e 2 em zona de cautela, a regra dos 3 filtros indica <strong>redução tática</strong>. Manter apenas BDCs Tier 1 com historial comprovado (ARCC, MAIN, HTGC). Monitorizar Non-Accruals trimestralmente. Evitar BDCs com exposição a Consumo Discricionário e Retalho.</p>
+          </div>
+
+        </div>
+
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navBDC(4)">← Anterior</button>
+          <button class="chapter-nav-btn" onclick="switchView('terminal', document.querySelectorAll('.nav-tab')[0])" style="color:var(--blue);border-color:var(--blue);">◉ Ver Terminal →</button>
+        </div>
+      </article>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>
