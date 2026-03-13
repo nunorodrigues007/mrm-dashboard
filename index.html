@@ -706,11 +706,11 @@
       <button class="nav-tab" onclick="switchView('academy', this)">
         ◈ Academy
       </button>
-      <button class="nav-tab" onclick="switchView('about', this)">
-        ◎ About
-      </button>
       <button class="nav-tab" onclick="switchView('bdc', this)">
         ◈ BDCs
+      </button>
+      <button class="nav-tab" onclick="switchView('about', this)">
+        ◎ About
       </button>
     </nav>
   </div>
@@ -1796,26 +1796,26 @@ function updateVerdict() {
     verdict.style.background = 'var(--green-dim)';
     verdict.style.borderColor = 'rgba(52,208,88,0.3)';
     label.style.color = 'var(--green)';
-    label.textContent = '✓ VEREDITO — ALTA QUALIDADE';
+    label.textContent = '✓ VERDICT — HIGH QUALITY';
     title.style.color = 'var(--green)';
-    title.textContent = total + '/6 — Ativo Tier 1';
-    text.textContent = 'BDC com balanço sólido. Elegível para exposição máxima em ambiente de Risk Score 1–4. Monitorizar trimestralmente.';
+    title.textContent = total + '/6 — Tier 1 Asset';
+    text.textContent = 'BDC with solid balance sheet. Eligible for maximum exposure in Risk Score 1–4 environment. Monitor quarterly.';
   } else if (total >= 3) {
     verdict.style.background = 'var(--orange-dim)';
     verdict.style.borderColor = 'rgba(249,140,79,0.3)';
     label.style.color = 'var(--orange)';
-    label.textContent = '⚡ VEREDITO — ALERTA AMARELO';
+    label.textContent = '⚡ VERDICT — YELLOW ALERT';
     title.style.color = 'var(--orange)';
-    title.textContent = total + '/6 — Risco Moderado';
-    text.textContent = 'Risco de corte de dividendo em caso de stress macro. Manter apenas se Risk Score MRM < 5. Reduzir posição em ambiente de turbulência.';
+    title.textContent = total + '/6 — Moderate Risk';
+    text.textContent = 'Risk of dividend cut in a macro stress event. Hold only if MRM Risk Score < 5. Reduce position in turbulent environment.';
   } else {
     verdict.style.background = 'var(--red-dim)';
     verdict.style.borderColor = 'rgba(215,58,73,0.3)';
     label.style.color = 'var(--red)';
-    label.textContent = '✕ VEREDITO — ZONA DE PERIGO';
+    label.textContent = '✕ VERDICT — DANGER ZONE';
     title.style.color = 'var(--red)';
-    title.textContent = total + '/6 — Risco Elevado';
-    text.textContent = 'Risco de perda permanente de capital. O dividend yield não compensa a deterioração do balanço. Evitar ou sair imediatamente.';
+    title.textContent = total + '/6 — High Risk';
+    text.textContent = 'Risk of permanent capital loss. The dividend yield does not compensate for balance sheet deterioration. Avoid or exit immediately.';
   }
 }
 
@@ -1838,53 +1838,53 @@ function resetScorecard() {
 // WATCHLIST DATA
 // ──────────────────────────────────────────
 const watchlistData = [
-  // BDCs Individuais
-  {ticker:'ARCC', name:'Ares Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Maior BDC do mundo. Referência do setor.'},
-  {ticker:'OBDC', name:'Blue Owl Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Foco em First Lien. Baixa alavancagem.'},
-  {ticker:'BXSL', name:'Blackstone Secured Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'98%+ First Lien. Muito defensivo.'},
-  {ticker:'MAIN', name:'Main Street Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Dividend mensal. Gestão excecional.'},
-  {ticker:'FSK', name:'FS KKR Capital Corp', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Grande escala. Monitorizar Non-Accruals.'},
-  {ticker:'GBDC', name:'Golub Capital BDC', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Foco conservador. Senior secured.'},
-  {ticker:'HTGC', name:'Hercules Capital', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Especializado em Tech/Life Sciences.'},
-  {ticker:'TSLX', name:'Sixth Street Specialty Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Alta qualidade de crédito. Tier 1.'},
-  {ticker:'PSEC', name:'Prospect Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Yield elevado. Maior risco de crédito.'},
-  {ticker:'CSWC', name:'Capital Southwest Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Dividend regular + especial.'},
-  {ticker:'MSDL', name:'Morgan Stanley Direct Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Novo. Respaldo institucional forte.'},
-  {ticker:'TRIN', name:'Trinity Capital', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Foco em equipment financing.'},
-  {ticker:'GSBD', name:'Goldman Sachs BDC', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Qualidade Goldman. Senior secured.'},
-  {ticker:'OCSL', name:'Oaktree Specialty Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Gestão Oaktree. Crédito defensivo.'},
-  {ticker:'BBDC', name:'Barings BDC', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Mid-market. Monitorizar leverage.'},
-  {ticker:'BCSF', name:'Bain Capital Specialty Finance', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Tier 2. Yield atrativo.'},
-  {ticker:'CGBD', name:'TCG BDC (Carlyle)', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Respaldo Carlyle. Senior focus.'},
+  // Individual BDCs
+  {ticker:'ARCC', name:'Ares Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Largest BDC in the world. Sector benchmark.'},
+  {ticker:'OBDC', name:'Blue Owl Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'First Lien focus. Low leverage.'},
+  {ticker:'BXSL', name:'Blackstone Secured Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'98%+ First Lien. Very defensive.'},
+  {ticker:'MAIN', name:'Main Street Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Monthly dividend. Exceptional management.'},
+  {ticker:'FSK', name:'FS KKR Capital Corp', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Large scale. Monitor Non-Accruals.'},
+  {ticker:'GBDC', name:'Golub Capital BDC', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Conservative focus. Senior secured.'},
+  {ticker:'HTGC', name:'Hercules Capital', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Specialized in Tech/Life Sciences.'},
+  {ticker:'TSLX', name:'Sixth Street Specialty Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'High credit quality. Tier 1.'},
+  {ticker:'PSEC', name:'Prospect Capital Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'High yield. Higher credit risk.'},
+  {ticker:'CSWC', name:'Capital Southwest Corporation', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Regular + special dividend.'},
+  {ticker:'MSDL', name:'Morgan Stanley Direct Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'New. Strong institutional backing.'},
+  {ticker:'TRIN', name:'Trinity Capital', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Equipment financing focus.'},
+  {ticker:'GSBD', name:'Goldman Sachs BDC', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Goldman quality. Senior secured.'},
+  {ticker:'OCSL', name:'Oaktree Specialty Lending', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Oaktree management. Defensive credit.'},
+  {ticker:'BBDC', name:'Barings BDC', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Mid-market. Monitor leverage.'},
+  {ticker:'BCSF', name:'Bain Capital Specialty Finance', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Tier 2. Attractive yield.'},
+  {ticker:'CGBD', name:'TCG BDC (Carlyle)', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Carlyle backing. Senior focus.'},
   {ticker:'NMFC', name:'New Mountain Finance', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Defensive Growth sectors focus.'},
-  {ticker:'PFLT', name:'PennantPark Floating Rate', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'100% floating rate. Protegido vs. subida de taxas.'},
+  {ticker:'PFLT', name:'PennantPark Floating Rate', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'100% floating rate. Protected vs. rising rates.'},
   {ticker:'MFIC', name:'MidCap Financial Investment', cat:'bdc', catLabel:'BDC', pilar:'Pilar III', note:'Apollo backed. First lien focus.'},
-  // ETFs BDC
-  {ticker:'BIZD', name:'VanEck BDC Income ETF', cat:'etf-bdc', catLabel:'ETF BDC', pilar:'Pilar III', note:'Maior ETF BDC. Exposição diversificada.'},
-  {ticker:'PBDC', name:'Putnam BDC Income ETF', cat:'etf-bdc', catLabel:'ETF BDC', pilar:'Pilar III', note:'Alternativa ativa ao BIZD.'},
-  {ticker:'FBDC', name:'Flat Rock Core Income Fund', cat:'etf-bdc', catLabel:'ETF BDC', pilar:'Pilar III', note:'Foco em BDCs de qualidade.'},
-  {ticker:'PSP', name:'Invesco Global Listed PE Fund', cat:'etf-bdc', catLabel:'ETF BDC', pilar:'Pilar II + III', note:'Inclui PE e BDCs. Mais diversificado.'},
+  // BDC ETFs
+  {ticker:'BIZD', name:'VanEck BDC Income ETF', cat:'etf-bdc', catLabel:'BDC ETF', pilar:'Pilar III', note:'Largest BDC ETF. Diversified exposure.'},
+  {ticker:'PBDC', name:'Putnam BDC Income ETF', cat:'etf-bdc', catLabel:'BDC ETF', pilar:'Pilar III', note:'Active alternative to BIZD.'},
+  {ticker:'FBDC', name:'Flat Rock Core Income Fund', cat:'etf-bdc', catLabel:'BDC ETF', pilar:'Pilar III', note:'Focus on quality BDCs.'},
+  {ticker:'PSP', name:'Invesco Global Listed PE Fund', cat:'etf-bdc', catLabel:'BDC ETF', pilar:'Pilar II + III', note:'Includes PE and BDCs. More diversified.'},
   // Covered Calls
   {ticker:'JEPI', name:'JPMorgan Equity Premium Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'S&P500 + ELN calls. O mais popular.'},
-  {ticker:'JEPQ', name:'JPMorgan Nasdaq Equity Premium', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'NASDAQ + calls. Alta volatilidade implícita.'},
-  {ticker:'QYLD', name:'Global X Nasdaq 100 Covered Call', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Yield alto. Erosão capital em bull markets.'},
+  {ticker:'JEPQ', name:'JPMorgan Nasdaq Equity Premium', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'NASDAQ + calls. High implied volatility.'},
+  {ticker:'QYLD', name:'Global X Nasdaq 100 Covered Call', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'High yield. Capital erosion in bull markets.'},
   {ticker:'XYLD', name:'Global X S&P 500 Covered Call', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'S&P500 covered call. Yield 10%+.'},
-  {ticker:'SPYI', name:'NEOS S&P 500 High Income ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Tax-efficient. Crescente popularidade.'},
-  {ticker:'QQQI', name:'NEOS Nasdaq 100 High Income ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Alternativa fiscal eficiente ao QYLD.'},
-  {ticker:'GPIQ', name:'Goldman Sachs Nasdaq 100 CC ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Goldman. Estratégia de calls parciais.'},
+  {ticker:'SPYI', name:'NEOS S&P 500 High Income ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Tax-efficient. Growing popularity.'},
+  {ticker:'QQQI', name:'NEOS Nasdaq 100 High Income ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Tax-efficient alternative to QYLD.'},
+  {ticker:'GPIQ', name:'Goldman Sachs Nasdaq 100 CC ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Goldman. Partial calls strategy.'},
   {ticker:'GPIX', name:'Goldman Sachs S&P 500 CC ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Goldman S&P version.'},
-  {ticker:'DIVO', name:'Amplify CWP Enhanced Dividend', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Seletivo. Stocks de qualidade + calls.'},
-  {ticker:'KNG', name:'FT Cboe Vest S&P Dividend Arist.', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Dividend aristocrats + calls. Defensivo.'},
-  {ticker:'RYLD', name:'Global X Russell 2000 Covered Call', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Small caps + calls. Alta volatilidade.'},
-  {ticker:'QYLG', name:'Global X Nasdaq 100 CC & Growth', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'50% calls. Mantém parte da apreciação.'},
+  {ticker:'DIVO', name:'Amplify CWP Enhanced Dividend', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Selective. Quality stocks + calls.'},
+  {ticker:'KNG', name:'FT Cboe Vest S&P Dividend Arist.', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Dividend aristocrats + calls. Defensive.'},
+  {ticker:'RYLD', name:'Global X Russell 2000 Covered Call', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Small caps + calls. High volatility.'},
+  {ticker:'QYLG', name:'Global X Nasdaq 100 CC & Growth', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'50% calls. Retains part of the appreciation.'},
   {ticker:'XYLG', name:'Global X S&P 500 CC & Growth', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'S&P 500 versão 50% calls.'},
-  {ticker:'TLTW', name:'iShares 20+ Year Treasury Bond CC', cat:'covered', catLabel:'Covered Call', pilar:'Pilar I', note:'Bonds + calls. Sensível à yield curve.'},
-  {ticker:'ISPY', name:'ProShares S&P 500 High Income ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Estratégia de calls semanais.'},
-  {ticker:'IQQQ', name:'ProShares Nasdaq 100 High Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'NASDAQ calls semanais.'},
-  {ticker:'OMAH', name:'Roundhill S&P 500 0DTE CC', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'0DTE options. Muito high yield.'},
-  {ticker:'NVDY', name:'YieldMax NVDA Option Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Single-stock NVDA. Risco concentrado.'},
-  {ticker:'ULTY', name:'YieldMax Ultra Option Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Yield extremo. Erosão capital elevada.'},
-  {ticker:'TSPY', name:'TOEWS Agility Shares', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Gestão ativa com proteção downside.'},
+  {ticker:'TLTW', name:'iShares 20+ Year Treasury Bond CC', cat:'covered', catLabel:'Covered Call', pilar:'Pilar I', note:'Bonds + calls. Sensitive to yield curve.'},
+  {ticker:'ISPY', name:'ProShares S&P 500 High Income ETF', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Weekly calls strategy.'},
+  {ticker:'IQQQ', name:'ProShares Nasdaq 100 High Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Weekly NASDAQ calls.'},
+  {ticker:'OMAH', name:'Roundhill S&P 500 0DTE CC', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'0DTE options. Very high yield.'},
+  {ticker:'NVDY', name:'YieldMax NVDA Option Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Single-stock NVDA. Concentrated risk.'},
+  {ticker:'ULTY', name:'YieldMax Ultra Option Income', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Extreme yield. High capital erosion.'},
+  {ticker:'TSPY', name:'TOEWS Agility Shares', cat:'covered', catLabel:'Covered Call', pilar:'Pilar II', note:'Active management with downside protection.'},
 ];
 
 function renderWatchlist(filter) {
@@ -2007,7 +2007,7 @@ setTimeout(() => renderWatchlist('all'), 200);
       <button class="chapter-nav-item active" onclick="showBDCSection(0, this)">
         <span class="chapter-num">01</span>
         <div class="chapter-nav-text">
-          <div class="chapter-nav-title">O que são BDCs?</div>
+          <div class="chapter-nav-title">What are BDCs?</div>
           <div class="chapter-nav-sub">Introdução & Income</div>
         </div>
       </button>
@@ -2015,21 +2015,21 @@ setTimeout(() => renderWatchlist('all'), 200);
         <span class="chapter-num">02</span>
         <div class="chapter-nav-text">
           <div class="chapter-nav-title">BDCs & Ciclo Macro</div>
-          <div class="chapter-nav-sub">Quando entrar e sair</div>
+          <div class="chapter-nav-sub">When to enter and exit</div>
         </div>
       </button>
       <button class="chapter-nav-item" onclick="showBDCSection(2, this)">
         <span class="chapter-num">03</span>
         <div class="chapter-nav-text">
           <div class="chapter-nav-title">Framework MRM</div>
-          <div class="chapter-nav-sub">3 Pilares Adaptados</div>
+          <div class="chapter-nav-sub">3 Adapted Pillars</div>
         </div>
       </button>
       <button class="chapter-nav-item" onclick="showBDCSection(3, this)">
         <span class="chapter-num">04</span>
         <div class="chapter-nav-text">
           <div class="chapter-nav-title">BDC Scorecard</div>
-          <div class="chapter-nav-sub">Ferramenta Interativa</div>
+          <div class="chapter-nav-sub">Interactive Tool</div>
         </div>
       </button>
       <button class="chapter-nav-item" onclick="showBDCSection(4, this)">
@@ -2043,7 +2043,7 @@ setTimeout(() => renderWatchlist('all'), 200);
         <span class="chapter-num">06</span>
         <div class="chapter-nav-text">
           <div class="chapter-nav-title">MRM Signal</div>
-          <div class="chapter-nav-sub">Alocação Recomendada</div>
+          <div class="chapter-nav-sub">Recommended Allocation</div>
         </div>
       </button>
     </aside>
@@ -2053,112 +2053,112 @@ setTimeout(() => renderWatchlist('all'), 200);
 
       <!-- ── SECTION 0: O QUE SÃO BDCs ── -->
       <article class="chapter-view active" id="bdc-0">
-        <span class="chapter-tag">Secção 01 — Introdução</span>
-        <h1 class="chapter-h1">O que são<br>as BDCs?</h1>
-        <p class="chapter-subtitle">Business Development Companies — o "shadow banking" da economia real e uma das fontes de income mais poderosas do mercado americano.</p>
+        <span class="chapter-tag">Section 01 — Introduction</span>
+        <h1 class="chapter-h1">What are<br>BDCs?</h1>
+        <p class="chapter-subtitle">Business Development Companies — the shadow banking of the real economy and one of the most powerful income sources in the American market.</p>
         <div class="chapter-divider"></div>
 
         <div class="content-body">
-          <h2>A Origem: Uma Lei de 1980 que Mudou Tudo</h2>
-          <p>Em 1980, o Congresso dos Estados Unidos aprovou o <strong>Small Business Investment Incentive Act</strong>, criando uma nova categoria de veículo de investimento regulado: as Business Development Companies. O objetivo era simples mas ambicioso — criar um mecanismo que canalizasse capital privado para as pequenas e médias empresas americanas que os bancos tradicionais, cada vez mais regulados e avessos ao risco, se recusavam a financiar.</p>
+          <h2>The Origin: A 1980 Law That Changed Everything</h2>
+          <p>In 1980, the US Congress passed the <strong>Small Business Investment Incentive Act</strong>, creating a new category of regulated investment vehicle: Business Development Companies. The goal was simple but ambitious — to create a mechanism that channeled private capital to small and mid-sized American companies that traditional banks, increasingly regulated and risk-averse, refused to finance.</p>
 
-          <p>Em essência, uma BDC é uma empresa cotada em bolsa que funciona como um banco de crédito privado acessível ao investidor de retalho. Ela capta capital nos mercados públicos, alavanca esse capital com dívida, e empresta-o — tipicamente a taxas variáveis e com garantias reais — a empresas do mercado médio (<em>middle market</em>) com receitas entre $10M e $1B.</p>
+          <p>In essence, a BDC is a publicly traded company that functions as a private credit bank accessible to retail investors. It raises capital in public markets, leverages that capital with debt, and lends it — typically at floating rates with real collateral — to middle market companies with revenues between $10M and $1B.</p>
 
           <div class="blockquote">
-            <p>"As BDCs são o elo perdido entre Wall Street e a Main Street. Financiam as empresas que constroem e operam a economia real — demasiado grandes para o banco local, demasiado pequenas para o mercado de capitais."</p>
+            <p>"BDCs are the missing link between Wall Street and Main Street. They finance the companies that build and operate the real economy — too large for the local bank, too small for the capital markets."</p>
             <cite>— BDC Strategic Framework, NNR 2026</cite>
           </div>
 
-          <h2>O Motor do Income: Por que as BDCs Pagam Tanto?</h2>
-          <p>A razão pela qual as BDCs oferecem dividend yields historicamente entre <strong>8% e 14%</strong> ao ano não é magia — é estrutura legal. Para manter o seu estatuto fiscal privilegiado como <strong>Regulated Investment Company (RIC)</strong>, uma BDC é legalmente obrigada a distribuir no mínimo <strong>90% do seu rendimento tributável</strong> aos acionistas.</p>
+          <h2>The Income Engine: Why BDCs Pay So Much?</h2>
+          <p>The reason BDCs historically offer dividend yields between <strong>8% and 14%</strong> per year is not magic — it is legal structure. To maintain their privileged tax status as a <strong>Regulated Investment Company (RIC)</strong>, a BDC is legally required to distribute a minimum of <strong>90% of its taxable income</strong> to shareholders.</p>
 
-          <p>Combinado com o facto de emprestarem a taxas variáveis (tipicamente SOFR + spread), as BDCs são veículos naturalmente beneficiados em ambientes de taxas elevadas — ao contrário das obrigações tradicionais, cujo valor de mercado desce quando as taxas sobem.</p>
+          <p>Combined with the fact that they lend at floating rates (typically SOFR + spread), BDCs naturally benefit in high-rate environments — unlike traditional bonds, whose market value falls when rates rise.</p>
 
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:24px 0;">
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;border-top:2px solid var(--green);">
               <div style="font-family:var(--mono);font-size:24px;font-weight:600;color:var(--green);margin-bottom:4px;">90%+</div>
-              <div style="font-size:11px;color:var(--text-muted);">Rendimento distribuído obrigatoriamente</div>
+              <div style="font-size:11px;color:var(--text-muted);">Income mandatorily distributed</div>
             </div>
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;border-top:2px solid var(--blue);">
               <div style="font-family:var(--mono);font-size:24px;font-weight:600;color:var(--blue);margin-bottom:4px;">8–14%</div>
-              <div style="font-size:11px;color:var(--text-muted);">Dividend yield histórico típico</div>
+              <div style="font-size:11px;color:var(--text-muted);">Typical historical dividend yield</div>
             </div>
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;border-top:2px solid var(--orange);">
               <div style="font-family:var(--mono);font-size:24px;font-weight:600;color:var(--orange);margin-bottom:4px;">SOFR+</div>
-              <div style="font-size:11px;color:var(--text-muted);">Empréstimos a taxas variáveis</div>
+              <div style="font-size:11px;color:var(--text-muted);">Floating rate loans</div>
             </div>
           </div>
 
-          <h2>A Anatomia de uma BDC</h2>
-          <p>Uma BDC típica opera com uma estrutura de capital simples mas poderosa: capta equity dos acionistas, alavanca esse equity com dívida (tipicamente até 1.0–1.5x o equity), e investe o total num portfólio diversificado de empréstimos e instrumentos de crédito privado. O rendimento gerado — juros, fees de originação, dividendos de equity kickers — é então distribuído trimestralmente.</p>
+          <h2>The Anatomy of a BDC</h2>
+          <p>A typical BDC operates with a simple but powerful capital structure: it raises equity from shareholders, leverages that equity with debt (typically up to 1.0–1.5x equity), and invests the total in a diversified portfolio of loans and private credit instruments. The income generated — interest, origination fees, equity kicker dividends — is then distributed quarterly.</p>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>Componente</th>
-                <th>Descrição</th>
-                <th>Impacto no Investidor</th>
+                <th>Component</th>
+                <th>Description</th>
+                <th>Investor Impact</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td><strong>Net Asset Value (NAV)</strong></td>
                 <td>Valor intrínseco do portfólio menos dívida</td>
-                <td>Âncora de valorização — comprar abaixo do NAV é favorável</td>
+                <td>Valuation anchor — buying below NAV is favorable</td>
               </tr>
               <tr>
                 <td><strong>Net Investment Income (NII)</strong></td>
                 <td>Rendimento de juros menos despesas operacionais</td>
-                <td>Fonte do dividendo — NII deve cobrir 100%+ do dividendo</td>
+                <td>Dividend source — NII must cover 100%+ of the dividend</td>
               </tr>
               <tr>
                 <td><strong>Non-Accruals</strong></td>
                 <td>Empréstimos em incumprimento (sem juros a receber)</td>
-                <td>Indicador de qualidade do crédito — acima de 3% é alerta</td>
+                <td>Credit quality indicator — above 3% is a warning</td>
               </tr>
               <tr>
                 <td><strong>PIK Income</strong></td>
                 <td>Juros pagos em títulos em vez de cash</td>
-                <td>Acima de 10% da receita sinaliza stress nos devedores</td>
+                <td>Above 10% of revenue signals borrower stress</td>
               </tr>
               <tr>
                 <td><strong>First Lien Debt</strong></td>
                 <td>Empréstimos com prioridade máxima em recuperação</td>
-                <td>Acima de 70% indica portfólio defensivo e de qualidade</td>
+                <td>Above 70% indicates a defensive, quality portfolio</td>
               </tr>
             </tbody>
           </table>
 
-          <h2>BDCs vs. Outras Fontes de Income</h2>
-          <p>No universo dos investimentos de income, as BDCs ocupam um nicho único — rendimentos superiores aos REITs e obrigações, com maior sensibilidade ao ciclo económico do que ambos. A tabela seguinte compara os perfis de risco/retorno:</p>
+          <h2>BDCs vs. Other Income Sources</h2>
+          <p>In the income investing universe, BDCs occupy a unique niche — yields superior to REITs and bonds, with greater sensitivity to the economic cycle than both. The table below compares risk/return profiles:</p>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>Veículo</th>
-                <th>Yield Típico</th>
-                <th>Sensibilidade ao Ciclo</th>
-                <th>Risco Principal</th>
+                <th>Vehicle</th>
+                <th>Typical Yield</th>
+                <th>Cycle Sensitivity</th>
+                <th>Primary Risk</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td><strong>BDCs</strong></td>
                 <td class="mono green">8–14%</td>
-                <td>Alta — Pilar III (Solvência)</td>
-                <td>Non-accruals, recessão</td>
+                <td>High — Pillar III (Solvency)</td>
+                <td>Non-accruals, recession</td>
               </tr>
               <tr>
                 <td><strong>REITs</strong></td>
                 <td class="mono green">4–8%</td>
-                <td>Média — taxas de juro</td>
-                <td>Vacancy, refinanciamento</td>
+                <td>Medium — interest rates</td>
+                <td>Vacancy, refinancing</td>
               </tr>
               <tr>
                 <td><strong>Covered Calls ETFs</strong></td>
                 <td class="mono orange">7–12%</td>
-                <td>Alta — Pilar II (Liquidez)</td>
-                <td>Erosão de capital em bull markets</td>
+                <td>High — Pillar II (Liquidity)</td>
+                <td>Capital erosion in bull markets</td>
               </tr>
               <tr>
                 <td><strong>High Yield Bonds</strong></td>
@@ -2170,217 +2170,217 @@ setTimeout(() => renderWatchlist('all'), 200);
                 <td><strong>Dividend Stocks</strong></td>
                 <td class="mono">2–5%</td>
                 <td>Média</td>
-                <td>Corte de dividendo, valorização</td>
+                <td>Dividend cut, appreciation</td>
               </tr>
             </tbody>
           </table>
 
           <div class="callout red">
-            <div class="callout-label">✕ A Armadilha do Yield Hunting</div>
-            <p>O maior perigo das BDCs não é o seu rendimento — é investir nelas <strong>fora de ciclo</strong>. Um dividend yield de 12% num ambiente de Non-Accruals a subir e Jobless Claims a disparar não é uma oportunidade. É uma <em>value trap</em>. O dividendo será cortado antes que o investidor desinformado consiga reagir, e a perda de capital supera múltiplos anos de dividendos acumulados.</p>
+            <div class="callout-label">✕ The Yield Hunting Trap</div>
+            <p>The greatest danger of BDCs is not their yield — it is investing in them <strong>out of cycle</strong>. A 12% dividend yield in an environment of rising Non-Accruals and spiking Jobless Claims is not an opportunity. It is a <em>value trap</em>. The dividend will be cut before the uninformed investor can react, and the capital loss exceeds multiple years of accumulated dividends.</p>
           </div>
         </div>
 
         <div class="chapter-footer">
-          <button class="chapter-nav-btn" disabled>← Anterior</button>
-          <button class="chapter-nav-btn" onclick="navBDC(1)">BDCs & Ciclo Macro →</button>
+          <button class="chapter-nav-btn" disabled>← Previous</button>
+          <button class="chapter-nav-btn" onclick="navBDC(1)">BDCs &amp; Macro Cycle →</button>
         </div>
       </article>
 
       <!-- ── SECTION 1: BDCs & CICLO MACRO ── -->
       <article class="chapter-view" id="bdc-1">
-        <span class="chapter-tag">Secção 02 — Timing</span>
+        <span class="chapter-tag">Section 02 — Timing</span>
         <h1 class="chapter-h1">BDCs &<br>Ciclo Macro</h1>
-        <p class="chapter-subtitle">O timing macro é a diferença entre capturar income generoso e sofrer perdas permanentes de capital.</p>
+        <p class="chapter-subtitle">Macro timing is the difference between capturing generous income and suffering permanent capital losses.</p>
         <div class="chapter-divider"></div>
 
         <div class="content-body">
-          <h2>Quando Deter — O Cenário Favorável</h2>
-          <p>As BDCs prosperam em ambientes macroeconómicos específicos. O alinhamento dos três indicadores seguintes cria as condições ideais para maximizar o income sem risco excessivo de capital:</p>
+          <h2>When to Hold — The Favorable Scenario</h2>
+          <p>BDCs thrive in specific macroeconomic environments. The alignment of the following three indicators creates the ideal conditions to maximize income without excessive capital risk:</p>
 
           <div class="callout green">
-            <div class="callout-label">✓ Cenário Ideal para BDCs</div>
-            <p><strong>Pilar I (Ciclo):</strong> Curva 10Y-2Y acima de +0.50% e a inclinar. O custo de financiamento das BDCs estabiliza enquanto as taxas recebidas dos empréstimos (SOFR+) permanecem elevadas.<br><br>
-            <strong>Pilar II (Liquidez):</strong> M2 Money Supply com crescimento real positivo. As empresas participadas conseguem refinanciar operações sem pressão de liquidez.<br><br>
-            <strong>Pilar III (Solvência):</strong> Jobless Claims abaixo de 275K e Non-Accruals do setor abaixo de 2%. O consumidor final aguenta, os devedores pagam.</p>
+            <div class="callout-label">✓ Ideal Scenario for BDCs</div>
+            <p><strong>Pillar I (Cycle):</strong> 10Y-2Y curve above +0.50% and steepening. BDC funding costs stabilize while loan rates received (SOFR+) remain elevated.<br><br>
+            <strong>Pillar II (Liquidity):</strong> M2 Money Supply with positive real growth. Portfolio companies can refinance operations without liquidity pressure.<br><br>
+            <strong>Pillar III (Solvency):</strong> Jobless Claims below 275K and sector Non-Accruals below 2%. The end consumer holds up, borrowers pay.</p>
           </div>
 
-          <h2>Quando Sair ou Reduzir — Cenários de Perigo</h2>
+          <h2>When to Exit or Reduce — Danger Scenarios</h2>
 
           <div class="callout red">
-            <div class="callout-label">✕ Cenário de Estagflação (Pior Caso)</div>
-            <p>Inflação acima de 3.5% impedindo a Fed de cortar juros, enquanto o desemprego começa a subir. Este é o cenário mais destrutivo para BDCs: aumenta o risco de incumprimento dos devedores sem o alívio das taxas de juro que normalmente compensaria.</p>
+            <div class="callout-label">✕ Stagflation Scenario (Worst Case)</div>
+            <p>Inflation above 3.5% preventing the Fed from cutting rates, while unemployment begins to rise. This is the most destructive scenario for BDCs: it increases borrower default risk without the interest rate relief that would normally compensate.</p>
           </div>
 
           <div class="callout orange">
-            <div class="callout-label">⚡ Cenário de Compressão de ERP</div>
-            <p>Quando o Equity Risk Premium desce abaixo de 1.0%, o investidor está a assumir risco de crédito corporativo (BDC) para ganhar quase o mesmo que numa Treasury sem risco. A relação risco/retorno colapsa.</p>
+            <div class="callout-label">⚡ ERP Compression Scenario</div>
+            <p>When the Equity Risk Premium falls below 1.0%, the investor is assuming corporate credit risk (BDC) to earn almost the same as a risk-free Treasury. The risk/return relationship collapses.</p>
           </div>
 
-          <h2>A Regra de Ouro dos 3 Filtros</h2>
-          <p>Antes de qualquer alocação em BDCs, verifica estes três sinais vitais do ecossistema macro. Se <strong>2 de 3</strong> forem negativos, a alocação deve ser reduzida ao mínimo histórico — independentemente do dividend yield apresentado.</p>
+          <h2>The Golden Rule of 3 Filters</h2>
+          <p>Before any BDC allocation, check these three vital signals of the macro ecosystem. If <strong>2 of 3</strong> are negative, allocation must be reduced to the historical minimum — regardless of the dividend yield presented.</p>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>Filtro</th>
-                <th>Série FRED</th>
-                <th>Threshold Positivo</th>
-                <th>Sinal Negativo</th>
+                <th>Filter</th>
+                <th>FRED Series</th>
+                <th>Positive Threshold</th>
+                <th>Negative Signal</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td><strong>Yield Curve</strong></td>
                 <td class="mono fred-tag">T10Y2Y</td>
-                <td class="mono green">Acima de +0.50% e subindo</td>
-                <td class="mono red">Re-inversão abaixo de 0%</td>
+                <td class="mono green">Above +0.50% and rising</td>
+                <td class="mono red">Re-inversion below 0%</td>
               </tr>
               <tr>
                 <td><strong>Jobless Claims</strong></td>
                 <td class="mono fred-tag">ICSA</td>
-                <td class="mono green">Abaixo de 275.000</td>
-                <td class="mono red">Acima de 275.000</td>
+                <td class="mono green">Below 275,000</td>
+                <td class="mono red">Above 275,000</td>
               </tr>
               <tr>
                 <td><strong>M2 Growth</strong></td>
                 <td class="mono fred-tag">M2SL</td>
-                <td class="mono green">Crescimento YoY positivo</td>
-                <td class="mono red">Contração nominal</td>
+                <td class="mono green">Positive YoY growth</td>
+                <td class="mono red">Nominal contraction</td>
               </tr>
             </tbody>
           </table>
 
-          <h2>Estudo de Caso: ARCC vs. QYLD (Fev 2026)</h2>
-          <p>Em fevereiro de 2026, com o rácio Market Cap/M2 em território de bolha e o ERP comprimido, dois dos ativos de income mais populares apresentavam perfis de risco radicalmente diferentes:</p>
+          <h2>Case Study: ARCC vs. QYLD (Feb 2026)</h2>
+          <p>In February 2026, with the Market Cap/M2 ratio in bubble territory and ERP compressed, two of the most popular income assets presented radically different risk profiles:</p>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>Característica</th>
+                <th>Characteristic</th>
                 <th>ARCC (BDC)</th>
                 <th>QYLD (Covered Call)</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><strong>Tipo de Ativo</strong></td>
-                <td>Crédito Privado</td>
-                <td>Derivados de Ações Tech</td>
+                <td><strong>Asset Type</strong></td>
+                <td>Private Credit</td>
+                <td>Tech Equity Derivatives</td>
               </tr>
               <tr>
-                <td><strong>Pilar Crítico MRM</strong></td>
+                <td><strong>Critical MRM Pillar</strong></td>
                 <td>Pilar III (Solvência)</td>
                 <td>Pilar II (Liquidez/Avaliação)</td>
               </tr>
               <tr>
-                <td><strong>Maior Risco</strong></td>
-                <td>Recessão e falências</td>
-                <td>Queda do NASDAQ + volatilidade baixa</td>
+                <td><strong>Primary Risk</strong></td>
+                <td>Recession and bankruptcies</td>
+                <td>NASDAQ decline + low volatility</td>
               </tr>
               <tr>
-                <td><strong>Veredito 2026</strong></td>
-                <td class="orange">⚡ Manter com Vigilância</td>
-                <td class="red">✕ Reduzir / Evitar</td>
+                <td><strong>2026 Verdict</strong></td>
+                <td class="orange">⚡ Hold with Vigilance</td>
+                <td class="red">✕ Reduce / Avoid</td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <div class="chapter-footer">
-          <button class="chapter-nav-btn" onclick="navBDC(0)">← Anterior</button>
-          <button class="chapter-nav-btn" onclick="navBDC(2)">Framework MRM →</button>
+          <button class="chapter-nav-btn" onclick="navBDC(0)">← Previous</button>
+          <button class="chapter-nav-btn" onclick="navBDC(2)">MRM Framework →</button>
         </div>
       </article>
 
       <!-- ── SECTION 2: FRAMEWORK MRM ── -->
       <article class="chapter-view" id="bdc-2">
-        <span class="chapter-tag">Secção 03 — Framework</span>
+        <span class="chapter-tag">Section 03 — Framework</span>
         <h1 class="chapter-h1">Framework<br>MRM para BDCs</h1>
-        <p class="chapter-subtitle">Os 3 Pilares adaptados especificamente para avaliar Business Development Companies dentro da lógica da Macro-Resilience Matrix.</p>
+        <p class="chapter-subtitle">The 3 Pillars specifically adapted to evaluate Business Development Companies within the Macro-Resilience Matrix logic.</p>
         <div class="chapter-divider"></div>
 
         <div class="content-body">
-          <h2>Por que o Framework MRM Padrão Não é Suficiente</h2>
-          <p>O framework MRM padrão foi desenhado para medir a resiliência sistémica da economia americana. Para as BDCs, é necessário um ajuste: o <strong>Pilar III (Solvência)</strong> da matriz original — que mede o sistema bancário — é substituído por indicadores de <strong>Qualidade de Crédito Interna</strong> da própria BDC. Afinal, não é o banco que vai falhar — é o devedor da BDC.</p>
+          <h2>Why the Standard MRM Framework Is Not Enough</h2>
+          <p>The standard MRM framework was designed to measure the systemic resilience of the US economy. For BDCs, an adjustment is necessary: the <strong>Pillar III (Solvency)</strong> of the original matrix — which measures the banking system — is replaced by indicators of <strong>Internal Credit Quality</strong> of the BDC itself. After all, it is not the bank that will fail — it is the BDC's borrower.</p>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>Pilar Adaptado</th>
-                <th>Métrica Crítica</th>
-                <th>Gatilho de Alerta</th>
-                <th>Peso</th>
+                <th>Adapted Pillar</th>
+                <th>Critical Metric</th>
+                <th>Alert Trigger</th>
+                <th>Weight</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td><strong>I. Ciclo</strong></td>
                 <td class="mono">10Y-2Y Spread</td>
-                <td class="mono red">Re-inversão abaixo de 0%</td>
+                <td class="mono red">Re-inversion below 0%</td>
                 <td class="mono">+1</td>
               </tr>
               <tr>
                 <td><strong>II. Liquidez</strong></td>
                 <td class="mono">NAV Premium/Discount</td>
-                <td class="mono red">Prémio &gt; 20% com M2 estagnado</td>
+                <td class="mono red">Premium &gt; 20% with stagnant M2</td>
                 <td class="mono">+2</td>
               </tr>
               <tr>
                 <td><strong>III. Solvência</strong></td>
                 <td class="mono">Non-Accruals / PIK</td>
-                <td class="mono red">Non-Accruals &gt; 3% ou PIK &gt; 10%</td>
+                <td class="mono red">Non-Accruals &gt; 3% or PIK &gt; 10%</td>
                 <td class="mono">+2</td>
               </tr>
             </tbody>
           </table>
 
-          <h2>Alocação Dinâmica por Risk Score MRM</h2>
-          <p>A exposição a BDCs é ajustada automaticamente pelo Global Risk Score da MRM. Esta é a integração direta entre o terminal macro e a estratégia de income:</p>
+          <h2>Dynamic Allocation by MRM Risk Score</h2>
+          <p>BDC exposure is automatically adjusted by the MRM Global Risk Score. This is the direct integration between the macro terminal and the income strategy:</p>
 
           <div class="callout green">
-            <div class="callout-label">✓ Risk Score 1–4 — Expansão Segura</div>
-            <p><strong>Exposição máxima permitida.</strong> O foco é capturar o dividend yield total enquanto os NPLs estão controlados e a curva de crédito é favorável. Considerar BDCs de segunda linha com yields mais elevados.</p>
+            <div class="callout-label">✓ Risk Score 1–4 — Safe Expansion</div>
+            <p><strong>Maximum exposure allowed.</strong> Focus is on capturing the full dividend yield while NPLs are controlled and the credit curve is favorable. Consider second-tier BDCs with higher yields.</p>
           </div>
 
           <div class="callout orange">
-            <div class="callout-label">⚡ Risk Score 5–7 — Alerta de Topo (Estado Atual)</div>
-            <p><strong>Redução tática.</strong> Focar apenas em BDCs com balanços "Tier 1" — baixa alavancagem (&lt;1.0x D/E), foco em First Lien (&gt;70%), gestão com histórico em 2008 e 2020. Evitar BDCs com exposição a setores cíclicos.</p>
+            <div class="callout-label">⚡ Risk Score 5–7 — Top Alert (Current State)</div>
+            <p><strong>Tactical reduction.</strong> Focus only on BDCs with "Tier 1" balance sheets — low leverage (&lt;1.0x D/E), First Lien focus (&gt;70%), management with track record through 2008 and 2020. Avoid BDCs with cyclical sector exposure.</p>
           </div>
 
           <div class="callout red">
-            <div class="callout-label">✕ Risk Score 8–10 — Zona de Perigo</div>
-            <p><strong>Alocação mínima ou nula.</strong> O risco de perda permanente de capital (drawdown no NAV + corte de dividendo) supera qualquer benefício do rendimento. Liquidar posições gradualmente antes que os Non-Accruals comecem a subir.</p>
+            <div class="callout-label">✕ Risk Score 8–10 — Danger Zone</div>
+            <p><strong>Minimum or zero allocation.</strong> The risk of permanent capital loss (NAV drawdown + dividend cut) outweighs any income benefit. Liquidate positions gradually before Non-Accruals begin to rise.</p>
           </div>
 
-          <h2>Guia de Gestão de Crise</h2>
-          <p>Se o cenário de Stress Test se confirmar (Desemprego acima de 5.2%):</p>
+          <h2>Crisis Management Guide</h2>
+          <p>If the Stress Test scenario is confirmed (Unemployment above 5.2%):</p>
 
           <div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">
             <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
               <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--red);flex-shrink:0;padding-top:1px;">01</div>
-              <div style="font-size:13px;color:var(--text-secondary);">Vender BDCs com exposição a setores cíclicos — Retalho, Consumo Discricionário, Restauração.</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Sell BDCs with cyclical sector exposure — Retail, Consumer Discretionary, Restaurants.</div>
             </div>
             <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
               <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--orange);flex-shrink:0;padding-top:1px;">02</div>
-              <div style="font-size:13px;color:var(--text-secondary);">Manter apenas BDCs com historial comprovado de gestão em 2008 e 2020 (ARCC, MAIN, HTGC).</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Keep only BDCs with proven management track record through 2008 and 2020 (ARCC, MAIN, HTGC).</div>
             </div>
             <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
               <div style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--orange);flex-shrink:0;padding-top:1px;">03</div>
-              <div style="font-size:13px;color:var(--text-secondary);">Monitorizar o PIK Income trimestralmente. Se subir 2 trimestres consecutivos, a empresa está a "maquilhar" lucros. Sair imediatamente.</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Monitor PIK Income quarterly. If it rises for 2 consecutive quarters, the company is "dressing up" earnings. Exit immediately.</div>
             </div>
           </div>
         </div>
 
         <div class="chapter-footer">
-          <button class="chapter-nav-btn" onclick="navBDC(1)">← Anterior</button>
+          <button class="chapter-nav-btn" onclick="navBDC(1)">← Previous</button>
           <button class="chapter-nav-btn" onclick="navBDC(3)">BDC Scorecard →</button>
         </div>
       </article>
 
       <!-- ── SECTION 3: SCORECARD INTERATIVO ── -->
       <article class="chapter-view" id="bdc-3">
-        <span class="chapter-tag">Secção 04 — Ferramenta</span>
+        <span class="chapter-tag">Section 04 — Tool</span>
         <h1 class="chapter-h1">BDC Scorecard<br>Interativo</h1>
         <p class="chapter-subtitle">Pontua qualquer BDC em 6 métricas de resiliência e obtém o veredito imediato.</p>
         <div class="chapter-divider"></div>
@@ -2391,8 +2391,8 @@ setTimeout(() => renderWatchlist('all'), 200);
           <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:20px 0;">
             
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-              <div style="font-family:var(--display);font-size:16px;font-weight:700;color:var(--text-primary);">Análise de Resiliência</div>
-              <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">Pontuação: <span id="bdc-score-display" style="color:var(--text-primary);font-weight:600;">0</span> / 6</div>
+              <div style="font-family:var(--display);font-size:16px;font-weight:700;color:var(--text-primary);">Resilience Analysis</div>
+              <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">Score: <span id="bdc-score-display" style="color:var(--text-primary);font-weight:600;">0</span> / 6</div>
             </div>
 
             <!-- Scorecard items -->
@@ -2402,7 +2402,7 @@ setTimeout(() => renderWatchlist('all'), 200);
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
                   <div>
                     <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">First Lien Debt</div>
-                    <div style="font-size:11px;color:var(--text-muted);">Mais de 70% do portfólio está em dívida de primeira prioridade?</div>
+                    <div style="font-size:11px;color:var(--text-muted);">More than 70% of the portfolio is in first priority debt?</div>
                   </div>
                   <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
                 </div>
@@ -2412,7 +2412,7 @@ setTimeout(() => renderWatchlist('all'), 200);
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
                   <div>
                     <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">Non-Accruals</div>
-                    <div style="font-size:11px;color:var(--text-muted);">Estão abaixo de 2.5% ao valor de custo?</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Are they below 2.5% at cost value?</div>
                   </div>
                   <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
                 </div>
@@ -2422,7 +2422,7 @@ setTimeout(() => renderWatchlist('all'), 200);
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
                   <div>
                     <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">PIK Income</div>
-                    <div style="font-size:11px;color:var(--text-muted);">Representa menos de 10% da receita total?</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Represents less than 10% of total revenue?</div>
                   </div>
                   <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
                 </div>
@@ -2432,7 +2432,7 @@ setTimeout(() => renderWatchlist('all'), 200);
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
                   <div>
                     <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">Net Leverage</div>
-                    <div style="font-size:11px;color:var(--text-muted);">O rácio Debt-to-Equity é inferior a 1.20x?</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Is the Debt-to-Equity ratio below 1.20x?</div>
                   </div>
                   <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
                 </div>
@@ -2442,7 +2442,7 @@ setTimeout(() => renderWatchlist('all'), 200);
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
                   <div>
                     <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">Dividend Coverage</div>
-                    <div style="font-size:11px;color:var(--text-muted);">O NII cobre mais de 100% do dividendo?</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Does NII cover more than 100% of the dividend?</div>
                   </div>
                   <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
                 </div>
@@ -2452,7 +2452,7 @@ setTimeout(() => renderWatchlist('all'), 200);
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="toggleScore(this)">
                   <div>
                     <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">Net Asset Value</div>
-                    <div style="font-size:11px;color:var(--text-muted);">O NAV por ação cresceu ou estabilizou nos últimos 4 trimestres?</div>
+                    <div style="font-size:11px;color:var(--text-muted);">Has NAV per share grown or stabilized over the last 4 quarters?</div>
                   </div>
                   <div class="score-toggle" style="width:28px;height:28px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text-muted);transition:all 0.2s;flex-shrink:0;">—</div>
                 </div>
@@ -2472,25 +2472,25 @@ setTimeout(() => renderWatchlist('all'), 200);
         </div>
 
         <div class="chapter-footer">
-          <button class="chapter-nav-btn" onclick="navBDC(2)">← Anterior</button>
+          <button class="chapter-nav-btn" onclick="navBDC(2)">← Previous</button>
           <button class="chapter-nav-btn" onclick="navBDC(4)">Watchlist →</button>
         </div>
       </article>
 
       <!-- ── SECTION 4: WATCHLIST ── -->
       <article class="chapter-view" id="bdc-4">
-        <span class="chapter-tag">Secção 05 — Watchlist</span>
+        <span class="chapter-tag">Section 05 — Watchlist</span>
         <h1 class="chapter-h1">Watchlist</h1>
-        <p class="chapter-subtitle">As 20 BDCs mais líquidas, os principais ETFs BDC e os 20 ETFs de Covered Call mais populares do mercado.</p>
+        <p class="chapter-subtitle">As 20 BDCs mais líquidas, os principais BDC ETFs e os 20 ETFs de Covered Call mais populares do mercado.</p>
         <div class="chapter-divider"></div>
 
         <div class="content-body">
 
           <!-- Filter tabs -->
           <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
-            <button onclick="filterWatchlist('all', this)" class="wl-filter active" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--blue);background:var(--blue-dim);color:var(--blue);font-family:var(--sans);">Todos</button>
-            <button onclick="filterWatchlist('bdc', this)" class="wl-filter" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:var(--sans);">BDCs Individuais</button>
-            <button onclick="filterWatchlist('etf-bdc', this)" class="wl-filter" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:var(--sans);">ETFs BDC</button>
+            <button onclick="filterWatchlist('all', this)" class="wl-filter active" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--blue);background:var(--blue-dim);color:var(--blue);font-family:var(--sans);">All</button>
+            <button onclick="filterWatchlist('bdc', this)" class="wl-filter" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:var(--sans);">Individual BDCs</button>
+            <button onclick="filterWatchlist('etf-bdc', this)" class="wl-filter" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:var(--sans);">BDC ETFs</button>
             <button onclick="filterWatchlist('covered', this)" class="wl-filter" style="padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:var(--sans);">Covered Calls</button>
           </div>
 
@@ -2498,10 +2498,10 @@ setTimeout(() => renderWatchlist('all'), 200);
             <thead>
               <tr>
                 <th>Ticker</th>
-                <th>Nome</th>
-                <th>Categoria</th>
+                <th>Name</th>
+                <th>Category</th>
                 <th>Pilar MRM</th>
-                <th>Nota</th>
+                <th>Note</th>
               </tr>
             </thead>
             <tbody id="watchlist-body">
@@ -2510,14 +2510,14 @@ setTimeout(() => renderWatchlist('all'), 200);
         </div>
 
         <div class="chapter-footer">
-          <button class="chapter-nav-btn" onclick="navBDC(3)">← Anterior</button>
+          <button class="chapter-nav-btn" onclick="navBDC(3)">← Previous</button>
           <button class="chapter-nav-btn" onclick="navBDC(5)">MRM Signal →</button>
         </div>
       </article>
 
       <!-- ── SECTION 5: MRM SIGNAL ── -->
       <article class="chapter-view" id="bdc-5">
-        <span class="chapter-tag">Secção 06 — Sinal Atual</span>
+        <span class="chapter-tag">Section 06 — Current Signal</span>
         <h1 class="chapter-h1">MRM Signal</h1>
         <p class="chapter-subtitle">A recomendação de alocação em BDCs baseada no score MRM atual e nos filtros macro em tempo real.</p>
         <div class="chapter-divider"></div>
@@ -2525,7 +2525,7 @@ setTimeout(() => renderWatchlist('all'), 200);
         <div class="content-body">
 
           <div id="mrm-signal-panel" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:24px;">
-            <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;">Sinal MRM Atual</div>
+            <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;">Current MRM Signal</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
               <div>
                 <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase;">Global Resilience Score</div>
@@ -2533,21 +2533,21 @@ setTimeout(() => renderWatchlist('all'), 200);
                 <div style="font-family:var(--mono);font-size:10px;color:var(--orange);margin-top:2px;" id="signal-status">TURBULENCE</div>
               </div>
               <div>
-                <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase;">Alocação BDC Recomendada</div>
-                <div style="font-family:var(--display);font-size:20px;font-weight:700;color:var(--orange);line-height:1.2;" id="signal-allocation">Redução Tática</div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;" id="signal-sub">Apenas BDCs Tier 1 com First Lien &gt;70%</div>
+                <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase;">Recommended BDC Allocation</div>
+                <div style="font-family:var(--display);font-size:20px;font-weight:700;color:var(--orange);line-height:1.2;" id="signal-allocation">Tactical Reduction</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;" id="signal-sub">Tier 1 BDCs only with First Lien &gt;70%</div>
               </div>
             </div>
           </div>
 
           <!-- 3 filter status -->
-          <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Estado dos 3 Filtros de Entrada</div>
+          <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Status of the 3 Entry Filters</div>
           <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;" id="filter-status-panel">
 
             <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
               <div>
                 <div style="font-size:13px;font-weight:500;color:var(--text-primary);">Yield Curve (10Y-2Y)</div>
-                <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: acima de +0.50%</div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: above +0.50%</div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;">
                 <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--orange);">+0.34%</div>
@@ -2558,7 +2558,7 @@ setTimeout(() => renderWatchlist('all'), 200);
             <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
               <div>
                 <div style="font-size:13px;font-weight:500;color:var(--text-primary);">Initial Jobless Claims</div>
-                <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: abaixo de 275.000</div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: below 275,000</div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;">
                 <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green);">231K</div>
@@ -2569,7 +2569,7 @@ setTimeout(() => renderWatchlist('all'), 200);
             <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
               <div>
                 <div style="font-size:13px;font-weight:500;color:var(--text-primary);">M2 Money Supply Growth</div>
-                <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: crescimento YoY positivo</div>
+                <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: positive YoY growth</div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;">
                 <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--orange);">+1.2%</div>
@@ -2580,15 +2580,15 @@ setTimeout(() => renderWatchlist('all'), 200);
           </div>
 
           <div class="callout orange">
-            <div class="callout-label">⚡ Veredito MRM — Março 2026</div>
-            <p>Com 1 filtro negativo (Yield Curve abaixo de +0.50%) e 2 em zona de cautela, a regra dos 3 filtros indica <strong>redução tática</strong>. Manter apenas BDCs Tier 1 com historial comprovado (ARCC, MAIN, HTGC). Monitorizar Non-Accruals trimestralmente. Evitar BDCs com exposição a Consumo Discricionário e Retalho.</p>
+            <div class="callout-label">⚡ MRM Verdict — March 2026</div>
+            <p>With 1 negative filter (Yield Curve below +0.50%) and 2 in caution zone, the 3-filter rule indicates <strong>tactical reduction</strong>. Maintain only Tier 1 BDCs with proven track record (ARCC, MAIN, HTGC). Monitor Non-Accruals quarterly. Avoid BDCs with Consumer Discretionary and Retail exposure.</p>
           </div>
 
         </div>
 
         <div class="chapter-footer">
-          <button class="chapter-nav-btn" onclick="navBDC(4)">← Anterior</button>
-          <button class="chapter-nav-btn" onclick="switchView('terminal', document.querySelectorAll('.nav-tab')[0])" style="color:var(--blue);border-color:var(--blue);">◉ Ver Terminal →</button>
+          <button class="chapter-nav-btn" onclick="navBDC(4)">← Previous</button>
+          <button class="chapter-nav-btn" onclick="switchView('terminal', document.querySelectorAll('.nav-tab')[0])" style="color:var(--blue);border-color:var(--blue);">◉ View Terminal →</button>
         </div>
       </article>
 
