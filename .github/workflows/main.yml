@@ -1,0 +1,16 @@
+name: Fix index
+on: workflow_dispatch
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cp "index(2).html" index.html
+          git config user.email "action@github.com"
+          git config user.name "Bot"
+          git add index.html
+          git commit -m "Fix: update index.html with BDC section"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
