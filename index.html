@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US MRM — Macro-Resilience Matrix Intelligence Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #101214;
+    --bg-secondary: #1A1D20;
+    --bg-card: #1E2226;
+    --bg-elevated: #242830;
+    --border: #2E3338;
+    --border-subtle: #252A2F;
+    --blue: #388BFD;
+    --blue-dim: rgba(56,139,253,0.12);
+    --blue-glow: rgba(56,139,253,0.25);
+    --orange: #F98C4F;
+    --orange-dim: rgba(249,140,79,0.12);
+    --red: #D73A49;
+    --red-dim: rgba(215,58,73,0.12);
+    --green: #34D058;
+    --green-dim: rgba(52,208,88,0.1);
+    --text-primary: #E8ECF0;
+    --text-secondary: #8B949E;
+    --text-muted: #586068;
+    --text-accent: #C9D1D9;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --display: 'Syne', system-ui, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(16,18,20,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; height: 56px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .logo {
+    font-family: var(--display);
+    font-size: 15px; font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--text-primary);
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--blue); }
+  .topbar-divider {
+    width: 1px; height: 22px;
+    background: var(--border); opacity: 0.5;
+  }
+  .topbar-subtitle {
+    font-family: var(--mono);
+    font-size: 10px; color: var(--text-muted);
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px; font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer; border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    font-family: var(--sans);
+  }
+  .nav-tab:hover { color: var(--text-primary); background: var(--bg-card); }
+  .nav-tab.active {
+    background: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid rgba(56,139,253,0.3);
+  }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .live-indicator {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--green); letter-spacing: 0.08em;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse-green 2s ease infinite;
+  }
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--green); }
+    50% { opacity: 0.5; box-shadow: 0 0 2px var(--green); }
+  }
+  .timestamp {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted); letter-spacing: 0.06em;
+  }
+
+  /* ─── VIEWS ─── */
+  .view { display: none; animation: fadeIn 0.35s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ─── TERMINAL SECTION ─── */
+  .terminal-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 0;
+    min-height: calc(100vh - 56px);
+  }
+  .terminal-main { padding: 24px; overflow-y: auto; }
+  .terminal-sidebar {
+    border-left: 1px solid var(--border-subtle);
+    padding: 20px;
+    overflow-y: auto;
+    background: var(--bg-secondary);
+  }
+
+  /* ─── GLOBAL SCORE HEADER ─── */
+  .score-header {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: relative; overflow: hidden;
+  }
+  .score-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(249,140,79,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .score-left { display: flex; align-items: center; gap: 24px; }
+  .score-ring {
+    position: relative; width: 88px; height: 88px;
+    flex-shrink: 0;
+  }
+  .score-ring svg { width: 88px; height: 88px; transform: rotate(-90deg); }
+  .score-ring-track { fill: none; stroke: var(--border); stroke-width: 4; }
+  .score-ring-fill {
+    fill: none; stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
+    stroke: var(--orange);
+  }
+  .score-label {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .score-number {
+    font-family: var(--mono); font-size: 22px; font-weight: 600;
+    color: var(--orange); line-height: 1;
+  }
+  .score-denom {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted);
+  }
+  .score-info { }
+  .score-title {
+    font-family: var(--display);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 6px;
+  }
+  .score-headline {
+    font-family: var(--display);
+    font-size: 24px; font-weight: 700;
+    color: var(--text-primary); line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 4px;
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .status-badge.turbulence {
+    background: var(--orange-dim);
+    border: 1px solid rgba(249,140,79,0.3);
+    color: var(--orange);
+  }
+  .status-badge.stable {
+    background: var(--green-dim);
+    border: 1px solid rgba(52,208,88,0.3);
+    color: var(--green);
+  }
+  .status-badge.critical {
+    background: var(--red-dim);
+    border: 1px solid rgba(215,58,73,0.3);
+    color: var(--red);
+  }
+  .status-badge::before {
+    content: ''; width: 5px; height: 5px;
+    border-radius: 50%; background: currentColor;
+  }
+  .score-right { text-align: right; }
+  .score-meta-row {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  }
+  .score-meta-item {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted);
+  }
+  .score-meta-item span { color: var(--text-secondary); }
+  .sparkline-container { margin-top: 10px; }
+  .sparkline-label {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--text-muted); letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  /* ─── PILLAR GRID ─── */
+  .pillars-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .pillars-header h2 {
+    font-family: var(--display); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .pillars-header-line {
+    flex: 1; height: 1px; background: var(--border-subtle);
+  }
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .pillar-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .pillar-card:hover {
+    border-color: var(--blue);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .pillar-card::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    border-radius: 10px 10px 0 0;
+  }
+  .pillar-card.status-stable::after { background: var(--green); }
+  .pillar-card.status-caution::after { background: var(--orange); }
+  .pillar-card.status-warning::after { background: var(--orange); opacity: 0.7; }
+  .pillar-card.status-critical::after { background: var(--red); }
+
+  .pillar-roman {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 6px;
+  }
+  .pillar-name {
+    font-family: var(--display); font-size: 15px; font-weight: 700;
+    color: var(--text-primary); margin-bottom: 10px;
+  }
+  .pillar-score-row {
+    display: flex; align-items: baseline; gap: 4px;
+    margin-bottom: 10px;
+  }
+  .pillar-score {
+    font-family: var(--mono); font-size: 26px; font-weight: 600;
+    line-height: 1;
+  }
+  .pillar-score.green { color: var(--green); }
+  .pillar-score.orange { color: var(--orange); }
+  .pillar-score.red { color: var(--red); }
+  .pillar-score-max {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-muted);
+  }
+  .pillar-metric {
+    font-size: 10px; color: var(--text-muted);
+    margin-bottom: 4px; font-family: var(--mono);
+  }
+  .pillar-value {
+    font-family: var(--mono); font-size: 14px; font-weight: 500;
+    color: var(--text-accent); margin-bottom: 4px;
+  }
+  .pillar-delta {
+    font-family: var(--mono); font-size: 10px;
+  }
+  .pillar-delta.up { color: var(--orange); }
+  .pillar-delta.down { color: var(--green); }
+  .pillar-desc {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 11px; color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ─── HISTORY STRIP ─── */
+  .history-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .history-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+  }
+  .history-title {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .history-chart { position: relative; }
+
+  /* ─── SENTINELS SIDEBAR ─── */
+  .sidebar-title {
+    font-family: var(--display); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle);
+  }
+  .sentinel-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+    position: relative; overflow: hidden;
+  }
+  .sentinel-card.alert-active {
+    border-color: var(--red);
+    background: rgba(215,58,73,0.05);
+  }
+  .sentinel-name {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 8px;
+  }
+  .sentinel-value {
+    font-family: var(--mono); font-size: 28px; font-weight: 600;
+    color: var(--text-primary); line-height: 1;
+    margin-bottom: 4px;
+  }
+  .sentinel-value.caution { color: var(--orange); }
+  .sentinel-value.alert { color: var(--red); }
+  .sentinel-delta {
+    font-family: var(--mono); font-size: 11px;
+    margin-bottom: 12px;
+  }
+  .sentinel-threshold-bar { margin-bottom: 8px; }
+  .threshold-labels {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 9px;
+    color: var(--text-muted); margin-bottom: 4px;
+  }
+  .threshold-track {
+    height: 4px; background: var(--border);
+    border-radius: 2px; position: relative; overflow: hidden;
+  }
+  .threshold-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 1s ease;
+  }
+  .threshold-fill.normal { background: var(--green); }
+  .threshold-fill.caution { background: var(--orange); }
+  .threshold-fill.alert { background: var(--red); }
+  .sentinel-status-row {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .sentinel-status-text {
+    font-size: 10px; color: var(--text-muted);
+  }
+  .sentinel-fred {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--text-muted); opacity: 0.5;
+  }
+
+  /* ─── ALERTS BOX ─── */
+  .alerts-section { margin-top: 18px; }
+  .alert-box {
+    padding: 12px 14px;
+    border-radius: 8px; margin-bottom: 8px;
+    border-left: 3px solid;
+  }
+  .alert-box.info {
+    background: var(--blue-dim);
+    border-color: var(--blue);
+  }
+  .alert-box.warning {
+    background: var(--orange-dim);
+    border-color: var(--orange);
+  }
+  .alert-box.danger {
+    background: var(--red-dim);
+    border-color: var(--red);
+  }
+  .alert-box-title {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .alert-box.info .alert-box-title { color: var(--blue); }
+  .alert-box.warning .alert-box-title { color: var(--orange); }
+  .alert-box.danger .alert-box-title { color: var(--red); }
+  .alert-box-text { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* ─── ACADEMY SECTION ─── */
+  .academy-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: calc(100vh - 56px);
+  }
+  .academy-nav {
+    border-right: 1px solid var(--border-subtle);
+    background: var(--bg-secondary);
+    padding: 24px 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .academy-nav-title {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-muted); padding: 0 20px; margin-bottom: 12px;
+  }
+  .chapter-nav-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer; border: none; background: transparent;
+    width: 100%; text-align: left;
+    border-left: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .chapter-nav-item:hover { background: var(--bg-card); }
+  .chapter-nav-item.active {
+    border-left-color: var(--blue);
+    background: var(--blue-dim);
+  }
+  .chapter-num {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    color: var(--text-muted); letter-spacing: 0.08em;
+    padding-top: 2px; flex-shrink: 0;
+  }
+  .chapter-nav-item.active .chapter-num { color: var(--blue); }
+  .chapter-nav-text { }
+  .chapter-nav-title {
+    font-size: 12px; font-weight: 500;
+    color: var(--text-secondary); line-height: 1.3;
+  }
+  .chapter-nav-item.active .chapter-nav-title { color: var(--blue); }
+  .chapter-nav-sub {
+    font-size: 10px; color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .academy-content {
+    padding: 40px 56px;
+    max-width: 820px;
+    overflow-y: auto;
+  }
+  .chapter-view { display: none; }
+  .chapter-view.active { display: block; animation: fadeIn 0.3s ease; }
+
+  /* ─── CONTENT TYPOGRAPHY ─── */
+  .chapter-tag {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--blue); margin-bottom: 10px;
+    display: block;
+  }
+  .chapter-h1 {
+    font-family: var(--display); font-size: 32px; font-weight: 800;
+    color: var(--text-primary); line-height: 1.15;
+    margin-bottom: 6px;
+  }
+  .chapter-subtitle {
+    font-size: 16px; color: var(--text-secondary);
+    line-height: 1.5; margin-bottom: 28px;
+    font-weight: 300;
+  }
+  .chapter-divider {
+    height: 1px; background: var(--border-subtle);
+    margin-bottom: 28px;
+  }
+  .content-body h2 {
+    font-family: var(--display); font-size: 18px; font-weight: 700;
+    color: var(--text-primary); margin: 32px 0 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .content-body h2::before {
+    content: '';
+    width: 3px; height: 18px;
+    background: var(--blue); border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .content-body h3 {
+    font-family: var(--display); font-size: 14px; font-weight: 600;
+    color: var(--text-accent); margin: 20px 0 8px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .content-body p {
+    color: var(--text-secondary); line-height: 1.75;
+    margin-bottom: 16px; font-size: 14px;
+  }
+  .content-body strong {
+    color: var(--text-primary); font-weight: 600;
+  }
+  .blockquote {
+    border-left: 3px solid var(--blue);
+    margin: 20px 0; padding: 14px 20px;
+    background: var(--blue-dim);
+    border-radius: 0 8px 8px 0;
+  }
+  .blockquote p {
+    color: var(--text-accent); font-style: italic;
+    font-size: 14px; margin: 0; line-height: 1.65;
+  }
+  .blockquote cite {
+    display: block; margin-top: 8px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted); font-style: normal;
+    letter-spacing: 0.06em;
+  }
+  .callout {
+    border: 1px solid;
+    border-radius: 8px; padding: 16px 18px; margin: 20px 0;
+  }
+  .callout.orange {
+    border-color: rgba(249,140,79,0.3);
+    background: var(--orange-dim);
+  }
+  .callout.green {
+    border-color: rgba(52,208,88,0.25);
+    background: var(--green-dim);
+  }
+  .callout.red {
+    border-color: rgba(215,58,73,0.3);
+    background: var(--red-dim);
+  }
+  .callout-label {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .callout.orange .callout-label { color: var(--orange); }
+  .callout.green .callout-label { color: var(--green); }
+  .callout.red .callout-label { color: var(--red); }
+  .callout p { margin: 0; font-size: 13px; }
+
+  /* ─── TABLES ─── */
+  .data-table {
+    width: 100%; border-collapse: collapse;
+    margin: 20px 0;
+  }
+  .data-table th {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-muted); text-align: left;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border-subtle);
+    font-size: 13px; color: var(--text-secondary);
+  }
+  .data-table tr:hover td { background: var(--bg-card); }
+  .data-table .mono { font-family: var(--mono); }
+  .data-table .green { color: var(--green); }
+  .data-table .orange { color: var(--orange); }
+  .data-table .red { color: var(--red); }
+
+  /* ─── MINI INLINE METRIC ─── */
+  .inline-metric {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--text-accent);
+    vertical-align: middle;
+  }
+
+  /* ─── CHAPTER PROGRESS ─── */
+  .chapter-progress {
+    display: flex; gap: 4px; margin-bottom: 28px;
+  }
+  .progress-dot {
+    width: 20px; height: 3px; border-radius: 2px;
+    background: var(--border);
+  }
+  .progress-dot.done { background: var(--blue); }
+  .progress-dot.active { background: var(--orange); }
+
+  /* ─── FOOTER NAV ─── */
+  .chapter-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 48px; padding-top: 24px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .chapter-nav-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .chapter-nav-btn:hover {
+    border-color: var(--blue); color: var(--blue);
+  }
+  .chapter-nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .chapter-nav-btn:disabled:hover { border-color: var(--border); color: var(--text-secondary); }
+
+  /* ─── CANVAS & CHARTS ─── */
+  canvas { display: block; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1100px) {
+    .pillars-grid { grid-template-columns: repeat(3, 1fr); }
+    .terminal-layout { grid-template-columns: 1fr; }
+    .terminal-sidebar { border-left: none; border-top: 1px solid var(--border-subtle); }
+  }
+  @media (max-width: 820px) {
+    .academy-layout { grid-template-columns: 1fr; }
+    .academy-nav { position: static; height: auto; }
+    .academy-content { padding: 24px 20px; }
+    .pillars-grid { grid-template-columns: repeat(2, 1fr); }
+    .score-header { flex-direction: column; gap: 16px; }
+  }
+
+  /* ─── FREDAPI INFO ─── */
+  .fred-tag {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--text-muted); opacity: 0.5;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px; padding: 1px 5px;
+    display: inline-block;
+  }
+
+  .section-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 24px 0 16px;
+  }
+  .section-divider-label {
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-muted); white-space: nowrap;
+  }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border-subtle); }
+
+  /* ─── LOADING ─── */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; gap: 12px;
+    color: var(--text-muted); font-family: var(--mono); font-size: 12px;
+  }
+  .loading-spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ─── TOPBAR ─── -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo">US<span>MRM</span></div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-subtitle">Macro-Resilience Matrix</div>
+    <div class="topbar-divider" style="opacity:0.3"></div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="switchView('terminal', this)">
+        ◉ Live Terminal
+      </button>
+      <button class="nav-tab" onclick="switchView('academy', this)">
+        ◈ Academy
+      </button>
+    </nav>
+  </div>
+  <div class="topbar-right">
+    <div class="live-indicator">
+      <span class="live-dot"></span>
+      LIVE
+    </div>
+    <div class="timestamp" id="timestamp">—</div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW A: TERMINAL
+═══════════════════════════════════════════════ -->
+<div class="view active" id="view-terminal">
+  <div class="terminal-layout">
+    <div class="terminal-main" id="terminal-main">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        Fetching resilience data...
+      </div>
+    </div>
+    <div class="terminal-sidebar" id="terminal-sidebar">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW B: ACADEMY
+═══════════════════════════════════════════════ -->
+<div class="view" id="view-academy">
+  <div class="academy-layout">
+    <!-- Sidebar Nav -->
+    <aside class="academy-nav">
+      <div class="academy-nav-title">Curriculum</div>
+      <button class="chapter-nav-item active" onclick="showChapter(0, this)">
+        <span class="chapter-num">CH 1</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">The Resilience Mandate</div>
+          <div class="chapter-nav-sub">Foundation</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showChapter(1, this)">
+        <span class="chapter-num">CH 2</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Pillar I — Cycle</div>
+          <div class="chapter-nav-sub">Yield Curve Analysis</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showChapter(2, this)">
+        <span class="chapter-num">CH 3</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Pillar II — Liquidity</div>
+          <div class="chapter-nav-sub">M2 & Market Cap Ratio</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showChapter(3, this)">
+        <span class="chapter-num">CH 4</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Pillar II — Premium</div>
+          <div class="chapter-nav-sub">Equity Risk Premium</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showChapter(4, this)">
+        <span class="chapter-num">CH 5</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Pillar III — Solvency</div>
+          <div class="chapter-nav-sub">Bank NPL Ratios</div>
+        </div>
+      </button>
+      <button class="chapter-nav-item" onclick="showChapter(5, this)">
+        <span class="chapter-num">CH 6</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Pillar III — Debt</div>
+          <div class="chapter-nav-sub">Household DSR</div>
+        </div>
+      </button>
+    </aside>
+
+    <!-- Chapter Content -->
+    <main class="academy-content">
+
+      <!-- ── CHAPTER 1 ── -->
+      <article class="chapter-view active" id="chapter-0">
+        <span class="chapter-tag">Chapter 01 — Foundation</span>
+        <h1 class="chapter-h1">The Resilience<br>Mandate</h1>
+        <p class="chapter-subtitle">Why the architecture of financial systems demands a different lens than traditional forecasting.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <div class="content-body">
+          <h2>Resilience vs. Robustness</h2>
+          <p>Most financial frameworks are built around the concept of <strong>robustness</strong> — the ability of a system to resist stress without changing. A robust bridge doesn't bend; a robust portfolio doesn't lose value in a downturn. But robustness is a fragile virtue. It assumes the stressor is known, bounded, and predictable. The 2008 Global Financial Crisis, the 2020 COVID shock, and the 2022 inflation regime change all exposed the limits of robustness thinking: the tail events that destroyed portfolios were precisely those not anticipated by the models designed to resist them.</p>
+
+          <p><strong>Resilience</strong> is a fundamentally different property. A resilient system doesn't claim immunity from stress — it claims the capacity to absorb disruption, adapt, and return to function. It allows bending without breaking. Applied to macroeconomics, resilience is the economy's capacity to metabolize shocks — supply disruptions, credit events, monetary tightening — without entering a self-reinforcing contraction spiral.</p>
+
+          <div class="blockquote">
+            <p>"Resilience is not about avoiding failure. It is about failing in ways that do not cascade into systemic collapse. The distinction between a bruise and a fracture is not the force applied — it is the architecture of what receives the force."</p>
+            <cite>— US Macro-Resilience Matrix Framework</cite>
+          </div>
+
+          <h2>The "Thin Ice" Metaphor</h2>
+          <p>Consider the metaphor of ice thickness on a lake in winter. A robust framework asks: <em>"Can this ice hold the weight of a skater?"</em> If the ice is thick enough, the answer is yes — until suddenly, catastrophically, it isn't. The robust framework has no mechanism to perceive gradual degradation.</p>
+
+          <p>A resilient framework asks a different set of questions: <em>"How thick is the ice today compared to last week? Is it thickening or thinning? Are there stress fractures forming at the edges? What is the temperature trend over the next 72 hours?"</em></p>
+
+          <p>This is the core operating principle of the US Macro-Resilience Matrix. We are not forecasting whether the ice will break. We are continuously measuring its thickness across five structural dimensions — the Pillars — and tracking early-warning signals at the perimeter, the Sentinels. The goal is not prediction. It is <strong>situational awareness</strong>.</p>
+
+          <div class="callout orange">
+            <div class="callout-label">⚠ Core Principle</div>
+            <p>The US MRM framework does not predict recessions. It measures the current load-bearing capacity of the US economic system. A score of 8+ indicates ice so thin that normal activity poses systemic risk. A score of 1–3 indicates ice thick enough to withstand significant shocks without catastrophic failure.</p>
+          </div>
+
+          <h2>The Five Pillars: A Structural Architecture</h2>
+          <p>The framework organizes macro-resilience into five orthogonal dimensions. Each Pillar captures a distinct failure mode of the economic system:</p>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Pillar</th>
+                <th>Core Question</th>
+                <th>Primary Signal</th>
+                <th>FRED Series</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>I. Cycle</strong></td>
+                <td>Where are we in the credit cycle?</td>
+                <td class="mono">10Y–2Y Yield Curve</td>
+                <td class="mono fred-tag">T10Y2Y</td>
+              </tr>
+              <tr>
+                <td><strong>II. Liquidity</strong></td>
+                <td>Is money plentiful or scarce?</td>
+                <td class="mono">Market Cap / M2</td>
+                <td class="mono fred-tag">M2SL, WILL5000</td>
+              </tr>
+              <tr>
+                <td><strong>II. Premium</strong></td>
+                <td>Are investors being compensated for risk?</td>
+                <td class="mono">ERP (E/P – 10Y)</td>
+                <td class="mono fred-tag">DGS10</td>
+              </tr>
+              <tr>
+                <td><strong>III. Solvency</strong></td>
+                <td>Is the banking system functionally sound?</td>
+                <td class="mono">Bank NPL Ratio</td>
+                <td class="mono fred-tag">DRALACBN</td>
+              </tr>
+              <tr>
+                <td><strong>III. Debt</strong></td>
+                <td>Can households service their obligations?</td>
+                <td class="mono">Household DSR</td>
+                <td class="mono fred-tag">TDSP</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>Notice that Pillar II appears twice — for Liquidity and Premium. This reflects the dual nature of capital markets as both a plumbing system (liquidity) and a pricing mechanism (premium). Separating them allows the framework to detect divergences: conditions where liquidity is ample but risk is mis-priced, or where premiums are adequate but monetary plumbing is seizing.</p>
+
+          <h2>The Scoring Logic</h2>
+          <p>Each Pillar produces a score from 1 to 10, where higher scores indicate greater systemic stress. The composite Global Resilience Score is a weighted average. The color-coded interpretation provides immediate situational context:</p>
+
+          <div class="callout green">
+            <div class="callout-label">✓ Score 1–4: Resilient</div>
+            <p>System absorbing stress normally. Ice is thick. Normal risk-taking activity is supported by structural conditions.</p>
+          </div>
+          <div class="callout orange">
+            <div class="callout-label">⚡ Score 5–7: Turbulence</div>
+            <p>Multiple Pillars showing strain. Ice thinning. System can still absorb moderate shocks but vulnerability to tail events is elevated.</p>
+          </div>
+          <div class="callout red">
+            <div class="callout-label">✕ Score 8–10: Critical</div>
+            <p>Systemic fragility across multiple dimensions. Ice dangerously thin. High probability of self-reinforcing contraction if a significant shock occurs.</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" disabled>← Previous</button>
+          <button class="chapter-nav-btn" onclick="navChapter(1)">Next: Pillar I — Cycle →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 2 ── -->
+      <article class="chapter-view" id="chapter-1">
+        <span class="chapter-tag">Chapter 02 — Pillar I</span>
+        <h1 class="chapter-h1">The Cycle</h1>
+        <p class="chapter-subtitle">Reading the economy's heartbeat through the geometry of the yield curve.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <div class="content-body">
+          <h2>The 10Y–2Y Yield Curve: A Compressed History of Economic Cycles</h2>
+          <p>The spread between the 10-year and 2-year US Treasury yields is perhaps the most battle-tested leading indicator in macroeconomics. Its predictive power derives not from arcane financial theory but from a simple economic reality: <strong>short rates reflect current monetary policy; long rates reflect long-term growth and inflation expectations</strong>. The shape of the curve between these two points encodes the market's collective assessment of where we are in the economic cycle.</p>
+
+          <p>When the spread is positive (normal curve), long-term rates exceed short-term rates. This reflects a healthy economy: lenders demand a premium for committing capital for longer periods, implying confidence that growth will generate adequate returns. Banks, which borrow short and lend long, profit from this spread. Credit flows. Investment expands. The cycle self-reinforces in a benign direction.</p>
+
+          <h2>Inversion: The Cycle's Red Flag</h2>
+          <p>When the curve inverts — short rates rising above long rates — the signal is historically ominous. Every US recession since 1955 has been preceded by an inverted yield curve, with a lead time of 6 to 24 months. The inversion compresses or eliminates bank net interest margins, reducing the incentive to extend credit. As credit availability tightens, investment and consumption slow. The self-reinforcing cycle reverses.</p>
+
+          <div class="blockquote">
+            <p>"An inverted yield curve does not cause recessions. It reveals that the conditions for one already exist. The curve is a thermometer, not a fever."</p>
+            <cite>— US MRM Framework, Pillar I Analysis</cite>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Curve Shape</th>
+                <th>10Y–2Y Spread</th>
+                <th>Interpretation</th>
+                <th>Pillar Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Deeply Inverted</strong></td>
+                <td class="mono red">Below –0.50%</td>
+                <td>Peak monetary tightening. Credit contraction imminent.</td>
+                <td class="mono red">8–10</td>
+              </tr>
+              <tr>
+                <td><strong>Mildly Inverted</strong></td>
+                <td class="mono orange">–0.50% to 0.00%</td>
+                <td>Caution. Cycle peak probability elevated.</td>
+                <td class="mono orange">5–7</td>
+              </tr>
+              <tr>
+                <td><strong>Normalizing</strong></td>
+                <td class="mono orange">0.00% to +0.75%</td>
+                <td>Post-inversion steepening. Historically precedes recession onset.</td>
+                <td class="mono orange">5–7</td>
+              </tr>
+              <tr>
+                <td><strong>Normal</strong></td>
+                <td class="mono green">+0.75% to +2.00%</td>
+                <td>Mid-cycle expansion. Credit conditions supportive.</td>
+                <td class="mono green">2–4</td>
+              </tr>
+              <tr>
+                <td><strong>Steep</strong></td>
+                <td class="mono green">Above +2.00%</td>
+                <td>Early cycle recovery. Maximum credit incentive for banks.</td>
+                <td class="mono green">1–3</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2>Normalization & Steepening: The Counterintuitive Danger</h2>
+          <p>Here is the most important — and most frequently misunderstood — insight about yield curve analysis: <strong>the normalization phase, when the curve moves from inverted back to positive, is not a "all-clear" signal. Historically, it is one of the most dangerous phases of the cycle.</strong></p>
+
+          <p>When the curve is deeply inverted, monetary conditions are extremely tight. As the Fed begins cutting rates in response to economic weakness, short-term yields fall faster than long-term yields. The spread widens — but this steepening typically occurs concurrent with rising unemployment, credit defaults, and equity market stress. The "good-looking" yield curve is often recording its best reading just as the recession is officially arriving.</p>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Current Reading</div>
+            <p>The 10Y–2Y spread is currently at <span class="inline-metric">+0.34%</span> — the normalization phase. The curve has re-steepened from its 2022–2023 deep inversion. The Cycle Pillar scores 5.8/10, reflecting the historical pattern that this normalization phase requires elevated vigilance.</p>
+          </div>
+
+          <h2>The FRED Series: T10Y2Y</h2>
+          <p>The Federal Reserve Bank of St. Louis publishes the 10-Year Treasury Constant Maturity minus 2-Year Treasury Constant Maturity spread as series <span class="fred-tag">T10Y2Y</span>. This is the primary data feed for the Cycle Pillar. The series updates on business days and reflects market closing prices. A simple threshold scoring system translates the spread into a 1–10 Pillar score, with the ranges outlined in the table above.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(0)">← Chapter 1</button>
+          <button class="chapter-nav-btn" onclick="navChapter(2)">Next: Pillar II — Liquidity →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 3 ── -->
+      <article class="chapter-view" id="chapter-2">
+        <span class="chapter-tag">Chapter 03 — Pillar II</span>
+        <h1 class="chapter-h1">Liquidity</h1>
+        <p class="chapter-subtitle">The blood volume of the financial system — and what happens when it runs thin.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <div class="content-body">
+          <h2>M2 Money Supply: The Economy's Blood Volume</h2>
+          <p>M2 is the broadest readily-available measure of money supply in the United States, encompassing physical currency, checking deposits, savings accounts, and money market funds. It represents the total pool of liquid capital available to fuel economic activity — consumption, investment, and financial market transactions. When M2 is expanding, the economic engine has ample fuel. When M2 contracts or decelerates sharply, the engine starves.</p>
+
+          <p>The 2022 experience was historically instructive: for the first time in the post-war era, M2 contracted in nominal terms — falling over 4% from its 2022 peak. The simultaneous tightening of fiscal policy (as pandemic-era transfers wound down), monetary policy (aggressive Fed rate hikes), and money supply created a liquidity triple-tightening that dramatically elevated systemic stress across multiple Pillars simultaneously.</p>
+
+          <h2>The Market Cap / M2 Ratio: The "Buffett Indicator"</h2>
+          <p>While M2 growth measures the flow of monetary fuel, the <strong>Market Cap / M2 Ratio</strong> measures how much of that fuel has been deployed into equity markets. This ratio — popularized by Warren Buffett's 2001 Fortune magazine commentary and subsequently known informally as the "Buffett Indicator" — compares the total value of publicly traded equities to the total money supply.</p>
+
+          <p>The ratio's utility derives from its anchoring logic: equity valuations are ultimately a claim on real economic output, which is itself constrained by the stock of money circulating in the economy. When the ratio is historically elevated, it signals that equity prices have outpaced the monetary support structure — that valuations are priced for perfection in a world where liquidity may not be sufficient to sustain them.</p>
+
+          <div class="blockquote">
+            <p>"The ratio of market capitalization to money supply is telling you, in the simplest possible terms, how much of the economy's blood has been redirected into the financial markets — and how much would need to flow back out if sentiment shifted."</p>
+            <cite>— US MRM Framework, Pillar II Analysis</cite>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ratio Range</th>
+                <th>Historical Context</th>
+                <th>Liquidity Reading</th>
+                <th>Pillar Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono green">Below 0.80x</td>
+                <td>Early 1990s, 2009 lows</td>
+                <td>Equity deeply undervalued vs. monetary base. Supportive.</td>
+                <td class="mono green">1–3</td>
+              </tr>
+              <tr>
+                <td class="mono green">0.80x – 1.20x</td>
+                <td>Mid-cycle normal</td>
+                <td>Healthy relationship. Monetary base supports valuations.</td>
+                <td class="mono green">2–4</td>
+              </tr>
+              <tr>
+                <td class="mono orange">1.20x – 1.60x</td>
+                <td>Late 1990s, 2014–2018</td>
+                <td>Elevated. Equity sensitivity to M2 deceleration increases.</td>
+                <td class="mono orange">5–7</td>
+              </tr>
+              <tr>
+                <td class="mono red">Above 1.60x</td>
+                <td>2000 Tech Bubble, 2021, Present</td>
+                <td>Historically preceded major corrections. Fragile liquidity dependency.</td>
+                <td class="mono red">7–10</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Current Reading</div>
+            <p>The Market Cap / M2 Ratio currently stands at <span class="inline-metric">1.82x</span>, placing it in historical territory previously seen only during the 1999–2000 equity bubble and briefly in 2021. The Liquidity Pillar scores 7.1/10, reflecting significant elevation in equity valuation relative to the monetary support structure.</p>
+          </div>
+
+          <h2>FRED Series</h2>
+          <p>Two series are combined to construct the Liquidity Pillar: <span class="fred-tag">M2SL</span> (M2 Money Supply, seasonally adjusted, monthly) and <span class="fred-tag">WILL5000PRFC</span> (Wilshire 5000 Total Market Full Cap Index), which serves as a proxy for total US equity market capitalization. The ratio is computed monthly and scored against historical percentile thresholds.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(1)">← Chapter 2</button>
+          <button class="chapter-nav-btn" onclick="navChapter(3)">Next: Pillar II — Premium →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 4 ── -->
+      <article class="chapter-view" id="chapter-3">
+        <span class="chapter-tag">Chapter 04 — Pillar II</span>
+        <h1 class="chapter-h1">Premium</h1>
+        <p class="chapter-subtitle">The price of risk — and what its compression signals about the market's collective judgment.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <div class="content-body">
+          <h2>The Equity Risk Premium: Compensation for Uncertainty</h2>
+          <p>In a rational market, investors holding equities — which carry earnings volatility, bankruptcy risk, and market price uncertainty — should receive higher returns than investors holding risk-free government bonds. The <strong>Equity Risk Premium (ERP)</strong> is the quantification of this excess return expectation. It answers the question: <em>how much extra return, above the risk-free rate, are investors demanding to hold equities?</em></p>
+
+          <p>The ERP is most commonly calculated using the earnings yield method: <strong>ERP = (Earnings / Price) – 10-Year Treasury Yield</strong>. The earnings yield (E/P, the inverse of the P/E ratio) represents the yield implicit in current equity valuations, while the 10-Year yield represents the risk-free alternative. When the ERP is high, equities offer substantially more than bonds — an attractive risk/return trade-off. When the ERP is compressed, investors are being paid minimal compensation for accepting equity risk.</p>
+
+          <h2>ERP Compression: The Danger Signal</h2>
+          <p>Historically, sustained ERP compression — where the earnings yield approaches or falls below the 10-Year Treasury yield — has been associated with periods of peak equity market vulnerability. The logic is structural: when equities and bonds offer nearly equivalent yields, the argument for accepting equity risk becomes extremely weak. Even modest increases in bond yields (as rates rise) or modest decreases in earnings (as a cycle turns) can trigger large, rapid equity re-pricing.</p>
+
+          <div class="blockquote">
+            <p>"When the Equity Risk Premium collapses to zero, the market is not saying equities are risk-free. It is saying investors have forgotten what risk feels like. This amnesia has historically not persisted."</p>
+            <cite>— US MRM Framework, Pillar II Premium Analysis</cite>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ERP Level</th>
+                <th>Interpretation</th>
+                <th>Market Vulnerability</th>
+                <th>Pillar Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono green">Above 4.0%</td>
+                <td>Equities deeply attractive vs. bonds. High margin of safety.</td>
+                <td>Low. Strong fundamental support.</td>
+                <td class="mono green">1–3</td>
+              </tr>
+              <tr>
+                <td class="mono green">2.0% – 4.0%</td>
+                <td>Normal. Adequate risk compensation.</td>
+                <td>Moderate. Normal market functioning.</td>
+                <td class="mono green">3–5</td>
+              </tr>
+              <tr>
+                <td class="mono orange">0.8% – 2.0%</td>
+                <td>Compressed. Risk/return trade-off deteriorating.</td>
+                <td>Elevated. Sensitive to rate or earnings shocks.</td>
+                <td class="mono orange">5–8</td>
+              </tr>
+              <tr>
+                <td class="mono red">Below 0.8%</td>
+                <td>Critical compression. Near risk parity with bonds.</td>
+                <td>High. Red Alert threshold triggered.</td>
+                <td class="mono red">8–10</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Current Reading — Approaching Alert Zone</div>
+            <p>The current ERP stands at <span class="inline-metric">1.02%</span> — within the Compressed range and approaching the <strong>Red Alert threshold of 0.80%</strong>. At this level, a 22bps further compression (from either falling earnings or rising rates) would trigger a Sentinel alert. The Premium Pillar scores 7.9/10 — the highest current stress reading in the framework.</p>
+          </div>
+
+          <h2>The Sentinel Connection</h2>
+          <p>The ERP serves dual duty in the US MRM framework: it is both a Pillar score component (Premium, Pillar II) and one of two primary Sentinel triggers. This reflects its disproportionate importance as a cross-market signal: ERP compression affects not only equity allocation decisions but also credit spreads, leverage ratios, and risk appetite across asset classes. When ERP breaches the 0.80% threshold, the framework upgrades the overall system status regardless of Pillar composite scores.</p>
+
+          <p>The FRED series <span class="fred-tag">DGS10</span> provides the risk-free rate component. The earnings yield is derived from S&P 500 trailing twelve-month earnings and current price levels, typically sourced from data providers including Bloomberg or S&P Global.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(2)">← Chapter 3</button>
+          <button class="chapter-nav-btn" onclick="navChapter(4)">Next: Pillar III — Solvency →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 5 ── -->
+      <article class="chapter-view" id="chapter-4">
+        <span class="chapter-tag">Chapter 05 — Pillar III</span>
+        <h1 class="chapter-h1">Solvency</h1>
+        <p class="chapter-subtitle">Monitoring the systemic plumbing of the banking sector — where hidden fractures become system-wide failures.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <div class="content-body">
+          <h2>The Banking System as Systemic Plumbing</h2>
+          <p>Banks occupy a unique position in the economic system: they are simultaneously the credit supply mechanism (extending loans that fund investment and consumption), the payment infrastructure (processing trillions in daily transactions), and the deposit safekeeping system (holding household and corporate liquid savings). This multi-role function means that banking sector stress does not merely affect one sector — it threatens the entire circulatory system of the economy.</p>
+
+          <p>Unlike equity markets, which can reprice 30% in weeks and recover over months, banking sector impairment operates on a different timescale and with qualitatively different consequences. A bank that becomes technically insolvent does not just lose value — it can trigger deposit runs, interbank lending freezes, and credit market paralysis that take years to resolve. The 2008–2009 experience remains the canonical example: the failure of confidence in bank solvency nearly produced a complete halt of the global payments system.</p>
+
+          <h2>Non-Performing Loan Ratios: The Lagging but Definitive Signal</h2>
+          <p>The <strong>Non-Performing Loan (NPL) Ratio</strong> measures the percentage of a bank's loan portfolio where borrowers have ceased making scheduled payments, typically defined as 90 days or more past due. This ratio is the Solvency Pillar's primary data feed because it captures the actual realized credit quality of the banking system's assets — not the theoretical or modeled quality, but the empirical quality.</p>
+
+          <p>NPL ratios are explicitly <strong>lagging indicators</strong>. They rise after economic deterioration, not before it. This is by design in the US MRM framework: the Sentinels and other Pillars provide leading signals; Solvency provides the definitive confirmation that stress is translating into actual loan book impairment. An elevated NPL ratio that appears while other Pillars are normalizing would be a critical warning that the banking system has not yet cleared previous-cycle damage.</p>
+
+          <div class="blockquote">
+            <p>"The NPL ratio is the credit cycle's report card — issued after the semester, not during it. It cannot predict the next crisis. But it can definitively confirm whether the last one has been fully resolved."</p>
+            <cite>— US MRM Framework, Pillar III Solvency Analysis</cite>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>NPL Ratio</th>
+                <th>Historical Reference</th>
+                <th>Solvency Assessment</th>
+                <th>Pillar Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono green">Below 1.5%</td>
+                <td>2016–2019, 2022</td>
+                <td>Excellent. Loan book performing strongly.</td>
+                <td class="mono green">1–3</td>
+              </tr>
+              <tr>
+                <td class="mono green">1.5% – 2.5%</td>
+                <td>Long-run average range</td>
+                <td>Normal. Systemic plumbing functioning within parameters.</td>
+                <td class="mono green">3–5</td>
+              </tr>
+              <tr>
+                <td class="mono orange">2.5% – 4.0%</td>
+                <td>2002–2003, 2020 brief spike</td>
+                <td>Elevated. Credit quality deteriorating. Monitor acceleration.</td>
+                <td class="mono orange">5–7</td>
+              </tr>
+              <tr>
+                <td class="mono red">Above 4.0%</td>
+                <td>2009–2011: peaked near 5.0%</td>
+                <td>Critical. Systemic solvency stress. Government intervention historically required.</td>
+                <td class="mono red">8–10</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout green">
+            <div class="callout-label">✓ Current Reading</div>
+            <p>Bank NPL ratios currently stand at approximately <span class="inline-metric">1.8%</span> — within the normal range, reflecting the post-2020 credit quality improvement driven by strong employment and government support programs. The Solvency Pillar scores 4.2/10, the healthiest reading in the current framework. However, the trajectory warrants monitoring as higher interest rates extend their impact on variable-rate commercial real estate and leveraged loan portfolios.</p>
+          </div>
+
+          <h2>FRED Series and Data Notes</h2>
+          <p>The primary FRED series for the Solvency Pillar is <span class="fred-tag">DRALACBN</span> — Delinquency Rate on All Loans, All Commercial Banks. This series is published quarterly by the Federal Reserve and represents the percentage of loans that are non-current (30 days or more past due). For greater precision, the framework can supplement with <span class="fred-tag">DRSFRMACBS</span> (single-family residential mortgage delinquency rates) and commercial loan-specific delinquency series to triangulate systemic exposure.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(3)">← Chapter 4</button>
+          <button class="chapter-nav-btn" onclick="navChapter(5)">Next: Pillar III — Debt →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 6 ── -->
+      <article class="chapter-view" id="chapter-5">
+        <span class="chapter-tag">Chapter 06 — Pillar III</span>
+        <h1 class="chapter-h1">Debt</h1>
+        <p class="chapter-subtitle">The household balance sheet as the ultimate test of economic resilience — or its deepest vulnerability.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+        </div>
+        <div class="content-body">
+          <h2>The Household Debt Service Ratio: The Economy's Structural Foundation</h2>
+          <p>If the banking system is the economy's circulatory system, household balance sheets are its structural foundation. Consumer spending represents approximately 70% of US GDP. When household finances are healthy — when income comfortably exceeds debt obligations — consumer spending is resilient, credit demand supports economic growth, and the broader system maintains upward momentum even through moderate shocks. When household finances are strained, the first-order effect on consumption and the second-order effects on credit quality create feedback loops that amplify any initial shock.</p>
+
+          <p>The <strong>Household Debt Service Ratio (DSR)</strong> measures the ratio of required debt payments (principal and interest on mortgage and consumer debt) to disposable personal income. It answers the most operationally relevant question about household financial health: not how much debt households hold, but how much of their current income is already committed to servicing existing obligations.</p>
+
+          <h2>Why DSR Outperforms Debt-to-Income as a Stress Signal</h2>
+          <p>Total debt-to-income ratios receive significant media attention, but DSR is a more precise measure of financial stress for a critical reason: the <strong>interest rate environment</strong>. A household with a $300,000 mortgage at 3% faces dramatically different monthly cash flow pressure than the same household with the same mortgage refinanced or newly issued at 7%. Total debt levels are identical; debt service burden is more than doubled. The DSR captures this distinction directly — it measures what households must actually pay, not just what they theoretically owe.</p>
+
+          <div class="blockquote">
+            <p>"Household debt levels are a balance sheet question. Household debt service ratios are a cash flow question. In a stress scenario, it is cash flow that fails first — not book values. The DSR is measuring the economy's monthly budget constraint, one quarter at a time."</p>
+            <cite>— US MRM Framework, Pillar III Debt Analysis</cite>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>DSR Level</th>
+                <th>Historical Reference</th>
+                <th>Consumer Assessment</th>
+                <th>Pillar Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono green">Below 10.0%</td>
+                <td>2020–2021 pandemic lows</td>
+                <td>Strong. Ample disposable income after debt service.</td>
+                <td class="mono green">1–3</td>
+              </tr>
+              <tr>
+                <td class="mono green">10.0% – 11.0%</td>
+                <td>2012–2016 recovery</td>
+                <td>Healthy. Consumer balance sheets well-positioned.</td>
+                <td class="mono green">2–4</td>
+              </tr>
+              <tr>
+                <td class="mono orange">11.0% – 12.5%</td>
+                <td>2018–2019, current</td>
+                <td>Elevated. Consumer sensitivity to income shocks rising.</td>
+                <td class="mono orange">5–7</td>
+              </tr>
+              <tr>
+                <td class="mono red">Above 12.5%</td>
+                <td>2007–2009: peaked near 13.2%</td>
+                <td>Critical. Household cash flow severely constrained. Recession amplifier.</td>
+                <td class="mono red">8–10</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Current Reading — Rising Trajectory</div>
+            <p>The Household DSR currently stands at <span class="inline-metric">11.4%</span> and has been trending higher for six consecutive quarters. This trajectory — rather than the absolute level — is the primary concern. If the rate of increase continues at its current pace, the 12.5% critical threshold would be reached within 18–24 months, coinciding with the typical lag between monetary tightening and its full consumer impact. The Debt Pillar scores 6.1/10.</p>
+          </div>
+
+          <h2>The Interaction Effect: DSR and Credit Cycles</h2>
+          <p>The Debt Pillar's most dangerous contribution to systemic risk is not its standalone score but its interaction with the Cycle and Solvency Pillars. When DSR is elevated and rising simultaneously with a normalizing yield curve (post-inversion) and rising NPL ratios, the three signals form a self-reinforcing triangle: household cash flow stress increases loan delinquencies, which impairs bank solvency, which tightens credit conditions, which further stresses household cash flows. This feedback loop is precisely the mechanism that transformed the 2006–2007 DSR deterioration into the 2008–2009 financial crisis.</p>
+
+          <div class="callout red">
+            <div class="callout-label">✕ Critical Monitor: Multi-Pillar Convergence Risk</div>
+            <p>The current framework shows simultaneous elevation in Cycle (5.8), Liquidity (7.1), Premium (7.9), and Debt (6.1) Pillars — four of five showing significant stress. Only Solvency remains contained. Historical analysis of multi-pillar convergence suggests this configuration materially elevates the probability of a rapid system state transition if a catalyst event occurs. Maintain elevated alertness on Sentinel indicators.</p>
+          </div>
+
+          <h2>FRED Series</h2>
+          <p>The Debt Pillar draws from FRED series <span class="fred-tag">TDSP</span> (Household Debt Service Payments as a Percent of Disposable Personal Income), published quarterly by the Federal Reserve Board. For more granular decomposition, <span class="fred-tag">MDSP</span> (mortgage DSR) and <span class="fred-tag">CDSP</span> (consumer DSR) allow identification of whether stress is concentrated in housing obligations or revolving credit — each implying different transmission mechanisms and policy responses.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(4)">← Chapter 5</button>
+          <button class="chapter-nav-btn" onclick="switchView('terminal', document.querySelector(\'.nav-tab\'))" style="color: var(--blue); border-color: var(--blue);">
+            ◉ Open Live Terminal →
+          </button>
+        </div>
+      </article>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────
+// CORE APPLICATION STATE
+// ──────────────────────────────────────────
+let appData = null;
+let currentChapter = 0;
+let sparklineChart = null;
+let historyChart = null;
+
+// ──────────────────────────────────────────
+// TIMESTAMP
+// ──────────────────────────────────────────
+function updateTimestamp() {
+  const now = new Date();
+  const opts = { month: 'short', day: '2-digit', year: 'numeric' };
+  const dateStr = now.toLocaleDateString('en-US', opts).toUpperCase();
+  const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('timestamp').textContent = `${dateStr} ${timeStr} UTC`;
+}
+updateTimestamp();
+setInterval(updateTimestamp, 1000);
+
+// ──────────────────────────────────────────
+// VIEW SWITCHING
+// ──────────────────────────────────────────
+function switchView(view, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  if (btn && btn.classList && btn.classList.contains('nav-tab')) btn.classList.add('active');
+  
+  if (view === 'terminal' && appData) renderTerminal(appData);
+}
+
+// ──────────────────────────────────────────
+// SCORE → COLOR
+// ──────────────────────────────────────────
+function scoreColor(score) {
+  if (score <= 4) return 'green';
+  if (score <= 7) return 'orange';
+  return 'red';
+}
+function scoreCSSVar(score) {
+  if (score <= 4) return 'var(--green)';
+  if (score <= 7) return 'var(--orange)';
+  return 'var(--red)';
+}
+function statusClass(status) {
+  const map = { stable: 'stable', caution: 'turbulence', warning: 'turbulence', critical: 'critical' };
+  return map[status] || 'turbulence';
+}
+
+// ──────────────────────────────────────────
+// LOAD DATA
+// ──────────────────────────────────────────
+async function loadData() {
+  try {
+    const res = await fetch('data.json');
+    if (!res.ok) throw new Error('Network error');
+    appData = await res.json();
+    renderTerminal(appData);
+  } catch (e) {
+    // Fallback: inline sample data for standalone demo
+    appData = getSampleData();
+    renderTerminal(appData);
+  }
+}
+
+function getSampleData() {
+  return {
+    meta: { lastUpdated: new Date().toISOString(), source: "Demo Data" },
+    globalResilienceScore: 6.4,
+    status: "Turbulence",
+    pillars: [
+      { id:"cycle", roman:"I", name:"Cycle", score:5.8, metric:"10Y-2Y Yield Curve", value:"+0.34%", trend:"steepening", delta:"+0.12", description:"Yield curve normalizing post-inversion. Historically precedes credit stress.", status:"caution" },
+      { id:"liquidity", roman:"II", name:"Liquidity", score:7.1, metric:"Market Cap / M2 Ratio", value:"1.82x", trend:"elevated", delta:"+0.04", description:"Buffett Indicator elevated. M2 growth decelerating. Liquidity conditions tightening.", status:"warning" },
+      { id:"premium", roman:"II", name:"Premium", score:7.9, metric:"Equity Risk Premium", value:"1.02%", trend:"compressed", delta:"-0.18", description:"ERP approaching critical threshold. Equity compensation for risk historically thin.", status:"warning" },
+      { id:"solvency", roman:"III", name:"Solvency", score:4.2, metric:"Bank NPL Ratio", value:"1.8%", trend:"stable", delta:"+0.02", description:"Non-performing loans contained. Systemic banking plumbing functioning within normal parameters.", status:"stable" },
+      { id:"debt", roman:"III", name:"Debt", score:6.1, metric:"Household DSR", value:"11.4%", trend:"rising", delta:"+0.3", description:"Debt service burden creeping higher. Consumer balance sheets showing early strain signals.", status:"caution" }
+    ],
+    sentinels: [
+      { id:"jobless", name:"Initial Jobless Claims", fredSeries:"ICSA", value:231000, displayValue:"231K", threshold:275000, thresholdDisplay:"275K", status:"normal", delta:"-4K", alert:false, description:"Weekly initial claims. Red alert triggers above 275,000." },
+      { id:"erp", name:"Equity Risk Premium", fredSeries:"DGS10", value:1.02, displayValue:"1.02%", threshold:0.8, thresholdDisplay:"0.80%", status:"caution", delta:"-0.18%", alert:false, description:"ERP = E/P ratio minus 10Y yield. Red alert triggers below 0.80%." }
+    ],
+    historicalScores: [
+      { date:"Sep '24", score:4.2 }, { date:"Oct '24", score:4.8 }, { date:"Nov '24", score:5.3 },
+      { date:"Dec '24", score:5.9 }, { date:"Jan '25", score:6.1 }, { date:"Feb '25", score:6.2 }, { date:"Mar '25", score:6.4 }
+    ]
+  };
+}
+
+// ──────────────────────────────────────────
+// RENDER TERMINAL
+// ──────────────────────────────────────────
+function renderTerminal(data) {
+  renderMain(data);
+  renderSidebar(data);
+}
+
+function renderMain(data) {
+  const score = data.globalResilienceScore;
+  const color = scoreCSSVar(score);
+  const pct = (score / 10) * 100;
+  const circumference = 2 * Math.PI * 32;
+  const offset = circumference - (pct / 100) * circumference;
+  const statusKey = score <= 4 ? 'stable' : score <= 7 ? 'turbulence' : 'critical';
+  const statusLabels = { stable: 'Resilient', turbulence: 'Turbulence', critical: 'Critical' };
+
+  const pillarsHTML = data.pillars.map(p => {
+    const cls = scoreColor(p.score);
+    const deltaDir = p.delta && p.delta.startsWith('+') ? 'up' : 'down';
+    return `
+    <div class="pillar-card status-${p.status}" title="${p.description}">
+      <div class="pillar-roman">Pillar ${p.roman}</div>
+      <div class="pillar-name">${p.name}</div>
+      <div class="pillar-score-row">
+        <div class="pillar-score ${cls}">${p.score.toFixed(1)}</div>
+        <div class="pillar-score-max">/10</div>
+      </div>
+      <div class="pillar-metric">${p.metric}</div>
+      <div class="pillar-value">${p.value}</div>
+      <div class="pillar-delta ${deltaDir}">${p.delta ? (p.delta.startsWith('+') ? '▲ ' : '▼ ') + Math.abs(parseFloat(p.delta)) : ''}</div>
+      <div class="pillar-desc">${p.description}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('terminal-main').innerHTML = `
+    <div class="score-header">
+      <div class="score-left">
+        <div class="score-ring">
+          <svg viewBox="0 0 88 88">
+            <circle class="score-ring-track" cx="44" cy="44" r="32"/>
+            <circle class="score-ring-fill" cx="44" cy="44" r="32"
+              stroke="${color}"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${offset}"
+            />
+          </svg>
+          <div class="score-label">
+            <div class="score-number" style="color:${color}">${score.toFixed(1)}</div>
+            <div class="score-denom">/10</div>
+          </div>
+        </div>
+        <div class="score-info">
+          <div class="score-title">Global Resilience Score</div>
+          <div class="score-headline">US Macro-Resilience<br>Matrix</div>
+          <span class="status-badge ${statusKey}">${statusLabels[statusKey]}</span>
+        </div>
+      </div>
+      <div class="score-right">
+        <div class="score-meta-row">
+          <div class="score-meta-item">Source: <span>FRED API / ${data.meta.source}</span></div>
+          <div class="score-meta-item">Updated: <span id="last-updated">—</span></div>
+          <div class="score-meta-item">Pillars Active: <span>5 / 5</span></div>
+        </div>
+        <div class="sparkline-container">
+          <div class="sparkline-label">6-MONTH TREND</div>
+          <canvas id="sparklineCanvas" width="160" height="40"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="pillars-header">
+      <h2>Five Pillars</h2>
+      <div class="pillars-header-line"></div>
+      <span class="fred-tag">FRED Data</span>
+    </div>
+    <div class="pillars-grid">${pillarsHTML}</div>
+
+    <div class="section-divider">
+      <span class="section-divider-label">Historical Score</span>
+      <div class="section-divider-line"></div>
+    </div>
+    <div class="history-section">
+      <div class="history-header">
+        <div class="history-title">Global Resilience Score — 7-Month History</div>
+        <div class="fred-tag">Composite</div>
+      </div>
+      <canvas id="historyCanvas" height="90"></canvas>
+    </div>
+  `;
+
+  // Set last updated
+  try {
+    const d = new Date(data.meta.lastUpdated);
+    document.getElementById('last-updated').textContent =
+      d.toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch(e) {}
+
+  // Draw charts
+  setTimeout(() => {
+    drawSparkline('sparklineCanvas', data.historicalScores);
+    drawHistory('historyCanvas', data.historicalScores);
+  }, 100);
+}
+
+function renderSidebar(data) {
+  const sentinelsHTML = data.sentinels.map(s => {
+    const isJobless = s.id === 'jobless';
+    const fillPct = isJobless
+      ? Math.min((s.value / s.threshold) * 100, 100)
+      : Math.max(0, Math.min(((s.threshold - s.value) / s.threshold * -1 + 1) * 100, 100));
+    const pctActual = isJobless
+      ? Math.min((s.value / s.threshold) * 100, 100)
+      : Math.min((s.value / (s.threshold * 3)) * 100, 100);
+    const fillClass = s.alert ? 'alert' : s.status === 'caution' ? 'caution' : 'normal';
+    const valClass = s.alert ? 'alert' : s.status === 'caution' ? 'caution' : '';
+    const deltaDir = s.delta && s.delta.startsWith('+') ? '▲' : '▼';
+    const deltaColor = isJobless
+      ? (s.delta && s.delta.startsWith('+') ? 'var(--orange)' : 'var(--green)')
+      : (s.delta && s.delta.startsWith('+') ? 'var(--orange)' : 'var(--green)');
+
+    return `
+    <div class="sentinel-card${s.alert ? ' alert-active' : ''}">
+      <div class="sentinel-name">${s.name} <span class="fred-tag">${s.fredSeries}</span></div>
+      <div class="sentinel-value ${valClass}">${s.displayValue}</div>
+      <div class="sentinel-delta" style="color:${deltaColor}">${deltaDir} ${s.delta} <span style="color:var(--text-muted);font-size:9px">vs. prev.</span></div>
+      <div class="sentinel-threshold-bar">
+        <div class="threshold-labels">
+          <span>0</span>
+          <span style="color:var(--red)">⚑ ${s.thresholdDisplay}</span>
+        </div>
+        <div class="threshold-track">
+          <div class="threshold-fill ${fillClass}" style="width:${pctActual.toFixed(1)}%"></div>
+        </div>
+      </div>
+      <div class="sentinel-status-row">
+        <span class="sentinel-status-text" style="color:${fillClass === 'normal' ? 'var(--green)' : fillClass === 'caution' ? 'var(--orange)' : 'var(--red)'}">
+          ${s.alert ? '⚑ ALERT ACTIVE' : s.status === 'caution' ? '⚡ Approaching Threshold' : '✓ Within Normal Range'}
+        </span>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.5">${s.description}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('terminal-sidebar').innerHTML = `
+    <div class="sidebar-title">⚑ Sentinels</div>
+    ${sentinelsHTML}
+    <div class="alerts-section">
+      <div class="section-divider" style="margin:0 0 12px">
+        <span class="section-divider-label" style="font-size:9px">System Alerts</span>
+        <div class="section-divider-line"></div>
+      </div>
+      <div class="alert-box warning">
+        <div class="alert-box-title">⚡ ERP Compression</div>
+        <div class="alert-box-text">ERP at 1.02% — 22bps above Red Alert threshold. Elevated sensitivity to rate or earnings shocks.</div>
+      </div>
+      <div class="alert-box info">
+        <div class="alert-box-title">◉ Yield Curve</div>
+        <div class="alert-box-text">10Y–2Y normalizing from inversion. Historically precedes recession onset by 6–18 months.</div>
+      </div>
+      <div style="margin-top:16px;padding:12px;background:var(--bg-primary);border-radius:8px;border:1px solid var(--border-subtle)">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Framework Automation</div>
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.6">
+          Production deployments connect directly to the <strong style="color:var(--text-secondary)">FRED API</strong> for live data ingestion. Series: T10Y2Y, M2SL, WILL5000PRFC, DGS10, DRALACBN, TDSP, ICSA.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────
+// CHARTS
+// ──────────────────────────────────────────
+function drawSparkline(canvasId, history) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const scores = history.map(h => h.score);
+  const min = Math.min(...scores) - 0.5;
+  const max = Math.max(...scores) + 0.5;
+  const pad = 2;
+  const pts = scores.map((s, i) => ({
+    x: pad + (i / (scores.length - 1)) * (w - pad * 2),
+    y: h - pad - ((s - min) / (max - min)) * (h - pad * 2)
+  }));
+
+  ctx.clearRect(0, 0, w, h);
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, 'rgba(249,140,79,0.3)');
+  grad.addColorStop(1, 'rgba(249,140,79,0)');
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, h);
+  ctx.lineTo(pts[0].x, h);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = '#F98C4F';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const last = pts[pts.length-1];
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#F98C4F';
+  ctx.fill();
+}
+
+function drawHistory(canvasId, history) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.offsetWidth * dpr;
+  const w = canvas.width, h = canvas.height = 90 * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = canvas.offsetWidth, H = 90;
+
+  const scores = history.map(d => d.score);
+  const dates = history.map(d => d.date);
+  const min = 0, max = 10;
+  const padL = 36, padR = 12, padT = 8, padB = 22;
+  const cw = W - padL - padR;
+  const ch = H - padT - padB;
+
+  function toXY(i, s) {
+    return {
+      x: padL + (i / (scores.length - 1)) * cw,
+      y: padT + (1 - (s - min) / (max - min)) * ch
+    };
+  }
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid lines
+  [0, 4, 7, 10].forEach(v => {
+    const y = padT + (1 - v / 10) * ch;
+    ctx.beginPath();
+    ctx.moveTo(padL, y); ctx.lineTo(padL + cw, y);
+    ctx.strokeStyle = v === 0 ? '#2E3338' : v === 4 ? 'rgba(52,208,88,0.2)' : v === 7 ? 'rgba(249,140,79,0.2)' : '#2E3338';
+    ctx.lineWidth = 1;
+    ctx.setLineDash(v === 4 || v === 7 ? [4, 4] : []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (v === 4 || v === 7) {
+      ctx.fillStyle = v === 4 ? 'rgba(52,208,88,0.5)' : 'rgba(249,140,79,0.5)';
+      ctx.font = `${9}px 'JetBrains Mono', monospace`;
+      ctx.textAlign = 'right';
+      ctx.fillText(v, padL - 4, y + 3);
+    }
+  });
+
+  const pts = scores.map((s, i) => toXY(i, s));
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+  grad.addColorStop(0, 'rgba(56,139,253,0.25)');
+  grad.addColorStop(1, 'rgba(56,139,253,0)');
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, padT + ch);
+  ctx.lineTo(pts[0].x, padT + ch);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = '#388BFD';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  pts.forEach((p, i) => {
+    const s = scores[i];
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = s <= 4 ? '#34D058' : s <= 7 ? '#F98C4F' : '#D73A49';
+    ctx.fill();
+    ctx.fillStyle = '#586068';
+    ctx.font = `${9}px 'JetBrains Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(dates[i], p.x, H - 4);
+  });
+}
+
+// ──────────────────────────────────────────
+// ACADEMY NAVIGATION
+// ──────────────────────────────────────────
+function showChapter(index, btn) {
+  currentChapter = index;
+  document.querySelectorAll('.chapter-view').forEach(c => c.classList.remove('active'));
+  document.getElementById('chapter-' + index).classList.add('active');
+  document.querySelectorAll('.chapter-nav-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelector('.academy-content').scrollTop = 0;
+}
+
+function navChapter(index) {
+  const items = document.querySelectorAll('.chapter-nav-item');
+  showChapter(index, items[index]);
+}
+
+// ──────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
