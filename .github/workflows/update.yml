@@ -1,0 +1,25 @@
+name: Update MRM Data
+on:
+  schedule:
+    - cron: '0 9 * * 6' # Corre todos os sábados às 09:00
+  workflow_dispatch: # Permite-te correr manualmente
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: pip install fredapi pandas
+      - name: Run script
+        run: python mrm_engine.py
+        env:
+          FRED_API_KEY: '846494f605a628223d8411828d97e7c6'
+      - name: Commit data
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add data.json
+          git commit -m "Auto-update data" || exit 0
+          git push
