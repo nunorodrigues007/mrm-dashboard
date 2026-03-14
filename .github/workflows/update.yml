@@ -5,11 +5,14 @@ on:
     - cron: '0 18 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout Repository
+      - name: 🛸 Checkout Repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -27,12 +30,10 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python fetch_data.py
 
-      - name: 💾 Commit Updated data.json
+      - name: 📋 Commit Updated data.json
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "MRM Data Bot"
           git add data.json
-          git diff --staged --quiet || git commit -m "🤖 Auto-update: MRM data $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git diff --staged --quiet || git commit -m "Auto-update MRM data"
           git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
