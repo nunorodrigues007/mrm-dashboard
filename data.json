@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "lastUpdated": "2026-03-14T11:45:59Z",
+    "source": "FRED API (Live)",
+    "version": "2.0.0",
+    "fredSeriesDates": {
+      "T10Y2Y": "2026-03-13",
+      "M2SL": "2026-01-01",
+      "WILL5000PRFC": null,
+      "DGS10": "2026-03-12",
+      "DRALACBN": "2025-10-01",
+      "TDSP": "2025-07-01",
+      "ICSA": "2026-03-07"
+    }
+  },
+  "globalResilienceScore": 6.47,
+  "status": "Turbulence",
+  "pillars": [
+    {
+      "id": "cycle",
+      "roman": "I",
+      "name": "Cycle",
+      "score": 4.5,
+      "metric": "10Y-2Y Yield Curve",
+      "value": "+0.55%",
+      "fredSeries": "T10Y2Y",
+      "trend": "steepening",
+      "delta": "+0.33%",
+      "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
+      "status": "caution"
+    },
+    {
+      "id": "liquidity",
+      "roman": "II",
+      "name": "Liquidity",
+      "score": 8.5,
+      "metric": "Market Cap / M2 Ratio",
+      "value": "1.82x",
+      "fredSeries": "M2SL + WILL5000PRFC",
+      "trend": "elevated",
+      "delta": "+0.03",
+      "description": "Buffett Indicator at 1.82x. M2 at $22.4T. Equity valuations elevated relative to monetary base.",
+      "status": "critical"
+    },
+    {
+      "id": "premium",
+      "roman": "II",
+      "name": "Premium",
+      "score": 9.0,
+      "metric": "Equity Risk Premium",
+      "value": "0.28%",
+      "fredSeries": "DGS10",
+      "trend": "compressed",
+      "delta": "-0.92",
+      "description": "ERP = E/P (4.55%) minus 10Y yield (4.27%). Approaching critical threshold.",
+      "status": "critical"
+    },
+    {
+      "id": "solvency",
+      "roman": "III",
+      "name": "Solvency",
+      "score": 3.5,
+      "metric": "Bank Delinquency Rate",
+      "value": "1.5%",
+      "fredSeries": "DRALACBN",
+      "trend": "stable",
+      "delta": "+0.02",
+      "description": "FRED DRALACBN delinquency rate at 1.53%. Systemic banking plumbing functioning normally.",
+      "status": "stable"
+    },
+    {
+      "id": "debt",
+      "roman": "III",
+      "name": "Debt",
+      "score": 5.5,
+      "metric": "Household DSR",
+      "value": "11.3%",
+      "fredSeries": "TDSP",
+      "trend": "rising",
+      "delta": "+0.3",
+      "description": "Household debt service ratio at 11.3%. Consumer balance sheet strain increasing.",
+      "status": "caution"
+    }
+  ],
+  "sentinels": [
+    {
+      "id": "jobless",
+      "name": "Initial Jobless Claims",
+      "fredSeries": "ICSA",
+      "value": 213000,
+      "unit": "claims",
+      "displayValue": "213K",
+      "threshold": 275000,
+      "thresholdDisplay": "275K",
+      "status": "normal",
+      "trend": "falling",
+      "delta": "-1K",
+      "alert": false,
+      "description": "Weekly initial jobless claims at 213K. Red alert triggers above 275,000."
+    },
+    {
+      "id": "erp",
+      "name": "Equity Risk Premium",
+      "fredSeries": "DGS10",
+      "value": 0.28,
+      "unit": "%",
+      "displayValue": "0.28%",
+      "threshold": 0.8,
+      "thresholdDisplay": "0.80%",
+      "status": "alert",
+      "trend": "falling",
+      "delta": "-0.92%",
+      "alert": true,
+      "description": "ERP at 0.28%. Red alert triggers below 0.80%."
+    }
+  ],
+  "historicalScores": [
+    {
+      "date": "Mar '26",
+      "score": 5.9
+    },
+    {
+      "date": "Mar '26",
+      "score": 5.9
+    },
+    {
+      "date": "Mar '26",
+      "score": 5.9
+    },
+    {
+      "date": "Mar '26",
+      "score": 5.9
+    },
+    {
+      "date": "Mar '26",
+      "score": 5.9
+    },
+    {
+      "date": "Mar '26",
+      "score": 5.9
+    },
+    {
+      "date": "Mar '26",
+      "score": 5.9
+    }
+  ]
+}
