@@ -1,0 +1,30 @@
+name: 📧 MRM Weekly Newsletter
+
+on:
+  schedule:
+    - cron: '0 18 * * 5'  # Every Friday at 18:00 UTC
+  workflow_dispatch:       # Manual trigger for testing
+
+permissions:
+  contents: read
+
+jobs:
+  send-newsletter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛸 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Dependencies
+        run: pip install requests
+
+      - name: 📧 Generate & Send Newsletter
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: python send_newsletter.py
