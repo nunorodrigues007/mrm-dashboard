@@ -19,21 +19,38 @@ with open("data.json", "r") as f:
 
 today = datetime.utcnow().strftime("%d %B %Y")
 
+# ── PARSE DATA.JSON STRUCTURE ──
+global_score = data.get('globalResilienceScore', 'N/A')
+regime = data.get('status', 'N/A')
+
+# Parse pillars array
+pillars = {p['id']: p for p in data.get('pillars', [])}
+cycle     = pillars.get('cycle', {})
+liquidity = pillars.get('liquidity', {})
+premium   = pillars.get('premium', {})
+solvency  = pillars.get('solvency', {})
+debt      = pillars.get('debt', {})
+
+# Parse sentinels array
+sentinels = {s['id']: s for s in data.get('sentinels', [])}
+icsa = sentinels.get('icsa', {})
+erp  = sentinels.get('erp', {})
+
 # ── BUILD PROMPT ──
 prompt = f"""You are a Senior Risk Strategist and CIO. Generate a complete MRM Weekly Institutional Newsletter in HTML format based on the following live data from the US Macro-Resilience Matrix dashboard.
 
 TODAY'S DATE: {today}
 
 LIVE DATA:
-- Global Resilience Score: {data.get('global_score', 'N/A')} / 10
-- Regime: {data.get('regime', 'N/A')}
-- Pillar I — Cycle (10Y-2Y Spread): {data.get('cycle_value', 'N/A')} | Score: {data.get('cycle_score', 'N/A')}/10
-- Pillar II — Liquidity (MC/M2 Ratio): {data.get('liquidity_value', 'N/A')} | Score: {data.get('liquidity_score', 'N/A')}/10
-- Pillar II — Premium (ERP): {data.get('premium_value', 'N/A')} | Score: {data.get('premium_score', 'N/A')}/10
-- Pillar III — Solvency (Bank NPL): {data.get('solvency_value', 'N/A')} | Score: {data.get('solvency_score', 'N/A')}/10
-- Pillar III — Debt (Household DSR): {data.get('debt_value', 'N/A')} | Score: {data.get('debt_score', 'N/A')}/10
-- Sentinel — Initial Jobless Claims (ICSA): {data.get('icsa_value', 'N/A')}
-- Sentinel — ERP Alert: {data.get('erp_alert', 'N/A')}
+- Global Resilience Score: {global_score} / 10
+- Regime: {regime}
+- Pillar I — Cycle (10Y-2Y Spread): {cycle.get('value', 'N/A')} | Score: {cycle.get('score', 'N/A')}/10 | Status: {cycle.get('status', 'N/A')}
+- Pillar II — Liquidity (MC/M2 Ratio): {liquidity.get('value', 'N/A')} | Score: {liquidity.get('score', 'N/A')}/10 | Status: {liquidity.get('status', 'N/A')}
+- Pillar II — Premium (ERP): {premium.get('value', 'N/A')} | Score: {premium.get('score', 'N/A')}/10 | Status: {premium.get('status', 'N/A')}
+- Pillar III — Solvency (Bank NPL): {solvency.get('value', 'N/A')} | Score: {solvency.get('score', 'N/A')}/10 | Status: {solvency.get('status', 'N/A')}
+- Pillar III — Debt (Household DSR): {debt.get('value', 'N/A')} | Score: {debt.get('score', 'N/A')}/10 | Status: {debt.get('status', 'N/A')}
+- Sentinel — Initial Jobless Claims (ICSA): {icsa.get('value', 'N/A')} | Alert: {icsa.get('alert', False)}
+- Sentinel — ERP: {erp.get('value', 'N/A')} | Alert: {erp.get('alert', False)}
 
 STRICT INSTRUCTIONS:
 1. Tone: Institutional, dry, objective, risk-focused. No emotional adjectives.
@@ -237,8 +254,7 @@ if owner_email not in subscribers:
 # ── SEND VIA BREVO ──
 print(f"Sending newsletter to {len(subscribers)} recipients...")
 
-score = data.get('global_score', '?')
-regime = data.get('regime', 'UNKNOWN')
+score = round(global_score, 1) if isinstance(global_score, (int, float)) else global_score
 
 send_payload = {
     "sender": {"name": "US MRM Intelligence Hub", "email": "usmrm@proton.me"},
