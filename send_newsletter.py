@@ -228,7 +228,7 @@ if "usmrm@proton.me" not in subscribers:
 print(f"Sending to {len(subscribers)} recipients...")
 send_r = requests.post("https://api.brevo.com/v3/smtp/email",
     headers={"api-key": BREVO_KEY, "content-type": "application/json", "accept": "application/json"},
-    json={"sender": {"name": "US MRM Intelligence Hub", "email": "usmrm@proton.me"},
+    json={"sender": {"name": "US MRM Intelligence Hub", "email": "noreply@usmrm.net"},
           "to": [{"email": e} for e in subscribers],
           "subject": f"MRM Weekly Signal — Issue #{issue_number} | {today} | Score {score}/10 · {regime}",
           "htmlContent": html_content})
