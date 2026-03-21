@@ -712,6 +712,9 @@
       <button class="nav-tab" onclick="switchView('about', this)">
         ◎ About
       </button>
+      <button class="nav-tab" onclick="switchView('newsletter', this)">
+        ◎ Newsletter
+      </button>
       <button class="nav-tab" onclick="switchView('contact', this)">
         ✉ Contact
       </button>
@@ -2688,7 +2691,7 @@ setTimeout(() => renderWatchlist('all'), 200);
           <div style="font-size:18px;">📬</div>
           <div>
             <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;">Email</div>
-            <div style="font-size:12px;color:var(--text-secondary);">usmrm@proton.me</div>
+            <div style="font-size:12px;color:var(--text-secondary);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7b0e081609163b0b09140f141555161e">[email&#160;protected]</a></div>
           </div>
         </div>
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px;">
@@ -2704,7 +2707,7 @@ setTimeout(() => renderWatchlist('all'), 200);
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // Contact form AJAX submit
 document.getElementById('contact-form').addEventListener('submit', async function(e) {
   e.preventDefault();
@@ -2724,16 +2727,4 @@ document.getElementById('contact-form').addEventListener('submit', async functio
       document.getElementById('form-success').style.display = 'block';
     } else {
       btn.textContent = 'Error. Try again.';
-      btn.disabled = false;
-      btn.style.background = 'var(--red)';
-    }
-  } catch {
-    btn.textContent = 'Error. Try again.';
-    btn.disabled = false;
-    btn.style.background = 'var(--red)';
-  }
-});
-</script>
-
-</body>
-</html>
+      bt
