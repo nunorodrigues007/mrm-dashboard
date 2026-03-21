@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MRM Weekly Audit — 14 March 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#F2F4F7; font-family:'DM Sans', Arial, sans-serif; font-size:14px; color:#1A1D20; }
+  a { color:#388BFD; text-decoration:none; }
+
+  .wrapper { max-width:640px; margin:32px auto; background:#FFFFFF; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.08); }
+
+  /* ── HEADER ── */
+  .header { background:#0D1117; padding:0; }
+  .header-top { display:flex; align-items:center; justify-content:space-between; padding:14px 28px; border-bottom:1px solid #21262D; }
+  .logo { font-family:'Syne', sans-serif; font-size:15px; font-weight:800; color:#E8ECF0; letter-spacing:0.08em; text-transform:uppercase; }
+  .logo span { color:#388BFD; }
+  .header-meta { font-family:'Courier New', monospace; font-size:9px; color:#586068; letter-spacing:0.12em; text-transform:uppercase; text-align:right; line-height:1.6; }
+  .header-subject { padding:18px 28px 20px; }
+  .header-subject .tag { font-family:'Courier New', monospace; font-size:9px; color:#388BFD; letter-spacing:0.16em; text-transform:uppercase; margin-bottom:6px; }
+  .header-subject h1 { font-family:'Syne', sans-serif; font-size:22px; font-weight:800; color:#E8ECF0; line-height:1.2; }
+
+  /* ── SCORE BAND ── */
+  .score-band { background:#161B22; padding:20px 28px; display:flex; align-items:center; gap:24px; border-bottom:3px solid #F98C4F; }
+  .score-circle { width:72px; height:72px; border-radius:50%; border:3px solid #F98C4F; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .score-num { font-family:'Courier New', monospace; font-size:26px; font-weight:700; color:#F98C4F; line-height:1; }
+  .score-info .regime { font-family:'Courier New', monospace; font-size:9px; color:#F98C4F; letter-spacing:0.16em; text-transform:uppercase; margin-bottom:4px; }
+  .score-info .score-label { font-family:'Syne', sans-serif; font-size:16px; font-weight:700; color:#E8ECF0; margin-bottom:4px; }
+  .score-info .score-sub { font-family:'Courier New', monospace; font-size:10px; color:#586068; }
+
+  /* ── CONTENT AREA ── */
+  .content { padding:28px; }
+
+  /* ── SECTION LABEL ── */
+  .section-label { font-family:'Courier New', monospace; font-size:9px; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:#8B949E; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid #E5E8EC; }
+
+  /* ── EXECUTIVE SUMMARY ── */
+  .summary p { font-size:13px; color:#2D3139; line-height:1.75; margin-bottom:10px; }
+  .summary p:last-child { margin-bottom:0; }
+
+  /* ── PILLARS TABLE ── */
+  .pillars-table { width:100%; border-collapse:collapse; margin-top:4px; font-size:12px; }
+  .pillars-table thead tr { background:#1A1D20; }
+  .pillars-table thead th { padding:8px 10px; text-align:left; font-family:'Courier New', monospace; font-size:8px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#8B949E; border-bottom:2px solid #388BFD; }
+  .pillars-table tbody tr:nth-child(odd) { background:#F8F9FB; }
+  .pillars-table tbody tr:nth-child(even) { background:#FFFFFF; }
+  .pillars-table td { padding:9px 10px; border-bottom:1px solid #E5E8EC; vertical-align:middle; }
+  .pillar-name { font-weight:600; color:#1A1D20; font-size:12px; }
+  .pillar-value { font-family:'Courier New', monospace; font-size:12px; font-weight:700; }
+  .pillar-score { font-family:'Courier New', monospace; font-size:13px; font-weight:700; }
+  .pillar-obs { font-size:11px; color:#586068; line-height:1.5; }
+  .status-pill { display:inline-block; padding:2px 7px; border-radius:4px; font-family:'Courier New', monospace; font-size:8px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; }
+  .status-critical { background:#FFEBEE; color:#D73A49; }
+  .status-elevated { background:#FFF3E0; color:#F98C4F; }
+  .status-caution { background:#FFF8E1; color:#E6A817; }
+  .status-stable { background:#E8F5E9; color:#2E7D32; }
+
+  /* ── DEEP DIVE ── */
+  .deep-dive { background:#FFF8E1; border-left:3px solid #F98C4F; padding:14px 16px; border-radius:0 6px 6px 0; }
+  .deep-dive p { font-size:12.5px; color:#2D3139; line-height:1.7; margin-bottom:8px; }
+  .deep-dive p:last-child { margin-bottom:0; }
+
+  /* ── PAGE DIVIDER ── */
+  .page-divider { margin:28px 0; border:none; border-top:2px dashed #E5E8EC; position:relative; }
+  .page-label { text-align:center; font-family:'Courier New', monospace; font-size:9px; color:#8B949E; letter-spacing:0.14em; text-transform:uppercase; margin:12px 0 20px; }
+
+  /* ── EWS TABLE ── */
+  .ews-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .ews-table thead tr { background:#1A1D20; }
+  .ews-table thead th { padding:8px 10px; text-align:left; font-family:'Courier New', monospace; font-size:8px; letter-spacing:0.12em; text-transform:uppercase; color:#8B949E; border-bottom:2px solid #388BFD; }
+  .ews-table tbody tr:nth-child(odd) { background:#F8F9FB; }
+  .ews-table td { padding:9px 10px; border-bottom:1px solid #E5E8EC; vertical-align:middle; }
+  .ews-value { font-family:'Courier New', monospace; font-size:13px; font-weight:700; }
+  .ews-threshold { font-family:'Courier New', monospace; font-size:11px; color:#8B949E; }
+
+  /* ── SECTOR MATRIX ── */
+  .sector-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .sector-col-ow { background:#F1FAF3; border:1px solid #C8E6C9; border-radius:8px; overflow:hidden; }
+  .sector-col-uw { background:#FFF5F5; border:1px solid #FFCDD2; border-radius:8px; overflow:hidden; }
+  .sector-col-header { padding:8px 12px; font-family:'Courier New', monospace; font-size:8px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; }
+  .sector-col-ow .sector-col-header { background:#E8F5E9; color:#2E7D32; }
+  .sector-col-uw .sector-col-header { background:#FFEBEE; color:#C62828; }
+  .sector-item { padding:7px 12px; border-bottom:1px solid rgba(0,0,0,0.05); }
+  .sector-item:last-child { border-bottom:none; }
+  .sector-name { font-size:11.5px; font-weight:600; margin-bottom:1px; }
+  .sector-col-ow .sector-name { color:#1B5E20; }
+  .sector-col-uw .sector-name { color:#B71C1C; }
+  .sector-rationale { font-size:10px; color:#586068; line-height:1.4; }
+
+  /* ── ALLOCATION TABLE ── */
+  .alloc-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .alloc-table thead tr { background:#1A1D20; }
+  .alloc-table thead th { padding:8px 10px; text-align:left; font-family:'Courier New', monospace; font-size:8px; letter-spacing:0.12em; text-transform:uppercase; color:#8B949E; border-bottom:2px solid #388BFD; }
+  .alloc-table tbody tr:nth-child(odd) { background:#F8F9FB; }
+  .alloc-table td { padding:9px 10px; border-bottom:1px solid #E5E8EC; vertical-align:middle; }
+  .alloc-pct { font-family:'Courier New', monospace; font-size:14px; font-weight:700; color:#388BFD; }
+  .alloc-name { font-weight:600; color:#1A1D20; }
+  .alloc-type { font-size:11px; color:#586068; }
+  .alloc-rationale { font-size:11px; color:#586068; }
+
+  /* ── VERDICT ── */
+  .verdict-box { background:#FFF8E1; border:2px solid #F98C4F; border-radius:8px; padding:16px 18px; }
+  .verdict-box p { font-size:13px; color:#2D3139; line-height:1.75; }
+
+  /* ── FOOTER ── */
+  .footer { background:#0D1117; padding:20px 28px; text-align:center; }
+  .footer-logo { font-family:'Syne', sans-serif; font-size:13px; font-weight:800; color:#8B949E; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px; }
+  .footer-logo span { color:#388BFD; }
+  .footer-links { margin-bottom:10px; }
+  .footer-links a { font-family:'Courier New', monospace; font-size:10px; color:#586068; margin:0 8px; }
+  .footer-disclaimer { font-family:'Courier New', monospace; font-size:9px; color:#3D4450; line-height:1.6; max-width:480px; margin:0 auto; }
+
+  .spacer { height:20px; }
+  .spacer-sm { height:12px; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ── HEADER ── -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">US<span>MRM</span></div>
+      <div class="header-meta">
+        MRM WEEKLY AUDIT<br>
+        14 MARCH 2026 · ISSUE #1
+      </div>
+    </div>
+    <div class="header-subject">
+      <div class="tag">Subject: Regime Diagnosis &amp; Tactical Execution</div>
+      <h1>US Macro-Resilience Matrix<br>Weekly Institutional Memo</h1>
+    </div>
+  </div>
+
+  <!-- ── SCORE BAND ── -->
+  <div class="score-band">
+    <div class="score-circle">
+      <div class="score-num">6.5</div>
+    </div>
+    <div class="score-info">
+      <div class="regime">● Turbulence Regime</div>
+      <div class="score-label">Global Resilience Score</div>
+      <div class="score-sub">Updated: Mar 14, 2026 · FRED API Live · 5/5 Pillars Active</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       PAGE 1: SYSTEMIC DIAGNOSIS
+  ══════════════════════════════ -->
+  <div class="content">
+
+    <!-- Executive Summary -->
+    <div class="section-label">Executive Summary</div>
+    <div class="summary">
+      <p>The US Macro-Resilience Matrix registers a Global Resilience Score of <strong>6.5/10</strong> as of 14 March 2026, placing the system firmly within the <strong>Turbulence Regime</strong>. Ice thickness is measurably thinner than 12 months prior across three of five structural dimensions. The system retains absorptive capacity for moderate shocks but exhibits materially elevated sensitivity to any exogenous catalyst — rate volatility, earnings deterioration, or a credit event in leveraged structures.</p>
+      <p>The dominant stress vector is <strong>Pillar II — Premium</strong>, where the Equity Risk Premium has compressed to <strong>0.28%</strong> — the lowest reading since the 2021 post-pandemic bubble. At this level, the spread between equity earnings yield and the risk-free 10Y Treasury yield has effectively collapsed. Investors are receiving near-zero incremental compensation for assuming equity risk over sovereign credit.</p>
+      <p>Two pillars — <strong>Liquidity (8.5/10)</strong> and <strong>Premium (9.0/10)</strong> — operate in the critical zone. The sole structural anchor is <strong>Solvency (3.5/10)</strong>, where bank delinquency rates remain within historical norms. Mandatory posture: <strong>defensive bias, elevated cash buffer, quality tilt across all risk allocations</strong>.</p>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- 5 Pillars Matrix -->
+    <div class="section-label">The 5 Pillars Matrix</div>
+    <table class="pillars-table">
+      <thead>
+        <tr>
+          <th>Pillar</th>
+          <th>Value</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Technical Observation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pillar-name">I — Cycle</span><br><span style="font-size:10px;color:#8B949E;">10Y-2Y Spread</span></td>
+          <td><span class="pillar-value" style="color:#E6A817;">+0.55%</span></td>
+          <td><span class="pillar-score" style="color:#E6A817;">4.5</span></td>
+          <td><span class="status-pill status-caution">CAUTION</span></td>
+          <td class="pillar-obs">Normalizing from inversion. Historically precedes recession onset by 6–18 months.</td>
+        </tr>
+        <tr>
+          <td><span class="pillar-name">II — Liquidity</span><br><span style="font-size:10px;color:#8B949E;">Market Cap / M2</span></td>
+          <td><span class="pillar-value" style="color:#D73A49;">1.82x</span></td>
+          <td><span class="pillar-score" style="color:#D73A49;">8.5</span></td>
+          <td><span class="status-pill status-critical">ELEVATED</span></td>
+          <td class="pillar-obs">Buffett Indicator at 1.82x. Equity valuations elevated relative to monetary base.</td>
+        </tr>
+        <tr>
+          <td><span class="pillar-name">II — Premium</span><br><span style="font-size:10px;color:#8B949E;">Equity Risk Premium</span></td>
+          <td><span class="pillar-value" style="color:#D73A49;">0.28%</span></td>
+          <td><span class="pillar-score" style="color:#D73A49;">9.0</span></td>
+          <td><span class="status-pill status-critical">CRITICAL</span></td>
+          <td class="pillar-obs">ERP = E/P (4.55%) minus 10Y yield (4.27%). Below Red Alert threshold of 0.80%.</td>
+        </tr>
+        <tr>
+          <td><span class="pillar-name">III — Solvency</span><br><span style="font-size:10px;color:#8B949E;">Bank Delinquency Rate</span></td>
+          <td><span class="pillar-value" style="color:#34D058;">1.5%</span></td>
+          <td><span class="pillar-score" style="color:#34D058;">3.5</span></td>
+          <td><span class="status-pill status-stable">STABLE</span></td>
+          <td class="pillar-obs">FRED DRALACBN at 1.5%. Systemic banking plumbing functioning normally.</td>
+        </tr>
+        <tr>
+          <td><span class="pillar-name">III — Debt</span><br><span style="font-size:10px;color:#8B949E;">Household DSR</span></td>
+          <td><span class="pillar-value" style="color:#F98C4F;">11.3%</span></td>
+          <td><span class="pillar-score" style="color:#F98C4F;">5.5</span></td>
+          <td><span class="status-pill status-elevated">ELEVATED</span></td>
+          <td class="pillar-obs">Household debt service ratio at 11.3%. Consumer balance sheet strain increasing.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="spacer"></div>
+
+    <!-- Deep Dive -->
+    <div class="section-label">Pillar Deep Dive — II: Premium (ERP = 0.28%)</div>
+    <div class="deep-dive">
+      <p>The Equity Risk Premium at <strong>0.28%</strong> represents the most severe stress reading within the current framework. Structurally, the ERP is derived as the difference between the S&amp;P 500 earnings yield (E/P = 4.55%) and the 10-Year Treasury yield (4.27%). At 28 basis points, this spread has crossed into territory where rational portfolio theory provides minimal justification for equity overweight versus risk-free alternatives.</p>
+      <p>The mechanism of destruction in low-ERP environments is non-linear. As premium compresses toward zero, the marginal seller of equities becomes rational at progressively lower triggers. The Red Alert threshold of 0.80% was breached <strong>52 basis points ago</strong>. Mandatory response: eliminate leverage, increase duration hedge, rotate equity exposure toward Quality and Low-Volatility factors.</p>
+    </div>
+
+  </div>
+
+  <!-- ── PAGE DIVIDER ── -->
+  <hr class="page-divider">
+  <div class="page-label">— Tactical Execution —</div>
+
+  <!-- ══════════════════════════════
+       PAGE 2: TACTICAL EXECUTION
+  ══════════════════════════════ -->
+  <div class="content" style="padding-top:0;">
+
+    <!-- EWS -->
+    <div class="section-label">Early Warning System (EWS)</div>
+    <table class="ews-table">
+      <thead>
+        <tr>
+          <th>Indicator</th>
+          <th>Current Value</th>
+          <th>Alert Threshold</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Initial Jobless Claims (ICSA)</td>
+          <td><span class="ews-value" style="color:#34D058;">213K</span></td>
+          <td><span class="ews-threshold">&gt; 275K</span></td>
+          <td><span class="status-pill status-stable">CLEAR</span></td>
+        </tr>
+        <tr>
+          <td>Equity Risk Premium (ERP)</td>
+          <td><span class="ews-value" style="color:#D73A49;">0.28%</span></td>
+          <td><span class="ews-threshold">&lt; 0.80%</span></td>
+          <td><span class="status-pill status-critical">ALERT</span></td>
+        </tr>
+        <tr>
+          <td>Yield Curve (10Y-2Y)</td>
+          <td><span class="ews-value" style="color:#E6A817;">+0.55%</span></td>
+          <td><span class="ews-threshold">&lt; 0.50%</span></td>
+          <td><span class="status-pill status-caution">CAUTION</span></td>
+        </tr>
+        <tr>
+          <td>M2 Money Supply Growth YoY</td>
+          <td><span class="ews-value" style="color:#34D058;">+1.2%</span></td>
+          <td><span class="ews-threshold">&lt; 0%</span></td>
+          <td><span class="status-pill status-stable">CLEAR</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="spacer"></div>
+
+    <!-- Sectorial Risk Matrix -->
+    <div class="section-label">Sectorial Risk Matrix</div>
+    <div class="sector-grid">
+      <div class="sector-col-ow">
+        <div class="sector-col-header">▲ Overweight — Defensive / Quality</div>
+        <div class="sector-item"><div class="sector-name">Healthcare</div><div class="sector-rationale">Defensive demand, pricing power, low cycle beta</div></div>
+        <div class="sector-item"><div class="sector-name">Consumer Staples</div><div class="sector-rationale">Inelastic demand, margin stability</div></div>
+        <div class="sector-item"><div class="sector-name">Quality Factor</div><div class="sector-rationale">High ROE, low leverage, earnings consistency</div></div>
+        <div class="sector-item"><div class="sector-name">Low Volatility Factor</div><div class="sector-rationale">Regime-appropriate in Turbulence score 5–7</div></div>
+        <div class="sector-item"><div class="sector-name">Tier 1 Private Credit</div><div class="sector-rationale">First Lien &gt;70%, non-accruals &lt;2%</div></div>
+        <div class="sector-item"><div class="sector-name">Short Duration Treasuries</div><div class="sector-rationale">Risk-free yield near equity ERP</div></div>
+      </div>
+      <div class="sector-col-uw">
+        <div class="sector-col-header">▼ Underweight — Cyclical / Leveraged</div>
+        <div class="sector-item"><div class="sector-name">Consumer Discretionary</div><div class="sector-rationale">DSR rising, disposable income under pressure</div></div>
+        <div class="sector-item"><div class="sector-name">Financials (non-Tier 1)</div><div class="sector-rationale">ERP compression reduces fee income on AUM</div></div>
+        <div class="sector-item"><div class="sector-name">Real Estate</div><div class="sector-rationale">Rate sensitivity with MC/M2 at 1.82x</div></div>
+        <div class="sector-item"><div class="sector-name">High Leverage Factor</div><div class="sector-rationale">D/E &gt;1.5x at risk in tightening credit</div></div>
+        <div class="sector-item"><div class="sector-name">Growth / Momentum</div><div class="sector-rationale">Valuation premium unsustainable at ERP 0.28%</div></div>
+        <div class="sector-item"><div class="sector-name">Cyclical Industrials</div><div class="sector-rationale">Yield curve normalization precedes capex contraction</div></div>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Clean Sheet Allocation -->
+    <div class="section-label">Theoretical "Clean Sheet" Allocation — Score 6.5 / Turbulence</div>
+    <table class="alloc-table">
+      <thead>
+        <tr>
+          <th>Asset Class</th>
+          <th>Allocation</th>
+          <th>Instrument Type</th>
+          <th>Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="alloc-name">Cash &amp; Short T-Bills</span></td>
+          <td><span class="alloc-pct">25%</span></td>
+          <td><span class="alloc-type">3M–6M Treasury Bills</span></td>
+          <td class="alloc-rationale">Risk-free yield near ERP. Capital preservation priority.</td>
+        </tr>
+        <tr>
+          <td><span class="alloc-name">Quality Equity</span></td>
+          <td><span class="alloc-pct">20%</span></td>
+          <td><span class="alloc-type">Quality / Low-Vol Factor</span></td>
+          <td class="alloc-rationale">Defensive equity with earnings resilience.</td>
+        </tr>
+        <tr>
+          <td><span class="alloc-name">Tier 1 Private Credit</span></td>
+          <td><span class="alloc-pct">15%</span></td>
+          <td><span class="alloc-type">BDC First Lien &gt;70%</span></td>
+          <td class="alloc-rationale">Income generation. Non-accruals &lt;2%.</td>
+        </tr>
+        <tr>
+          <td><span class="alloc-name">Investment Grade Bonds</span></td>
+          <td><span class="alloc-pct">12%</span></td>
+          <td><span class="alloc-type">IG Corporate, 3–5Y Duration</span></td>
+          <td class="alloc-rationale">Yield pick-up vs Treasuries, manageable duration.</td>
+        </tr>
+        <tr>
+          <td><span class="alloc-name">Defensive Healthcare</span></td>
+          <td><span class="alloc-pct">10%</span></td>
+          <td><span class="alloc-type">Sector Equity — Healthcare</span></td>
+          <td class="alloc-rationale">Non-cyclical demand, pricing power intact.</td>
+        </tr>
+        <tr>
+          <td><span class="alloc-name">Consumer Staples</span></td>
+          <td><span class="alloc-pct">10%</span></td>
+          <td><span class="alloc-type">Sector Equity — Staples</span></td>
+          <td class="alloc-rationale">Inelastic demand, low DSR sensitivity.</td>
+        </tr>
+        <tr>
+          <td><span class="alloc-name">Liquid Alternatives</span></td>
+          <td><span class="alloc-pct">8%</span></td>
+          <td><span class="alloc-type">Trend / Managed Futures</span></td>
+          <td class="alloc-rationale">Non-correlated returns, crisis alpha.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="spacer"></div>
+
+    <!-- Final Risk Verdict -->
+    <div class="section-label">Final Risk Verdict</div>
+    <div class="verdict-box">
+      <p>With a Global Resilience Score of <strong>6.5/10</strong> and two pillars in the critical zone (Premium 9.0, Liquidity 8.5), the mandatory posture for the week of 14 March 2026 is <strong>defensive bias with elevated cash buffer</strong>. The ERP at 0.28% — 52 basis points below the Red Alert threshold — represents the primary systemic vulnerability. Any catalyst capable of compressing earnings yield or widening the 10Y Treasury yield by more than 50 basis points should be treated as a potential trigger for non-linear re-pricing. Maintain quality tilt. Reduce cyclical exposure. Do not chase yield in leveraged structures. Review allocation if score crosses 7.5 in either direction.</p>
+    </div>
+
+    <div class="spacer"></div>
+
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <div class="footer">
+    <div class="footer-logo">US<span>MRM</span> Intelligence Hub</div>
+    <div class="footer-links">
+      <a href="https://nunorodrigues007.github.io/mrm-dashboard/">Live Terminal</a>
+      <a href="https://nunorodrigues007.github.io/mrm-dashboard/">Academy</a>
+      <a href="https://nunorodrigues007.github.io/mrm-dashboard/">BDCs</a>
+      <a href="mailto:usmrm@proton.me">Contact</a>
+    </div>
+    <div class="footer-disclaimer">
+      This newsletter is produced for educational and personal analysis purposes only.
+      It does not constitute financial advice, investment recommendation, or solicitation of any kind.
+      All data sourced from FRED API (Federal Reserve Bank of St. Louis).<br>
+      © 2026 US MRM Intelligence Hub · usmrm@proton.me · To unsubscribe, reply with "unsubscribe".
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
