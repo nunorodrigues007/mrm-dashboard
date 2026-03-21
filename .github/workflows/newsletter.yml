@@ -2,7 +2,7 @@ name: 📧 MRM Weekly Newsletter
 
 on:
   schedule:
-    - cron: '0 18 * * 5'  # Every Friday at 18:00 UTC
+    - cron: '0 18 * * 5'
   workflow_dispatch:
 
 permissions:
