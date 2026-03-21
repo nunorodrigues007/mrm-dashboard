@@ -225,13 +225,41 @@ if subs_r.status_code == 200:
 if "usmrm@proton.me" not in subscribers:
     subscribers.insert(0, "usmrm@proton.me")
 
+# ── BUILD TWEET TEXT ──
+icsa_val = icsa.get('value', 'N/A')
+erp_val = premium.get('value', 'N/A')
+icsa_alert = "🔴" if icsa.get('alert', False) else "✅"
+erp_alert = "🔴 Red Alert Active" if erp.get('alert', False) else "✅"
+
+tweet_text = f"""🧊 MRM Weekly Signal — Issue #{issue_number}
+
+Global Resilience Score: {score}/10 | {regime}
+ERP: {erp_val} — {erp_alert}
+ICSA: {icsa_val} {icsa_alert}
+
+Full institutional memo 👇
+usmrm.net/{filename}
+
+#MacroInvesting #ERP #FedWatch #Finance #WeekendReading"""
+
+tweet_block = f"""
+<div style="margin:0;padding:24px 28px;background:#F8F9FB;border-top:2px dashed #E5E8EC;">
+  <div style="font-family:'Courier New',monospace;font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8B949E;margin-bottom:12px;">📱 SATURDAY TWEET — Copy & Paste</div>
+  <div style="background:#fff;border:1px solid #E5E8EC;border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:12px;color:#1A1D20;line-height:1.8;white-space:pre-wrap;">{tweet_text}</div>
+  <div style="margin-top:10px;font-family:'Courier New',monospace;font-size:10px;color:#8B949E;">Post on Saturday morning for maximum reach. Tag @usmrm if you have a Twitter account set up.</div>
+</div>
+"""
+
+# Append tweet block before closing </div></body></html>
+full_html = html_content.replace('</div></body></html>', tweet_block + '</div></body></html>')
+
 print(f"Sending to {len(subscribers)} recipients...")
 send_r = requests.post("https://api.brevo.com/v3/smtp/email",
     headers={"api-key": BREVO_KEY, "content-type": "application/json", "accept": "application/json"},
     json={"sender": {"name": "US MRM Intelligence Hub", "email": "noreply@usmrm.net"},
           "to": [{"email": e} for e in subscribers],
           "subject": f"MRM Weekly Signal — Issue #{issue_number} | {today} | Score {score}/10 · {regime}",
-          "htmlContent": html_content})
+          "htmlContent": full_html})
 
 if send_r.status_code in [200, 201, 202]:
     print(f"✅ Issue #{issue_number} sent to {len(subscribers)} recipients!")
