@@ -226,42 +226,62 @@ if "usmrm@proton.me" not in subscribers:
     subscribers.insert(0, "usmrm@proton.me")
 
 # ── BUILD TWEET TEXT ──
-icsa_val = icsa.get('value', 'N/A')
 erp_val = premium.get('value', 'N/A')
-icsa_alert = "🔴" if icsa.get('alert', False) else "✅"
-erp_alert = "🔴 Red Alert Active" if erp.get('alert', False) else "✅"
+icsa_val = icsa.get('value', 'N/A')
+erp_alert = "🔴 Red Alert Active" if erp.get('alert', False) else "✅ Clear"
+icsa_status = "🔴" if icsa.get('alert', False) else "✅"
 
 tweet_text = f"""🧊 MRM Weekly Signal — Issue #{issue_number}
 
 Global Resilience Score: {score}/10 | {regime}
 ERP: {erp_val} — {erp_alert}
-ICSA: {icsa_val} {icsa_alert}
+ICSA: {icsa_val} {icsa_status}
 
 Full institutional memo 👇
 usmrm.net/{filename}
 
 #MacroInvesting #ERP #FedWatch #Finance #WeekendReading"""
 
-tweet_block = f"""
-<div style="margin:0;padding:24px 28px;background:#F8F9FB;border-top:2px dashed #E5E8EC;">
-  <div style="font-family:'Courier New',monospace;font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8B949E;margin-bottom:12px;">📱 SATURDAY TWEET — Copy & Paste</div>
-  <div style="background:#fff;border:1px solid #E5E8EC;border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:12px;color:#1A1D20;line-height:1.8;white-space:pre-wrap;">{tweet_text}</div>
-  <div style="margin-top:10px;font-family:'Courier New',monospace;font-size:10px;color:#8B949E;">Post on Saturday morning for maximum reach. Tag @usmrm if you have a Twitter account set up.</div>
-</div>
-"""
+# ── SEND CLEAN NEWSLETTER TO ALL SUBSCRIBERS ──
+# Remove owner from subscriber list for clean send
+clean_subscribers = [e for e in subscribers if e != "usmrm@proton.me"]
+if not clean_subscribers:
+    clean_subscribers = subscribers  # fallback if only owner
 
-# Append tweet block before closing </div></body></html>
-full_html = html_content.replace('</div></body></html>', tweet_block + '</div></body></html>')
-
-print(f"Sending to {len(subscribers)} recipients...")
+print(f"Sending clean newsletter to {len(clean_subscribers)} subscribers...")
 send_r = requests.post("https://api.brevo.com/v3/smtp/email",
     headers={"api-key": BREVO_KEY, "content-type": "application/json", "accept": "application/json"},
     json={"sender": {"name": "US MRM Intelligence Hub", "email": "noreply@usmrm.net"},
-          "to": [{"email": e} for e in subscribers],
+          "to": [{"email": e} for e in clean_subscribers],
           "subject": f"MRM Weekly Signal — Issue #{issue_number} | {today} | Score {score}/10 · {regime}",
-          "htmlContent": full_html})
+          "htmlContent": html_content})
 
 if send_r.status_code in [200, 201, 202]:
-    print(f"✅ Issue #{issue_number} sent to {len(subscribers)} recipients!")
+    print(f"✅ Issue #{issue_number} sent to {len(clean_subscribers)} subscribers!")
 else:
-    print(f"❌ Brevo error: {send_r.status_code} — {send_r.text}"); exit(1)
+    print(f"❌ Brevo send error: {send_r.status_code} — {send_r.text}"); exit(1)
+
+# ── SEND OWNER EMAIL WITH TWEET ──
+tweet_html = f"""<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#F2F4F7;padding:24px;">
+<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;">
+  <div style="font-family:Courier New,monospace;font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8B949E;margin-bottom:12px;">📱 SATURDAY TWEET — Copy & Paste on Twitter/X</div>
+  <div style="background:#F8F9FB;border:1px solid #E5E8EC;border-radius:8px;padding:16px;font-family:Courier New,monospace;font-size:13px;color:#1A1D20;line-height:1.8;white-space:pre-wrap;">{tweet_text}</div>
+  <div style="margin-top:16px;padding:12px;background:#EBF5FF;border-radius:8px;font-size:12px;color:#586068;">
+    📬 Newsletter Issue #{issue_number} sent successfully to {len(clean_subscribers)} subscriber(s).<br>
+    🌐 Live at: <a href="https://usmrm.net/{filename}">usmrm.net/{filename}</a>
+  </div>
+</div>
+</body></html>"""
+
+print("Sending owner briefing with tweet...")
+owner_r = requests.post("https://api.brevo.com/v3/smtp/email",
+    headers={"api-key": BREVO_KEY, "content-type": "application/json", "accept": "application/json"},
+    json={"sender": {"name": "MRM System", "email": "noreply@usmrm.net"},
+          "to": [{"email": "usmrm@proton.me"}],
+          "subject": f"📱 MRM Issue #{issue_number} Sent — Saturday Tweet Ready",
+          "htmlContent": tweet_html})
+
+if owner_r.status_code in [200, 201, 202]:
+    print("✅ Owner briefing sent to usmrm@proton.me!")
+else:
+    print(f"⚠️ Owner briefing error: {owner_r.status_code}")
