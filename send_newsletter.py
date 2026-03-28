@@ -147,10 +147,10 @@ print("Calling Claude API...")
 response = requests.post(
     "https://api.anthropic.com/v1/messages",
     headers={"x-api-key": ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-    json={"model": "claude-opus-4-5", "max_tokens": 8000, "messages": [{"role": "user", "content": prompt}]}
+    json={"model": "claude-opus-4-6", "max_tokens": 8000, "messages": [{"role": "user", "content": prompt}]}
 )
 if response.status_code != 200:
-    print(f"Claude API error: {response.status_code}"); exit(1)
+    print(f"Claude API error: {response.status_code} — {response.text}"); exit(1)
 
 html_content = response.json()["content"][0]["text"].strip()
 if html_content.startswith("```"):
@@ -196,9 +196,9 @@ new_card = f"""
         </div>
       </div>"""
 
-marker = "<!-- ISSUE #2 -->"
+marker = "<!-- NEWSLETTER_ARCHIVE_START -->"
 if marker in index:
-    index = index.replace(marker, new_card + "\n\n      " + marker)
+    index = index.replace(marker, marker + "\n\n      " + new_card)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(index)
     print("index.html updated!")
