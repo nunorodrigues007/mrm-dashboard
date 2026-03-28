@@ -1,0 +1,174 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>MRM Weekly Audit — Issue #3 — 28 March 2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#F2F4F7;font-family:Arial,sans-serif;font-size:14px;color:#1A1D20;}
+a{color:#388BFD;text-decoration:none;}
+.wrapper{max-width:640px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);}
+.header{background:#0D1117;}
+.header-top{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid #21262D;}
+.logo{font-size:15px;font-weight:800;color:#E8ECF0;letter-spacing:0.08em;text-transform:uppercase;}
+.logo span{color:#388BFD;}
+.header-meta{font-family:'Courier New',monospace;font-size:9px;color:#586068;letter-spacing:0.12em;text-transform:uppercase;text-align:right;line-height:1.6;}
+.header-subject{padding:18px 28px 20px;}
+.header-subject .tag{font-family:'Courier New',monospace;font-size:9px;color:#388BFD;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:6px;}
+.header-subject h1{font-size:22px;font-weight:800;color:#E8ECF0;line-height:1.2;}
+.score-band{background:#161B22;padding:20px 28px;display:flex;align-items:center;gap:24px;border-bottom:3px solid #F98C4F;}
+.score-circle{width:72px;height:72px;border-radius:50%;border:3px solid #F98C4F;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.score-num{font-family:'Courier New',monospace;font-size:26px;font-weight:700;color:#F98C4F;line-height:1;}
+.score-info .regime{font-family:'Courier New',monospace;font-size:9px;color:#F98C4F;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:4px;}
+.score-info .score-label{font-size:16px;font-weight:700;color:#E8ECF0;margin-bottom:4px;}
+.score-info .score-sub{font-family:'Courier New',monospace;font-size:10px;color:#586068;}
+.content{padding:28px;}
+.section-label{font-family:'Courier New',monospace;font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8B949E;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #E5E8EC;}
+.summary p{font-size:13px;color:#2D3139;line-height:1.75;margin-bottom:10px;}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px;}
+thead tr{background:#1A1D20;}
+thead th{padding:8px 10px;text-align:left;font-family:'Courier New',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#8B949E;border-bottom:2px solid #388BFD;}
+tbody tr:nth-child(odd){background:#F8F9FB;}
+td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
+.pill{display:inline-block;padding:2px 7px;border-radius:4px;font-family:'Courier New',monospace;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;}
+.red{background:#FFEBEE;color:#D73A49;} .orange{background:#FFF3E0;color:#F98C4F;} .yellow{background:#FFF8E1;color:#E6A817;} .green{background:#E8F5E9;color:#2E7D32;}
+.deep-dive{background:#FFF8E1;border-left:3px solid #F98C4F;padding:14px 16px;border-radius:0 6px 6px 0;margin-bottom:4px;}
+.deep-dive p{font-size:12.5px;color:#2D3139;line-height:1.7;margin-bottom:8px;}
+.page-divider{margin:28px 0;border:none;border-top:2px dashed #E5E8EC;}
+.page-label{text-align:center;font-family:'Courier New',monospace;font-size:9px;color:#8B949E;letter-spacing:0.14em;text-transform:uppercase;margin:12px 0 20px;}
+.sector-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sector-col-ow{background:#F1FAF3;border:1px solid #C8E6C9;border-radius:8px;overflow:hidden;}
+.sector-col-uw{background:#FFF5F5;border:1px solid #FFCDD2;border-radius:8px;overflow:hidden;}
+.sector-col-header{padding:8px 12px;font-family:'Courier New',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;}
+.sector-col-ow .sector-col-header{background:#E8F5E9;color:#2E7D32;}
+.sector-col-uw .sector-col-header{background:#FFEBEE;color:#C62828;}
+.sector-item{padding:7px 12px;border-bottom:1px solid rgba(0,0,0,0.05);}
+.sector-item:last-child{border-bottom:none;}
+.sector-name{font-size:11.5px;font-weight:600;margin-bottom:1px;}
+.sector-col-ow .sector-name{color:#1B5E20;} .sector-col-uw .sector-name{color:#B71C1C;}
+.sector-rationale{font-size:10px;color:#586068;line-height:1.4;}
+.alloc-pct{font-family:'Courier New',monospace;font-size:14px;font-weight:700;color:#388BFD;}
+.verdict-box{background:#FFF8E1;border:2px solid #F98C4F;border-radius:8px;padding:16px 18px;}
+.verdict-box p{font-size:13px;color:#2D3139;line-height:1.75;}
+.footer{background:#0D1117;padding:20px 28px;text-align:center;}
+.footer-logo{font-size:13px;font-weight:800;color:#8B949E;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;}
+.footer-logo span{color:#388BFD;}
+.footer-links{margin-bottom:10px;}
+.footer-links a{font-family:'Courier New',monospace;font-size:10px;color:#586068;margin:0 8px;}
+.footer-disclaimer{font-family:'Courier New',monospace;font-size:9px;color:#3D4450;line-height:1.6;max-width:480px;margin:0 auto;}
+.spacer{height:20px;}
+</style></head><body><div class="wrapper">
+
+<div class="header"><div class="header-top"><div class="logo">US<span>MRM</span></div><div class="header-meta">MRM WEEKLY AUDIT<br>28 March 2026 · ISSUE #3</div></div><div class="header-subject"><div class="tag">Subject: Regime Diagnosis &amp; Tactical Execution</div><h1>US Macro-Resilience Matrix<br>Weekly Institutional Memo</h1></div></div>
+
+<div class="score-band"><div class="score-circle"><div class="score-num">6.5</div></div><div class="score-info"><div class="regime">● TURBULENCE REGIME</div><div class="score-label">Global Resilience Score</div><div class="score-sub">Updated: 28 March 2026 · FRED API Live · 5/5 Pillars Active · ▼ -0.2 WoW</div></div></div>
+
+<div class="content">
+
+<!-- EXECUTIVE SUMMARY -->
+<div class="section-label">01 · Executive Summary</div>
+<div class="summary">
+<p>The composite resilience score slipped to 6.5 from 6.7 the prior week, dragged lower by a material deterioration in the Cycle pillar. The regime classification remains <strong>Turbulence</strong>—the third consecutive week in this band—reinforcing that the macro backdrop is neither collapsing nor clearing. Risk budgets should reflect this ambiguity.</p>
+<p>Liquidity and Equity Risk Premium readings continue to print at elevated levels (8.5 and 9.0 respectively), flagging a market that is priced for near-perfection while the real economy softens at the margin. The ERP Sentinel triggered for the second straight week at 0.13%, signaling that the compensation offered for bearing equity risk relative to duration-matched Treasuries is critically thin. This is the single most important signal in the current tape.</p>
+<p>Solvency and Debt pillars held flat week-over-week, providing a stable but unremarkable foundation. The absence of an Initial Claims Spike Alert (ICSA) keeps the labor-market trapdoor shut for now, but the Cycle score's 1.0-point weekly decline demands immediate attention and is the subject of this week's Deep Dive.</p>
+</div>
+
+<div class="spacer"></div>
+
+<!-- PILLARS TABLE -->
+<div class="section-label">02 · Pillar Scorecard</div>
+<table>
+<thead>
+<tr><th>Pillar</th><th>Reading</th><th>Score</th><th>WoW Δ</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr><td style="font-weight:600;">Cycle</td><td style="font-family:'Courier New',monospace;">+0.56%</td><td style="font-family:'Courier New',monospace;">4.5 / 10</td><td style="font-family:'Courier New',monospace;color:#D73A49;">▼ -1.0</td><td><span class="pill orange">CAUTION</span></td></tr>
+<tr><td style="font-weight:600;">Liquidity</td><td style="font-family:'Courier New',monospace;">1.82x</td><td style="font-family:'Courier New',monospace;">8.5 / 10</td><td style="font-family:'Courier New',monospace;color:#8B949E;">— 0.0</td><td><span class="pill red">CRITICAL</span></td></tr>
+<tr><td style="font-weight:600;">Premium (ERP)</td><td style="font-family:'Courier New',monospace;">0.13%</td><td style="font-family:'Courier New',monospace;">9.0 / 10</td><td style="font-family:'Courier New',monospace;color:#8B949E;">— 0.0</td><td><span class="pill red">CRITICAL</span></td></tr>
+<tr><td style="font-weight:600;">Solvency</td><td style="font-family:'Courier New',monospace;">1.5%</td><td style="font-family:'Courier New',monospace;">3.5 / 10</td><td style="font-family:'Courier New',monospace;color:#8B949E;">— 0.0</td><td><span class="pill green">STABLE</span></td></tr>
+<tr><td style="font-weight:600;">Debt</td><td style="font-family:'Courier New',monospace;">11.3%</td><td style="font-family:'Courier New',monospace;">5.5 / 10</td><td style="font-family:'Courier New',monospace;color:#8B949E;">— 0.0</td><td><span class="pill orange">CAUTION</span></td></tr>
+</tbody>
+</table>
+<p style="font-family:'Courier New',monospace;font-size:9px;color:#8B949E;margin-top:6px;">Scores inverted where applicable. Higher score = higher risk contribution to composite. Composite: weighted average across 5 pillars.</p>
+
+<div class="spacer"></div>
+
+<!-- DEEP DIVE -->
+<div class="section-label">03 · Deep Dive — Cycle Pillar (▼ -1.0 WoW)</div>
+<div class="deep-dive">
+<p><strong>Why it matters.</strong> The Cycle pillar registered the largest single-week deterioration across all five pillars, dropping a full point from 5.5 to 4.5. The underlying reading—real GDP growth tracking at just +0.56%—places the economy perilously close to stall speed. A reading below +0.50% would historically coincide with the onset of contractionary regimes and would mechanically push the composite score into the "Stress" band.</p>
+<p><strong>What changed.</strong> Incoming data through mid-March showed a deceleration in industrial production and a flattening in real personal consumption expenditures. The Conference Board's Leading Economic Index posted its fourth consecutive monthly decline in the February release. While no single datapoint triggers a regime shift, the convergence of softening activity indicators is now broad enough to register in the pillar model. The 1.0-point weekly drop is the steepest since Issue #1 and suggests the deceleration is accelerating rather than stabilizing.</p>
+<p><strong>Forward implications.</strong> If Cycle deteriorates by another 0.5 points, the composite score will breach 7.0—the threshold at which the model formally recommends defensive re-allocation. Portfolios should begin pre-positioning now. Specifically: reduce cyclical exposure, extend duration selectively in high-quality fixed income, and increase cash buffers. The interaction between a weakening cycle and a razor-thin equity risk premium (0.13%) creates a fragile equilibrium where even modest negative surprises could trigger outsized drawdowns in risk assets.</p>
+<p><strong>Key level to watch.</strong> Real GDP tracking below +0.40% on next week's data refresh would confirm a Cycle score at or below 4.0, likely tipping the composite into Stress regime territory. This is now a base-case-adjacent scenario, not a tail risk.</p>
+</div>
+
+</div>
+
+<hr class="page-divider"><div class="page-label">— Page 2: Tactical Execution —</div>
+
+<div class="content" style="padding-top:0;">
+
+<!-- EWS TABLE -->
+<div class="section-label">04 · Early Warning Sentinels</div>
+<table>
+<thead>
+<tr><th>Sentinel</th><th>Reading</th><th>Alert</th><th>WoW Δ</th><th>Interpretation</th></tr>
+</thead>
+<tbody>
+<tr><td style="font-weight:600;">ICSA (Initial Claims Spike)</td><td style="font-family:'Courier New',monospace;">N/A</td><td><span class="pill green">NO</span></td><td style="font-family:'Courier New',monospace;color:#8B949E;">—</td><td style="font-size:11px;">No abnormal spike in weekly filings. Labor market holding.</td></tr>
+<tr><td style="font-weight:600;">ERP Sentinel</td><td style="font-family:'Courier New',monospace;">0.13%</td><td><span class="pill red">YES</span></td><td style="font-family:'Courier New',monospace;color:#8B949E;">— 0.0</td><td style="font-size:11px;">Equity premium critically compressed. Risk/reward asymmetry unfavorable for broad equity exposure.</td></tr>
+</tbody>
+</table>
+<p style="font-family:'Courier New',monospace;font-size:9px;color:#8B949E;margin-top:6px;">ERP Sentinel triggers when spread falls below 1.5%. ICSA triggers on ≥10% 4-week spike. Both are binary early-warning flags.</p>
+
+<div class="spacer"></div>
+
+<!-- SECTOR MATRIX -->
+<div class="section-label">05 · Sector &amp; Factor Tilt Matrix</div>
+<div class="sector-grid">
+<div class="sector-col-ow">
+<div class="sector-col-header">▲ Overweight</div>
+<div class="sector-item"><div class="sector-name">Utilities</div><div class="sector-rationale">Defensive cashflow profile; outperforms in late-cycle deceleration and Turbulence regimes.</div></div>
+<div class="sector-item"><div class="sector-name">Healthcare</div><div class="sector-rationale">Inelastic demand, low beta to cycle. Attractive when Cycle score trends below 5.0.</div></div>
+<div class="sector-item"><div class="sector-name">Consumer Staples</div><div class="sector-rationale">Pricing power intact; dividend yield provides carry in compressed-ERP environments.</div></div>
+<div class="sector-item"><div class="sector-name">Quality Factor</div><div class="sector-rationale">High-ROE, low-leverage names historically outperform when composite enters 6.0–7.0 band.</div></div>
+</div>
+<div class="sector-col-uw">
+<div class="sector-col-header">▼ Underweight</div>
+<div class="sector-item"><div class="sector-name">Consumer Discretionary</div><div class="sector-rationale">Stall-speed GDP and fading consumption momentum create earnings downside risk.</div></div>
+<div class="sector-item"><div class="sector-name">Small-Cap Growth</div><div class="sector-rationale">Liquidity score at 8.5 signals tight conditions; small-cap refinancing risk elevated.</div></div>
+<div class="sector-item"><div class="sector-name">Industrials</div><div class="sector-rationale">Cycle deceleration and declining LEI undermine order-book expectations.</div></div>
+<div class="sector-item"><div class="sector-name">High Beta Factor</div><div class="sector-rationale">Compressed ERP offers no compensation for vol exposure. Asymmetry is negative.</div></div>
+</div>
+</div>
+
+<div class="spacer"></div>
+
+<!-- ALLOCATION TABLE -->
+<div class="section-label">06 · Model Allocation — Turbulence Regime</div>
+<table>
+<thead>
+<tr><th>Asset Class</th><th>Target</th><th>WoW Δ</th><th>Rationale</th></tr>
+</thead>
+<tbody>
+<tr><td style="font-weight:600;">US Equities (Broad)</td><td><span class="alloc-pct">38%</span></td><td style="font-family:'Courier New',monospace;color:#D73A49;">▼ -2%</td><td style="font-size:11px;">Cycle deterioration and ERP sentinel warrant further trim. Maintain defensive sector tilt within allocation.</td></tr>
+<tr><td style="font-weight:600;">US Treasuries (7–10Y)</td><td><span class="alloc-pct">25%</span></td><td style="font-family:'Courier New',monospace;color:#2E7D32;">▲ +2%</td><td style="font-size:11px;">Duration extension warranted as growth decelerates. Solvency stable at 1.5% supports sovereign credit.</td></tr>
+<tr><td style="font-weight:600;">Investment-Grade Credit</td><td><span class="alloc-pct">12%</span></td><td style="font-family:'Courier New',monospace;color:#8B949E;">— 0%</td><td style="font-size:11px;">Spreads adequate but not compelling. Hold position; do not add until Cycle stabilizes.</td></tr>
+<tr><td style="font-weight:600;">Commodities (Broad)</td><td><span class="alloc-pct">5%</span></td><td style="font-family:'Courier New',monospace;color:#8B949E;">— 0%</td><td style="font-size:11px;">Inflation hedge maintained at minimum weight. Cycle weakness limits demand-side upside.</td></tr>
+<tr><td style="font-weight:600;">Cash &amp; Equivalents</td><td><span class="alloc-pct">15%</span></td><td style="font-family:'Courier New',monospace;color:#8B949E;">— 0%</td><td style="font-size:11px;">Elevated cash buffer appropriate in Turbulence regime. Optionality value high near regime boundary.</td></tr>
+<tr><td style="font-weight:600;">Alternatives / Real Assets</td><td><span class="alloc-pct">5%</span></td><td style="font-family:'Courier New',monospace;color:#8B949E;">— 0%</td><td style="font-size:11px;">Infrastructure and real asset exposure maintained for diversification. No tactical change.</td></tr>
+</tbody>
+</table>
+<p style="font-family:'Courier New',monospace;font-size:9px;color:#8B949E;margin-top:6px;">Allocations are model-indicative for a balanced institutional mandate. Actual implementation depends on client-specific constraints, liquidity needs, and risk tolerance. Totals = 100%.</p>
+
+<div class="spacer"></div>
+
+<!-- VERDICT BOX -->
+<div class="section-label">07 · CIO Verdict</div>
+<div class="verdict-box">
+<p><strong>Regime: Turbulence (6.5/10).</strong> The macro tape is deteriorating at the margin. The Cycle pillar's 1.0-point weekly decline is the dominant signal this week and demands a tactical response, not merely observation. With the equity risk premium at 0.13%—a level that has historically preceded negative 6-month forward equity returns—the market is offering almost no margin of safety for growth disappointments that are now materializing in real-time.</p>
+<p><strong>Action bias: Defensive.</strong> We are rotating 2 percentage points from broad equities into intermediate-duration Treasuries. Within equities, tilt toward Quality, Healthcare, Utilities, and Staples. Reduce cyclical, high-beta, and small-cap growth exposure. Cash remains elevated at 15%—this is a feature, not a bug, when the composite is one data print away from a Stress regime reclassification.</p>
+<p><strong>Trigger for escalation:</strong> A composite score breach of 7.0 or a Cycle reading below +0.40% on next week's refresh will initiate a formal Stress protocol, including an additional 3–5 percentage point reduction in equity weight and a reassessment of credit exposure. The ICSA sentinel remains clean, which is the sole anchor preventing a more aggressive de-risking. Monitor weekly claims data with heightened vigilance.</p>
+</div>
+
+</div>
+
+<div class="footer"><div class="footer-logo">US<span>MRM</span> Intelligence Hub</div><div class="footer-links"><a href="https://usmrm.net">Live Terminal</a><a href="https://usmrm.net">Newsletter</a><a href="https://usmrm.net">BDCs</a><a href="mailto:usmrm@proton.me">Contact</a></div><div class="footer-disclaimer">This newsletter is produced for educational and personal analysis purposes only. It does not constitute financial advice, a solicitation, or a recommendation to buy or sell any security or financial instrument.<br>All data sourced from FRED API · © 2026 US MRM Intelligence Hub · usmrm.net</div></div>
+
+</div></body></html>
