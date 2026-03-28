@@ -17,8 +17,9 @@ FRED_BASE = "https://api.stlouisfed.org/fred/series/observations"
 # ──────────────────────────────────────────
 # FRED FETCHER
 # ──────────────────────────────────────────
-def fetch_fred(series_id, limit=12):
-    """Fetch the most recent observations for a FRED series."""
+def fetch_fred(series_id, limit=12, retries=3, backoff=5):
+    """Fetch the most recent observations for a FRED series with retry logic."""
+    import time
     params = {
         "series_id": series_id,
         "api_key": FRED_API_KEY,
@@ -27,16 +28,19 @@ def fetch_fred(series_id, limit=12):
         "limit": limit,
         "observation_start": (datetime.now() - timedelta(days=730)).strftime("%Y-%m-%d")
     }
-    try:
-        r = requests.get(FRED_BASE, params=params, timeout=15)
-        r.raise_for_status()
-        observations = r.json().get("observations", [])
-        # Filter out missing values
-        valid = [o for o in observations if o["value"] not in (".", "")]
-        return valid
-    except Exception as e:
-        print(f"  [ERROR] Failed to fetch {series_id}: {e}")
-        return []
+    for attempt in range(1, retries + 1):
+        try:
+            r = requests.get(FRED_BASE, params=params, timeout=15)
+            r.raise_for_status()
+            observations = r.json().get("observations", [])
+            valid = [o for o in observations if o["value"] not in (".", "")]
+            return valid
+        except Exception as e:
+            print(f"  [R] Failed to fetch {series_id}: {e} (attempt {attempt}/{retries})")
+            if attempt < retries:
+                time.sleep(backoff * attempt)
+    print(f"  [WARN] {series_id} unavailable after {retries} attempts — using fallback.")
+    return []
 
 def latest_value(series_id, limit=12):
     """Return the most recent valid float value for a series."""
@@ -278,7 +282,7 @@ def build_data():
                 "fredSeries": "M2SL + WILL5000PRFC",
                 "trend": "elevated" if mc_m2_ratio > 1.4 else "normal",
                 "delta": "+0.03",
-                "description": f"Buffett Indicator at {mc_m2_ratio:.2f}x. M2 at ${m2_val/1000:.1f}T. Equity valuations elevated relative to monetary base.",
+                "description": f"Buffett Indicator at {mc_m2_ratio:.2f}x. M2 at ${f'{m2_val/1000:.1f}' if m2_val is not None else 'N/A'}T. Equity valuations elevated relative to monetary base.",
                 "status": pillar_status(s_liquidity)
             },
             {
@@ -291,7 +295,7 @@ def build_data():
                 "fredSeries": "DGS10",
                 "trend": "compressed" if erp_val < 2.0 else "adequate",
                 "delta": f"{erp_val - 1.20:+.2f}",
-                "description": f"ERP = E/P ({SP500_EARNINGS_YIELD}%) minus 10Y yield ({dgs10_val:.2f}%). {'Approaching critical threshold.' if erp_val < 1.2 else 'Within normal range.'}",
+                "description": f"ERP = E/P ({SP500_EARNINGS_YIELD}%) minus 10Y yield ({f'{dgs10_val:.2f}' if dgs10_val is not None else 'N/A'}%). {'Approaching critical threshold.' if erp_val < 1.2 else 'Within normal range.'}",
                 "status": pillar_status(s_premium)
             },
             {
@@ -304,7 +308,7 @@ def build_data():
                 "fredSeries": "DRALACBN",
                 "trend": "stable" if s_solvency < 5 else "rising",
                 "delta": "+0.02",
-                "description": f"FRED DRALACBN delinquency rate at {npl_val:.2f}%. Systemic banking plumbing {'functioning normally.' if s_solvency < 5 else 'showing stress.'}",
+                "description": f"FRED DRALACBN delinquency rate at {f'{npl_val:.2f}' if npl_val is not None else 'N/A'}%. Systemic banking plumbing {'functioning normally.' if s_solvency < 5 else 'showing stress.'}",
                 "status": pillar_status(s_solvency)
             },
             {
@@ -317,7 +321,7 @@ def build_data():
                 "fredSeries": "TDSP",
                 "trend": "rising" if s_debt > 5 else "stable",
                 "delta": "+0.3",
-                "description": f"Household debt service ratio at {dsr_val:.1f}%. {'Consumer balance sheet strain increasing.' if s_debt > 5 else 'Consumer balance sheets healthy.'}",
+                "description": f"Household debt service ratio at {f'{dsr_val:.1f}' if dsr_val is not None else 'N/A'}%. {'Consumer balance sheet strain increasing.' if s_debt > 5 else 'Consumer balance sheets healthy.'}",
                 "status": pillar_status(s_debt)
             }
         ],
