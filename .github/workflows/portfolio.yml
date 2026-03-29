@@ -1,0 +1,44 @@
+name: MRM Portfolio Saturday Update
+
+on:
+  schedule:
+    # Every Saturday at 10:00 UTC (6:00 AM ET — Friday markets long closed)
+    - cron: "0 10 * * 6"
+  workflow_dispatch:
+    # Allow manual trigger for testing
+
+jobs:
+  update-portfolio:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install yfinance requests
+
+      - name: Run portfolio updater
+        run: python update_portfolio.py
+
+      - name: Commit updated portfolio.json
+        run: |
+          git config user.name  "MRM Portfolio Bot"
+          git config user.email "noreply@usmrm.net"
+          git add portfolio.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: portfolio update $(date -u +%Y-%m-%d)"
+            git push
+          fi
