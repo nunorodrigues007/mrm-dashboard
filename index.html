@@ -1978,8 +1978,20 @@ function renderPortfolioKPIs(data) {
   aEl.style.color = portColor(c.alpha_vs_benchmark_pct);
   document.getElementById('port-kpi-regime').textContent = (latest ? latest.regime : '—') + ' regime';
   document.getElementById('port-kpi-score').textContent = latest && latest.mrm_score ? latest.mrm_score.toFixed(1)+'/10' : '—';
+  function fmtTrigger(reason) {
+    if (!reason || reason === 'no_rebalance') return 'Hold — no rebalance';
+    if (reason === 'inception') return 'Inception — initial allocation';
+    if (reason === 'quarterly_rebalance') return '⟳ Quarterly rebalance';
+    if (reason.startsWith('emergency')) return '⚠ Emergency — score ≥ 7.0';
+    if (reason.startsWith('tactical') || reason.startsWith('wow')) {
+      // Parse WoW deltas from reason string e.g. "wow_delta_spy_minus2_ief_plus2"
+      // or generic "tactical_wow_delta"
+      return '⟳ Tactical — newsletter WoW delta';
+    }
+    return '⟳ ' + reason.replace(/_/g,' ');
+  }
   document.getElementById('port-kpi-rebalance').textContent = latest && latest.rebalance_triggered
-    ? '⟳ ' + latest.rebalance_reason.replace(/_/g,' ') : 'Hold — no rebalance';
+    ? fmtTrigger(latest.rebalance_reason) : 'Hold — no rebalance';
   document.getElementById('port-updated').textContent = 'Updated: ' + c.date;
 }
 
@@ -2098,7 +2110,14 @@ function renderRebalanceLog(data) {
       <td style="font-family:var(--mono);font-weight:600;color:var(--text-primary);padding:8px 8px 8px 0;">#${s.issue}</td>
       <td style="font-family:var(--mono);color:var(--text-primary);padding:8px 8px 8px 0;">${s.mrm_score ? s.mrm_score.toFixed(1) : '—'}</td>
       <td style="padding:8px 8px 8px 0;"><span style="padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;background:${regimeBg};color:${regimeColor};">${s.regime||'—'}</span></td>
-      <td style="font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${s.rebalance_triggered ? '⟳ '+s.rebalance_reason.replace(/_/g,' ') : '— hold'}</td>
+      <td style="font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${s.rebalance_triggered ? (()=>{
+        const r=s.rebalance_reason;
+        if(r==='inception') return '⟳ Inception';
+        if(r==='quarterly_rebalance') return '⟳ Quarterly';
+        if(r&&r.startsWith('emergency')) return '⚠ Emergency score';
+        if(r&&(r.startsWith('tactical')||r.startsWith('wow'))) return '⟳ Tactical WoW delta';
+        return '⟳ '+r.replace(/_/g,' ');
+      })() : '— hold'}</td>
       <td style="font-family:var(--mono);color:var(--text-primary);padding:8px 8px 8px 0;">${fmtUSD(s.portfolio_value)}</td>
       <td style="font-family:var(--mono);color:${pnlColor};padding:8px 0 8px 0;">${fmtPct(s.portfolio_pnl_pct)}</td>
     </tr>`;
