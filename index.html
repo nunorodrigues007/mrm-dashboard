@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>US MRM — Macro-Resilience Matrix Intelligence Hub</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
 <style>
@@ -715,6 +716,9 @@
       <button class="nav-tab" onclick="switchView('newsletter', this)">
         ◎ Newsletter
       </button>
+      <button class="nav-tab" onclick="switchView('portfolio', this)">
+        ◈ Portfolio
+      </button>
       <button class="nav-tab" onclick="switchView('contact', this)">
         ✉ Contact
       </button>
@@ -1368,6 +1372,7 @@ function switchView(view, btn) {
   if (btn && btn.classList && btn.classList.contains('nav-tab')) btn.classList.add('active');
   
   if (view === 'terminal' && appData) renderTerminal(appData);
+  if (view === 'portfolio') initPortfolio();
 }
 
 // ──────────────────────────────────────────
@@ -1924,6 +1929,182 @@ function filterWatchlist(filter, btn) {
 
 // Init watchlist on load
 setTimeout(() => renderWatchlist('all'), 200);
+
+// ──────────────────────────────────────────
+// PORTFOLIO
+// ──────────────────────────────────────────
+const ETF_META = {
+  SPY:  { name: 'US Equities (Broad)',        color: 'var(--blue)' },
+  IEF:  { name: 'US Treasuries 7-10Y',        color: 'var(--green)' },
+  LQD:  { name: 'IG Credit',                  color: 'var(--orange)' },
+  PDBC: { name: 'Commodities',                color: '#f97316' },
+  BIL:  { name: 'Cash & T-Bills',             color: 'var(--text-muted)' },
+  VNQ:  { name: 'Alternatives / Real Assets', color: '#a855f7' },
+};
+
+function initPortfolio() {
+  fetch('portfolio.json?v=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      renderPortfolioKPIs(data);
+      renderPortfolioHoldings(data);
+      renderPortfolioDonut(data);
+      renderEquityCurve(data);
+      renderRebalanceLog(data);
+    })
+    .catch(() => {
+      const el = document.getElementById('port-holdings-body');
+      if (el) el.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">Unable to load portfolio data.</td></tr>';
+    });
+}
+
+function fmtUSD(v) { return '$' + parseFloat(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtPct(v) { const n=parseFloat(v); return (n>=0?'+':'')+n.toFixed(2)+'%'; }
+function portColor(v) { return parseFloat(v)>=0 ? 'var(--green)' : 'var(--red)'; }
+
+function renderPortfolioKPIs(data) {
+  const c = data.current;
+  const latest = data.history[data.history.length-1];
+  document.getElementById('port-kpi-value').textContent = fmtUSD(c.portfolio_value);
+  const pnlEl = document.getElementById('port-kpi-pnl');
+  pnlEl.textContent = fmtPct(c.portfolio_pnl_pct) + ' vs inception';
+  pnlEl.style.color = portColor(c.portfolio_pnl_pct);
+  document.getElementById('port-kpi-bench').textContent = fmtUSD(c.benchmark_spy_value);
+  const bEl = document.getElementById('port-kpi-bench-pnl');
+  bEl.textContent = fmtPct(c.benchmark_spy_pnl_pct) + ' vs inception';
+  bEl.style.color = portColor(c.benchmark_spy_pnl_pct);
+  const aEl = document.getElementById('port-kpi-alpha');
+  aEl.textContent = fmtPct(c.alpha_vs_benchmark_pct);
+  aEl.style.color = portColor(c.alpha_vs_benchmark_pct);
+  document.getElementById('port-kpi-regime').textContent = (latest ? latest.regime : '—') + ' regime';
+  document.getElementById('port-kpi-score').textContent = latest && latest.mrm_score ? latest.mrm_score.toFixed(1)+'/10' : '—';
+  document.getElementById('port-kpi-rebalance').textContent = latest && latest.rebalance_triggered
+    ? '⟳ ' + latest.rebalance_reason.replace(/_/g,' ') : 'Hold — no rebalance';
+  document.getElementById('port-updated').textContent = 'Updated: ' + c.date;
+}
+
+function renderPortfolioHoldings(data) {
+  const c = data.current;
+  const tickers = ['SPY','IEF','LQD','PDBC','BIL','VNQ'];
+  const tbody = document.getElementById('port-holdings-body');
+  const colors = { SPY:'#388BFD', IEF:'#34D058', LQD:'#F98C4F', PDBC:'#f97316', BIL:'#586068', VNQ:'#a855f7' };
+  tbody.innerHTML = tickers.map(t => {
+    const shares = c.shares[t]||0;
+    const price  = c.last_prices[t]||0;
+    const alloc  = c.allocation_pct[t]||0;
+    const value  = shares * price;
+    const meta   = ETF_META[t];
+    return `<tr>
+      <td style="font-family:var(--mono);font-weight:600;color:var(--text-primary);padding:8px 8px 8px 0;">${t}</td>
+      <td style="font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${meta.name}</td>
+      <td style="padding:8px 8px 8px 0;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:50px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;">
+            <div style="width:${alloc}%;height:3px;background:${colors[t]};border-radius:2px;"></div>
+          </div>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-secondary);">${alloc.toFixed(0)}%</span>
+        </div>
+      </td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${shares.toFixed(4)}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${fmtUSD(price)}</td>
+      <td style="font-family:var(--mono);font-weight:600;color:var(--text-primary);padding:8px 0 8px 0;">${fmtUSD(value)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPortfolioDonut(data) {
+  const c = data.current;
+  const tickers = ['SPY','IEF','LQD','PDBC','BIL','VNQ'];
+  const canvas = document.getElementById('port-donut');
+  if (!canvas || !window.Chart) return;
+  if (canvas._chartInstance) canvas._chartInstance.destroy();
+  canvas._chartInstance = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: tickers,
+      datasets: [{ data: tickers.map(t=>c.allocation_pct[t]||0),
+        backgroundColor: ['#388BFD','#34D058','#F98C4F','#f97316','#586068','#a855f7'],
+        borderWidth: 0, hoverOffset: 4 }]
+    },
+    options: {
+      cutout: '68%',
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#1A1D20', borderColor: '#2E3338', borderWidth: 1,
+        bodyColor: '#E8ECF0',
+        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}%` }
+      }},
+      animation: { duration: 600 }
+    }
+  });
+  const legend = document.getElementById('port-donut-legend');
+  const colors = ['#388BFD','#34D058','#F98C4F','#f97316','#586068','#a855f7'];
+  legend.innerHTML = tickers.map((t,i) => {
+    const pct = c.allocation_pct[t]||0;
+    if (!pct) return '';
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+      <div style="width:8px;height:8px;border-radius:2px;background:${colors[i]};flex-shrink:0;"></div>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text-secondary);">${t}</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-left:auto;">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+function renderEquityCurve(data) {
+  const h = data.history;
+  const canvas = document.getElementById('port-equity-chart');
+  if (!canvas || !window.Chart) return;
+  if (canvas._chartInstance) canvas._chartInstance.destroy();
+  canvas._chartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: h.map(s=>s.date),
+      datasets: [
+        { label: 'MRM Portfolio', data: h.map(s=>s.portfolio_pnl_pct),
+          borderColor: '#388BFD', backgroundColor: 'rgba(56,139,253,0.08)',
+          borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#388BFD',
+          fill: true, tension: 0.3 },
+        { label: 'SPY Benchmark', data: h.map(s=>s.benchmark_spy_pnl_pct),
+          borderColor: '#586068', backgroundColor: 'transparent',
+          borderWidth: 1.5, pointRadius: 3, pointBackgroundColor: '#586068',
+          fill: false, tension: 0.3, borderDash: [4,3] }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#8B949E', font: { family: "'JetBrains Mono',monospace", size: 11 }, boxWidth: 12 } },
+        tooltip: { backgroundColor: '#1A1D20', borderColor: '#2E3338', borderWidth: 1,
+          titleColor: '#8B949E', bodyColor: '#E8ECF0',
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtPct(ctx.raw)}` } }
+      },
+      scales: {
+        x: { ticks: { color: '#586068', font: { family: "'JetBrains Mono',monospace", size: 10 } }, grid: { color: '#1E2226' } },
+        y: { ticks: { color: '#586068', font: { family: "'JetBrains Mono',monospace", size: 10 },
+          callback: v => fmtPct(v) }, grid: { color: '#1E2226' } }
+      }
+    }
+  });
+}
+
+function renderRebalanceLog(data) {
+  const tbody = document.getElementById('port-log-body');
+  tbody.innerHTML = [...data.history].reverse().map(s => {
+    const regimeColor = s.regime==='Turbulence' ? 'var(--orange)' : s.regime==='Critical' ? 'var(--red)' : 'var(--green)';
+    const regimeBg   = s.regime==='Turbulence' ? 'var(--orange-dim)' : s.regime==='Critical' ? 'var(--red-dim)' : 'var(--green-dim)';
+    const pnlColor   = parseFloat(s.portfolio_pnl_pct)>=0 ? 'var(--green)' : 'var(--red)';
+    return `<tr>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${s.date}</td>
+      <td style="font-family:var(--mono);font-weight:600;color:var(--text-primary);padding:8px 8px 8px 0;">#${s.issue}</td>
+      <td style="font-family:var(--mono);color:var(--text-primary);padding:8px 8px 8px 0;">${s.mrm_score ? s.mrm_score.toFixed(1) : '—'}</td>
+      <td style="padding:8px 8px 8px 0;"><span style="padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;background:${regimeBg};color:${regimeColor};">${s.regime||'—'}</span></td>
+      <td style="font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${s.rebalance_triggered ? '⟳ '+s.rebalance_reason.replace(/_/g,' ') : '— hold'}</td>
+      <td style="font-family:var(--mono);color:var(--text-primary);padding:8px 8px 8px 0;">${fmtUSD(s.portfolio_value)}</td>
+      <td style="font-family:var(--mono);color:${pnlColor};padding:8px 0 8px 0;">${fmtPct(s.portfolio_pnl_pct)}</td>
+    </tr>`;
+  }).join('');
+}
+
 
 </script>
 
@@ -2718,6 +2899,115 @@ setTimeout(() => renderWatchlist('all'), 200);
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════
+     VIEW: PORTFOLIO
+═══════════════════════════════════════════════ -->
+<div class="view" id="view-portfolio">
+  <div style="padding:24px;max-width:1200px;margin:0 auto;">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--border-subtle);padding-bottom:18px;margin-bottom:24px;">
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--blue);margin-bottom:4px;">MRM VIRTUAL PORTFOLIO</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">$10,000 inception · 14 Mar 2026 · ETF-only · Follows newsletter model allocation</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--green);margin-bottom:4px;">&#9679; LIVE</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);" id="port-updated">—</div>
+      </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+        <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Portfolio Value</div>
+        <div style="font-family:var(--mono);font-size:26px;font-weight:600;color:var(--text-primary);line-height:1;margin-bottom:4px;" id="port-kpi-value">—</div>
+        <div style="font-family:var(--mono);font-size:11px;" id="port-kpi-pnl">—</div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+        <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">SPY Benchmark</div>
+        <div style="font-family:var(--mono);font-size:26px;font-weight:600;color:var(--text-primary);line-height:1;margin-bottom:4px;" id="port-kpi-bench">—</div>
+        <div style="font-family:var(--mono);font-size:11px;" id="port-kpi-bench-pnl">—</div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-top:2px solid var(--blue);">
+        <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Alpha vs SPY</div>
+        <div style="font-family:var(--mono);font-size:26px;font-weight:600;line-height:1;margin-bottom:4px;" id="port-kpi-alpha">—</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);" id="port-kpi-regime">—</div>
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+        <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">MRM Score</div>
+        <div style="font-family:var(--mono);font-size:26px;font-weight:600;color:var(--orange);line-height:1;margin-bottom:4px;" id="port-kpi-score">—</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);" id="port-kpi-rebalance">—</div>
+      </div>
+    </div>
+
+    <!-- Holdings + Donut -->
+    <div style="display:grid;grid-template-columns:1fr 260px;gap:12px;margin-bottom:12px;">
+
+      <!-- Holdings Table -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;">
+        <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border-subtle);">CURRENT HOLDINGS</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">ETF</th>
+              <th style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">ASSET CLASS</th>
+              <th style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">ALLOC</th>
+              <th style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">SHARES</th>
+              <th style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">PRICE</th>
+              <th style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;color:var(--text-muted);text-align:left;padding:0 0 8px 0;border-bottom:1px solid var(--border);">VALUE</th>
+            </tr>
+          </thead>
+          <tbody id="port-holdings-body">
+            <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--mono);font-size:11px;">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Donut -->
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;display:flex;flex-direction:column;align-items:center;">
+        <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border-subtle);width:100%;">ALLOCATION</div>
+        <canvas id="port-donut" width="200" height="200" style="margin-bottom:12px;"></canvas>
+        <div id="port-donut-legend" style="width:100%;"></div>
+      </div>
+    </div>
+
+    <!-- Equity Chart -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:12px;">
+      <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border-subtle);">EQUITY CURVE — MRM Portfolio vs SPY Benchmark (Since Inception)</div>
+      <canvas id="port-equity-chart" height="100"></canvas>
+    </div>
+
+    <!-- Rebalance Log -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:12px;">
+      <div style="font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border-subtle);">REBALANCE LOG</div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">DATE</th>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">ISSUE</th>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">SCORE</th>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">REGIME</th>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">TRIGGER</th>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--text-muted);text-align:left;padding:0 8px 8px 0;border-bottom:1px solid var(--border);">VALUE</th>
+            <th style="font-family:var(--mono);font-size:9px;color:var(--text-muted);text-align:left;padding:0 0 8px 0;border-bottom:1px solid var(--border);">P&amp;L</th>
+          </tr>
+        </thead>
+        <tbody id="port-log-body">
+          <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--mono);font-size:11px;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Disclaimer -->
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-align:center;padding-top:16px;border-top:1px solid var(--border-subtle);line-height:1.5;opacity:0.6;">
+      Virtual portfolio for educational purposes only. Does not constitute financial advice.
+      Prices sourced via Yahoo Finance every Saturday. Allocations mirror MRM Weekly Newsletter model allocation.
+    </div>
+
+  </div>
+</div>
+
 <div class="view" id="view-contact">
   <div style="min-height:calc(100vh - 56px); display:flex; align-items:center; justify-content:center; padding:48px 24px;">
     <div style="max-width:640px; width:100%;">
@@ -2839,4 +3129,13 @@ document.getElementById('contact-form').addEventListener('submit', async functio
       document.getElementById('form-success').style.display = 'block';
     } else {
       btn.textContent = 'Error. Try again.';
-      bt
+      bt      btn.disabled = false;
+    }
+  } catch (err) {
+    btn.textContent = 'Error. Try again.';
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
