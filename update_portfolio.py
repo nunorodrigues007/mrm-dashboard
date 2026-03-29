@@ -302,6 +302,15 @@ def main():
     final_alloc         = current_alloc.copy()
 
     if new_alloc:
+        # Validate parsed allocation sums to ~100% before any rebalance
+        alloc_total = sum(new_alloc.values())
+        alloc_valid = abs(alloc_total - 100.0) <= 5.0
+
+        if not alloc_valid:
+            log.error(f"Parsed allocation sums to {alloc_total:.1f}% — expected ~100%. Aborting rebalance, holding current allocation.")
+            new_alloc = {}
+
+    if new_alloc:
         quarterly = is_quarterly_rebalance_week(target_date)
         wow_delta = has_wow_delta(new_alloc, current_alloc)
         emergency = mrm_score is not None and mrm_score >= 7.0
@@ -322,12 +331,21 @@ def main():
         else:
             log.info("No rebalance needed this week.")
     else:
-        log.warning("No newsletter parsed — holding current allocation.")
+        log.warning("No newsletter parsed or invalid allocation — holding current allocation.")
 
     # ── Calculate new shares ──────────────────────────────────────────────────
     if rebalance_triggered:
-        new_shares = rebalance_shares(portfolio_value, final_alloc, prices)
-        log.info(f"New shares after rebalance: {new_shares}")
+        candidate_shares = rebalance_shares(portfolio_value, final_alloc, prices)
+        # Safety check: if all shares are 0, something went wrong — abort
+        total_shares_value = sum((candidate_shares.get(t,0) * prices.get(t,0)) for t in TICKERS)
+        if total_shares_value < portfolio_value * 0.5:
+            log.error(f"Rebalanced shares total value ${total_shares_value:.2f} is less than 50% of portfolio — aborting rebalance.")
+            new_shares = current_shares.copy()
+            rebalance_triggered = False
+            rebalance_reason = "aborted_invalid_shares"
+        else:
+            new_shares = candidate_shares
+            log.info(f"New shares after rebalance: {new_shares}")
     else:
         new_shares = current_shares.copy()
 
