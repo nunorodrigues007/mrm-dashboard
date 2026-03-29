@@ -165,57 +165,11 @@
       "benchmark_spy_pnl_pct": -4.43,
       "rebalance_triggered": true,
       "rebalance_reason": "wow_delta_spy_minus2_ief_plus2"
-    },
-    {
-      "issue": 2,
-      "date": "2026-03-27",
-      "mrm_score": 6.5,
-      "regime": "Turbulence",
-      "prices": {
-        "SPY": 634.09,
-        "IEF": 94.6,
-        "LQD": 107.62,
-        "PDBC": 17.4,
-        "BIL": 91.63,
-        "VNQ": 87.0
-      },
-      "prices_confirmed": {
-        "SPY": true,
-        "IEF": true,
-        "LQD": true,
-        "PDBC": true,
-        "BIL": true,
-        "VNQ": true
-      },
-      "portfolio_value_pre_rebalance": 9825.51,
-      "allocation_pct": {
-        "SPY": 38.0,
-        "IEF": 25.0,
-        "LQD": 12.0,
-        "PDBC": 5.0,
-        "BIL": 15.0,
-        "VNQ": 5.0
-      },
-      "shares": {
-        "SPY": 5.897,
-        "IEF": 25.9358,
-        "LQD": 10.9469,
-        "PDBC": 28.1479,
-        "BIL": 16.0862,
-        "VNQ": 5.6425
-      },
-      "portfolio_value": 9825.51,
-      "portfolio_pnl_pct": -1.74,
-      "benchmark_spy_value": 9578.37,
-      "benchmark_spy_pnl_pct": -4.22,
-      "alpha_vs_benchmark_pct": 2.48,
-      "rebalance_triggered": false,
-      "rebalance_reason": "no_rebalance"
     }
   ],
   "current": {
-    "issue": 2,
-    "date": "2026-03-27",
+    "issue": 3,
+    "date": "2026-03-28",
     "shares": {
       "SPY": 5.897,
       "IEF": 25.9358,
@@ -233,18 +187,18 @@
       "VNQ": 5.0
     },
     "last_prices": {
-      "SPY": 634.09,
-      "IEF": 94.6,
+      "SPY": 632.71,
+      "IEF": 94.65,
       "LQD": 107.62,
-      "PDBC": 17.4,
-      "BIL": 91.63,
+      "PDBC": 17.2,
+      "BIL": 91.53,
       "VNQ": 87.0
     },
-    "portfolio_value": 9825.51,
-    "portfolio_pnl_pct": -1.74,
+    "portfolio_value": 9817.98,
+    "portfolio_pnl_pct": -1.82,
     "benchmark_spy_shares": 15.1057,
-    "benchmark_spy_value": 9578.37,
-    "benchmark_spy_pnl_pct": -4.22,
-    "alpha_vs_benchmark_pct": 2.48
+    "benchmark_spy_value": 9557.27,
+    "benchmark_spy_pnl_pct": -4.43,
+    "alpha_vs_benchmark_pct": 2.61
   }
 }
