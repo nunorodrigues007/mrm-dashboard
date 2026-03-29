@@ -245,9 +245,9 @@ def main():
     target_date = get_last_friday()
     log.info(f"Target date (last Friday): {target_date}")
 
-    # Check if already updated for this date
-    if current["date"] == str(target_date):
-        log.info("Portfolio already up to date for this Friday. Exiting.")
+    # Check if already updated for this week or newer — prevent re-runs on same day or earlier
+    if current["date"] >= str(target_date):
+        log.info(f"Portfolio date {current['date']} >= target {target_date}. Already up to date. Exiting.")
         sys.exit(0)
 
     # ── Fetch prices ──────────────────────────────────────────────────────────
