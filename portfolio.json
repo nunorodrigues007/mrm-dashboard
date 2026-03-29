@@ -1,0 +1,199 @@
+{
+  "meta": {
+    "inception_date": "2026-03-14",
+    "inception_value": 10000.00,
+    "currency": "USD",
+    "benchmark": "SPY",
+    "rebalance_rule": "quarterly_tactical",
+    "quarterly_dates": ["last_friday_march", "last_friday_june", "last_friday_september", "last_friday_december"],
+    "tactical_trigger": "wow_delta_nonzero_or_score_gte_7",
+    "etf_map": {
+      "US Equities": "SPY",
+      "US Treasuries": "IEF",
+      "Investment-Grade Credit": "LQD",
+      "Commodities": "PDBC",
+      "Cash": "BIL",
+      "Alternatives": "VNQ"
+    },
+    "note_on_prices": "Prices for 2026-03-14 and 2026-03-21 are estimated from market data. Confirmed prices begin 2026-03-28. All prices are Friday close."
+  },
+  "benchmark_inception": {
+    "date": "2026-03-14",
+    "spy_price": 662.00,
+    "spy_shares": 15.1057,
+    "inception_value": 10000.00
+  },
+  "history": [
+    {
+      "issue": 1,
+      "date": "2026-03-14",
+      "mrm_score": 6.5,
+      "regime": "Turbulence",
+      "prices": {
+        "SPY": 662.00,
+        "IEF": 95.20,
+        "LQD": 109.50,
+        "PDBC": 15.20,
+        "BIL": 91.47,
+        "VNQ": 91.50
+      },
+      "prices_confirmed": {
+        "SPY": false,
+        "IEF": false,
+        "LQD": false,
+        "PDBC": false,
+        "BIL": false,
+        "VNQ": false
+      },
+      "allocation_pct": {
+        "SPY": 40.0,
+        "IEF": 12.0,
+        "LQD": 15.0,
+        "PDBC": 3.0,
+        "BIL": 25.0,
+        "VNQ": 5.0
+      },
+      "allocation_note": "Issue #1 sectorial allocation mapped to 6-bucket canonical model",
+      "shares": {
+        "SPY": 6.0423,
+        "IEF": 12.6050,
+        "LQD": 13.6986,
+        "PDBC": 19.7368,
+        "BIL": 27.3285,
+        "VNQ": 5.4645
+      },
+      "portfolio_value": 10000.00,
+      "portfolio_pnl_pct": 0.00,
+      "benchmark_spy_value": 10000.00,
+      "benchmark_spy_pnl_pct": 0.00,
+      "rebalance_triggered": true,
+      "rebalance_reason": "inception"
+    },
+    {
+      "issue": 2,
+      "date": "2026-03-21",
+      "mrm_score": 6.7,
+      "regime": "Turbulence",
+      "prices": {
+        "SPY": 646.00,
+        "IEF": 94.80,
+        "LQD": 108.50,
+        "PDBC": 16.80,
+        "BIL": 91.50,
+        "VNQ": 88.75
+      },
+      "prices_confirmed": {
+        "SPY": false,
+        "IEF": false,
+        "LQD": false,
+        "PDBC": false,
+        "BIL": false,
+        "VNQ": true
+      },
+      "portfolio_value_pre_rebalance": 9901.64,
+      "allocation_pct": {
+        "SPY": 50.0,
+        "IEF": 22.0,
+        "LQD": 8.0,
+        "PDBC": 7.0,
+        "BIL": 13.0,
+        "VNQ": 0.0
+      },
+      "allocation_note": "Issue #2: Domestic Eq 38% + Intl Dev 12% folded into SPY. VNQ not referenced.",
+      "shares": {
+        "SPY": 7.6638,
+        "IEF": 22.9784,
+        "LQD": 7.3007,
+        "PDBC": 41.2565,
+        "BIL": 14.0652,
+        "VNQ": 0.0
+      },
+      "portfolio_value": 9901.64,
+      "portfolio_pnl_pct": -0.98,
+      "benchmark_spy_value": 9758.28,
+      "benchmark_spy_pnl_pct": -2.42,
+      "rebalance_triggered": true,
+      "rebalance_reason": "allocation_changed_issue2_vs_issue1"
+    },
+    {
+      "issue": 3,
+      "date": "2026-03-28",
+      "mrm_score": 6.5,
+      "regime": "Turbulence",
+      "prices": {
+        "SPY": 632.71,
+        "IEF": 94.65,
+        "LQD": 107.62,
+        "PDBC": 17.20,
+        "BIL": 91.53,
+        "VNQ": 87.00
+      },
+      "prices_confirmed": {
+        "SPY": true,
+        "IEF": true,
+        "LQD": true,
+        "PDBC": false,
+        "BIL": false,
+        "VNQ": true
+      },
+      "portfolio_value_pre_rebalance": 9817.98,
+      "allocation_pct": {
+        "SPY": 38.0,
+        "IEF": 25.0,
+        "LQD": 12.0,
+        "PDBC": 5.0,
+        "BIL": 15.0,
+        "VNQ": 5.0
+      },
+      "allocation_note": "Issue #3 canonical format. WoW: SPY -2%, IEF +2%.",
+      "shares": {
+        "SPY": 5.8970,
+        "IEF": 25.9358,
+        "LQD": 10.9469,
+        "PDBC": 28.1479,
+        "BIL": 16.0862,
+        "VNQ": 5.6425
+      },
+      "portfolio_value": 9817.98,
+      "portfolio_pnl_pct": -1.82,
+      "benchmark_spy_value": 9557.27,
+      "benchmark_spy_pnl_pct": -4.43,
+      "rebalance_triggered": true,
+      "rebalance_reason": "wow_delta_spy_minus2_ief_plus2"
+    }
+  ],
+  "current": {
+    "issue": 3,
+    "date": "2026-03-28",
+    "shares": {
+      "SPY": 5.8970,
+      "IEF": 25.9358,
+      "LQD": 10.9469,
+      "PDBC": 28.1479,
+      "BIL": 16.0862,
+      "VNQ": 5.6425
+    },
+    "allocation_pct": {
+      "SPY": 38.0,
+      "IEF": 25.0,
+      "LQD": 12.0,
+      "PDBC": 5.0,
+      "BIL": 15.0,
+      "VNQ": 5.0
+    },
+    "last_prices": {
+      "SPY": 632.71,
+      "IEF": 94.65,
+      "LQD": 107.62,
+      "PDBC": 17.20,
+      "BIL": 91.53,
+      "VNQ": 87.00
+    },
+    "portfolio_value": 9817.98,
+    "portfolio_pnl_pct": -1.82,
+    "benchmark_spy_shares": 15.1057,
+    "benchmark_spy_value": 9557.27,
+    "benchmark_spy_pnl_pct": -4.43,
+    "alpha_vs_benchmark_pct": 2.61
+  }
+}
