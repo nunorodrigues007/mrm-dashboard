@@ -167,7 +167,7 @@
       "rebalance_reason": "wow_delta_spy_minus2_ief_plus2"
     },
     {
-      "issue": 3,
+      "issue": 4,
       "date": "2026-04-03",
       "mrm_score": 6.5,
       "regime": "Turbulence",
@@ -189,48 +189,49 @@
       },
       "portfolio_value_pre_rebalance": 10005.47,
       "allocation_pct": {
-        "SPY": 38.0,
-        "IEF": 25.0,
-        "LQD": 12.0,
-        "PDBC": 5.0,
-        "BIL": 15.0,
-        "VNQ": 5.0
+        "SPY": 40.0,
+        "IEF": 18.0,
+        "LQD": 28.0,
+        "PDBC": 6.0,
+        "BIL": 8.0,
+        "VNQ": 0.0
       },
+      "allocation_note": "Issue #4: Tactical rebalance \u2014 SPY reduced to 40% (32%+8% Domestic+Intl), LQD increased to 28%, IEF 18%, BIL 8%",
       "shares": {
-        "SPY": 5.897,
-        "IEF": 25.9358,
-        "LQD": 10.9469,
-        "PDBC": 28.1479,
-        "BIL": 16.0862,
-        "VNQ": 5.6425
+        "SPY": 6.1025,
+        "IEF": 18.906,
+        "LQD": 25.6739,
+        "PDBC": 34.2653,
+        "BIL": 8.7556,
+        "VNQ": 0.0
       },
       "portfolio_value": 10005.47,
       "portfolio_pnl_pct": 0.05,
       "benchmark_spy_value": 9906.77,
       "benchmark_spy_pnl_pct": -0.93,
       "alpha_vs_benchmark_pct": 0.98,
-      "rebalance_triggered": false,
-      "rebalance_reason": "no_rebalance"
+      "rebalance_triggered": true,
+      "rebalance_reason": "tactical_wow_delta_issue4"
     }
   ],
   "current": {
-    "issue": 3,
+    "issue": 4,
     "date": "2026-04-03",
     "shares": {
-      "SPY": 5.897,
-      "IEF": 25.9358,
-      "LQD": 10.9469,
-      "PDBC": 28.1479,
-      "BIL": 16.0862,
-      "VNQ": 5.6425
+      "SPY": 6.1025,
+      "IEF": 18.906,
+      "LQD": 25.6739,
+      "PDBC": 34.2653,
+      "BIL": 8.7556,
+      "VNQ": 0.0
     },
     "allocation_pct": {
-      "SPY": 38.0,
-      "IEF": 25.0,
-      "LQD": 12.0,
-      "PDBC": 5.0,
-      "BIL": 15.0,
-      "VNQ": 5.0
+      "SPY": 40.0,
+      "IEF": 18.0,
+      "LQD": 28.0,
+      "PDBC": 6.0,
+      "BIL": 8.0,
+      "VNQ": 0.0
     },
     "last_prices": {
       "SPY": 655.83,
