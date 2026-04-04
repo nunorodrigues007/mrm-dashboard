@@ -3,95 +3,134 @@ update_portfolio.py
 MRM Portfolio Saturday Price Updater
 Runs every Saturday at 10:00 UTC via GitHub Actions (portfolio.yml)
 
-What it does:
-1. Fetches Friday close prices for all 6 ETFs via Yahoo Finance
-2. Calculates current portfolio value and P&L
-3. Checks if rebalance is needed (tactical WoW delta or quarterly)
-4. If rebalance: reads latest newsletter allocation and updates shares
-5. Appends new snapshot to portfolio.json history
-6. Saves updated portfolio.json (committed by workflow)
+Rebalance rules:
+- SEMESTRAL: last Friday of January and June
+- EMERGENCY: 2 consecutive weeks with score >= 8.0 (defensive) or <= 4.0 (offensive)
+- NO tactical weekly rebalance
+
+ETF universe varies by regime:
+- Turbulence (default): SPY, IEF, LQD, PDBC, BIL, VNQ
+- Critical  (>= 8.0) : USMV, TLT, SGOV, GLD, BIL, (VNQ reduced)
+- Resilient (<= 4.0) : QQQ, SHY, HYG, PDBC, BIL, IWO
 """
 
-import json
-import os
-import sys
-import time
-import logging
-from datetime import date, datetime, timedelta
+import json, os, sys, time, re, logging
+from datetime import date, timedelta
 from pathlib import Path
 
-import requests
 import yfinance as yf
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("mrm_portfolio")
 
-# ── Constants ────────────────────────────────────────────────────────────────
+# ── Canonical 6 buckets ───────────────────────────────────────────────────────
+BUCKETS = ["US_EQUITIES", "US_TREASURIES", "IG_CREDIT", "COMMODITIES", "CASH", "ALTERNATIVES"]
 
-TICKERS = ["SPY", "IEF", "LQD", "PDBC", "BIL", "VNQ"]
-
-ASSET_CLASS_MAP = {
-    # Issue #3 format
-    "US Equities":              "SPY",
-    "US Equities (Broad)":      "SPY",
-    "US Treasuries":            "IEF",
-    "US Treasuries (7":         "IEF",
-    "Investment-Grade Credit":  "LQD",
-    "Investment Grade Credit":  "LQD",
-    "Commodities":              "PDBC",
-    "Real Assets":              "PDBC",
-    "Cash":                     "BIL",
-    "Cash & Equivalents":       "BIL",
-    "Alternatives / Real":      "VNQ",
-    "Alternatives":             "VNQ",
-    # Issue #4 format — Tactical Allocation Framework
-    "Domestic Equity":          "SPY",
-    "International Developed":  "SPY",   # folded into SPY
-    "Investment-Grade Fixed":   "LQD",
-    "Sovereign":                "IEF",   # Sovereign / T-Bills Short Duration
-    "Alternatives / Hedge":     "VNQ",
+# ETF per bucket per regime
+REGIME_ETF_MAP = {
+    "Turbulence": {
+        "US_EQUITIES":   "SPY",
+        "US_TREASURIES": "IEF",
+        "IG_CREDIT":     "LQD",
+        "COMMODITIES":   "PDBC",
+        "CASH":          "BIL",
+        "ALTERNATIVES":  "VNQ",
+    },
+    "Critical": {
+        "US_EQUITIES":   "USMV",   # Min volatility in crisis
+        "US_TREASURIES": "TLT",    # Long duration flight-to-safety
+        "IG_CREDIT":     "SGOV",   # Ultra-short sovereign
+        "COMMODITIES":   "GLD",    # Gold as safe haven
+        "CASH":          "BIL",
+        "ALTERNATIVES":  "VNQ",    # Reduced but maintained
+    },
+    "Resilient": {
+        "US_EQUITIES":   "QQQ",    # Growth offensive
+        "US_TREASURIES": "SHY",    # Short duration, free up for equities
+        "IG_CREDIT":     "HYG",    # High yield when credit healthy
+        "COMMODITIES":   "PDBC",
+        "CASH":          "BIL",
+        "ALTERNATIVES":  "IWO",    # Russell 2000 Growth
+    },
 }
 
-# Quarterly rebalance: last Friday of March, June, September, December
-QUARTERLY_MONTHS = {3, 6, 9, 12}
+# All tickers across all regimes
+ALL_TICKERS = list(set(t for regime in REGIME_ETF_MAP.values() for t in regime.values()))
 
-PORTFOLIO_PATH = Path("portfolio.json")
-NEWSLETTER_DIR = Path(".")   # newsletters live in repo root
+# Asset class → bucket mapping (handles both newsletter formats)
+ASSET_CLASS_BUCKET_MAP = {
+    # Issue #3 format
+    "US Equities":             "US_EQUITIES",
+    "US Equities (Broad)":     "US_EQUITIES",
+    "Domestic Equity":         "US_EQUITIES",
+    "International Developed": "US_EQUITIES",  # folded into equity bucket
+    "US Treasuries":           "US_TREASURIES",
+    "US Treasuries (7":        "US_TREASURIES",
+    "Sovereign":               "US_TREASURIES",
+    "Investment-Grade Credit": "IG_CREDIT",
+    "Investment Grade Credit": "IG_CREDIT",
+    "Investment-Grade Fixed":  "IG_CREDIT",
+    "Commodities":             "COMMODITIES",
+    "Real Assets":             "COMMODITIES",
+    "Cash":                    "CASH",
+    "Cash & Equivalents":      "CASH",
+    "Alternatives / Real":     "ALTERNATIVES",
+    "Alternatives / Hedge":    "ALTERNATIVES",
+    "Alternatives":            "ALTERNATIVES",
+}
+
+SEMESTRAL_MONTHS = {1, 6}   # January and June
+EMERGENCY_SCORE_HIGH = 8.0  # Critical regime
+EMERGENCY_SCORE_LOW  = 4.0  # Resilient regime
+CONSECUTIVE_WEEKS    = 2    # Weeks needed to confirm structural change
+
+PORTFOLIO_PATH  = Path("portfolio.json")
+NEWSLETTER_DIR  = Path(".")
 
 
-# ── Price Fetching ────────────────────────────────────────────────────────────
+# ── Regime classification ─────────────────────────────────────────────────────
+def classify_regime(score):
+    if score is None: return "Turbulence"
+    if score >= EMERGENCY_SCORE_HIGH: return "Critical"
+    if score <= EMERGENCY_SCORE_LOW:  return "Resilient"
+    return "Turbulence"
 
-def get_last_friday() -> date:
-    """Return the most recent Friday (today if Saturday)."""
+
+def get_active_tickers(regime):
+    return list(REGIME_ETF_MAP.get(regime, REGIME_ETF_MAP["Turbulence"]).values())
+
+
+def get_ticker_for_bucket(bucket, regime):
+    return REGIME_ETF_MAP.get(regime, REGIME_ETF_MAP["Turbulence"]).get(bucket, "BIL")
+
+
+# ── Date helpers ──────────────────────────────────────────────────────────────
+def get_last_friday():
     today = date.today()
-    # Saturday = weekday 5, so last Friday is yesterday
     days_back = (today.weekday() - 4) % 7
     return today - timedelta(days=days_back)
 
 
-def fetch_prices(tickers: list, target_date: date, retries: int = 3) -> dict:
-    """
-    Fetch closing prices for tickers on target_date via yfinance.
-    Returns dict {ticker: close_price}.
-    """
+def is_semestral_rebalance_week(target_date):
+    """Last Friday of January or June."""
+    if target_date.month not in SEMESTRAL_MONTHS:
+        return False
+    next_friday = target_date + timedelta(days=7)
+    return next_friday.month != target_date.month
+
+
+# ── Price fetching ────────────────────────────────────────────────────────────
+def fetch_prices(tickers, target_date, retries=3):
     prices = {}
     start = target_date - timedelta(days=5)
     end   = target_date + timedelta(days=1)
-
     for ticker in tickers:
         for attempt in range(retries):
             try:
-                t = yf.Ticker(ticker)
-                hist = t.history(start=str(start), end=str(end))
-                if hist.empty:
-                    raise ValueError(f"No data returned for {ticker}")
-                # Get the row closest to target_date (should be Friday close)
+                hist = yf.Ticker(ticker).history(start=str(start), end=str(end))
+                if hist.empty: raise ValueError(f"No data for {ticker}")
                 hist.index = hist.index.date
-                if target_date in hist.index:
-                    price = float(hist.loc[target_date]["Close"])
-                else:
-                    # fallback: last available price
-                    price = float(hist["Close"].iloc[-1])
+                price = float(hist.loc[target_date]["Close"]) if target_date in hist.index else float(hist["Close"].iloc[-1])
                 prices[ticker] = round(price, 4)
                 log.info(f"  {ticker}: ${price:.4f}")
                 break
@@ -99,292 +138,255 @@ def fetch_prices(tickers: list, target_date: date, retries: int = 3) -> dict:
                 log.warning(f"  {ticker} attempt {attempt+1} failed: {e}")
                 time.sleep(2 ** attempt)
         else:
-            log.error(f"  {ticker}: all retries failed — using previous price")
             prices[ticker] = None
-
+            log.error(f"  {ticker}: all retries failed")
     return prices
 
 
-# ── Portfolio Calculations ────────────────────────────────────────────────────
-
-def calculate_portfolio_value(shares: dict, prices: dict) -> float:
-    """Calculate total portfolio value given shares and prices."""
-    total = 0.0
-    for ticker, qty in shares.items():
-        if qty and prices.get(ticker):
-            total += qty * prices[ticker]
-    return round(total, 2)
+# ── Portfolio calculations ────────────────────────────────────────────────────
+def calculate_value(shares, prices):
+    return round(sum((shares.get(t, 0) or 0) * (prices.get(t) or 0) for t in shares), 2)
 
 
-def calculate_pnl_pct(current_value: float, inception_value: float) -> float:
-    return round((current_value - inception_value) / inception_value * 100, 2)
-
-
-def rebalance_shares(portfolio_value: float, allocation_pct: dict, prices: dict) -> dict:
-    """Calculate new share counts given total value, target %, and current prices."""
+def rebalance_shares(portfolio_value, bucket_alloc_pct, regime, prices):
+    """Calculate new shares given bucket allocations and current regime ETFs."""
     shares = {}
-    for ticker in TICKERS:
-        pct = allocation_pct.get(ticker, 0.0) / 100.0
-        dollar_amount = portfolio_value * pct
-        price = prices.get(ticker)
+    etf_map = REGIME_ETF_MAP.get(regime, REGIME_ETF_MAP["Turbulence"])
+    # Zero out all known tickers first
+    for r in REGIME_ETF_MAP.values():
+        for t in r.values():
+            shares[t] = 0.0
+    # Allocate
+    for bucket, pct in bucket_alloc_pct.items():
+        ticker = etf_map.get(bucket, "BIL")
+        dollar = portfolio_value * (pct / 100.0)
+        price  = prices.get(ticker)
         if price and price > 0:
-            shares[ticker] = round(dollar_amount / price, 4)
-        else:
-            shares[ticker] = 0.0
-    return shares
+            shares[ticker] = shares.get(ticker, 0.0) + round(dollar / price, 4)
+    return {t: v for t, v in shares.items() if v > 0}
 
 
-# ── Newsletter Parsing ────────────────────────────────────────────────────────
-
-def parse_newsletter_allocation(newsletter_path: Path) -> dict:
-    """
-    Parse Section 06 allocation table from newsletter HTML.
-    Returns dict {ticker: target_pct} e.g. {"SPY": 38.0, "IEF": 25.0, ...}
-    """
-    try:
-        content = newsletter_path.read_text(encoding="utf-8")
-    except Exception as e:
-        log.error(f"Cannot read newsletter: {e}")
-        return {}
-
-    allocation = {}
-
-    # Find the allocation table (Section 06 or Tactical Allocation Framework)
-    # Match rows like: | Asset Class Name | XX% | ...
-    # First column must start with a letter (not a digit or %) to avoid matching numeric columns
-    import re
-    pattern = re.compile(
-        r'\|\s*([A-Za-z][^|%]{2,50}?)\s*\|\s*(\d+(?:\.\d+)?)\s*%\s*\|',
-        re.IGNORECASE
-    )
-    matches = pattern.findall(content)
-
-    for asset_class_raw, pct_str in matches:
-        asset_class = asset_class_raw.strip()
-        pct = float(pct_str)
-        # Map to ticker — SUM if multiple classes map to same ticker (e.g. Domestic + Intl → SPY)
-        for key, ticker in ASSET_CLASS_MAP.items():
-            if key.lower() in asset_class.lower():
-                allocation[ticker] = allocation.get(ticker, 0.0) + pct
-                break
-
-    # Validate total
-    total = sum(allocation.values())
-    if total > 0 and abs(total - 100.0) > 5.0:
-        log.warning(f"Allocation total = {total:.1f}% (expected ~100%). Check parsing.")
-
-    # Fill missing tickers with 0
-    for ticker in TICKERS:
-        if ticker not in allocation:
-            allocation[ticker] = 0.0
-
-    log.info(f"Parsed allocation: {allocation} (total={sum(allocation.values()):.1f}%)")
-    return allocation
-
-
-def find_latest_newsletter() -> Path | None:
-    """Find the most recent newsletter HTML file in repo root."""
+# ── Newsletter parsing ────────────────────────────────────────────────────────
+def find_latest_newsletter():
     candidates = sorted(NEWSLETTER_DIR.glob("MRM_Newsletter*.html"), reverse=True)
     if candidates:
         log.info(f"Latest newsletter: {candidates[0]}")
         return candidates[0]
-    log.warning("No newsletter HTML found in repo root.")
     return None
 
 
-def parse_mrm_score(newsletter_path: Path) -> float | None:
-    """Extract MRM score from newsletter HTML."""
-    import re
+def parse_newsletter(newsletter_path):
+    """Returns (bucket_alloc_pct dict, mrm_score float|None)."""
     try:
         content = newsletter_path.read_text(encoding="utf-8")
-        # Score appears as a standalone number like "6.5" near "Global Resilience Score"
-        match = re.search(r'<[^>]*>\s*(\d\.\d)\s*</[^>]*>', content)
-        if match:
-            return float(match.group(1))
-    except Exception:
-        pass
-    return None
+    except Exception as e:
+        log.error(f"Cannot read newsletter: {e}")
+        return {}, None
+
+    # Parse MRM score
+    mrm_score = None
+    score_match = re.search(r'<[^>]*>\s*(\d\.\d)\s*</[^>]*>', content)
+    if score_match:
+        mrm_score = float(score_match.group(1))
+    log.info(f"MRM Score: {mrm_score}")
+
+    # Parse allocation table — first column must be text (letter-starting, no %)
+    pattern = re.compile(
+        r'\|\s*([A-Za-z][^|%]{2,50}?)\s*\|\s*(\d+(?:\.\d+)?)\s*%\s*\|',
+        re.IGNORECASE
+    )
+    bucket_alloc = {}
+    for asset_class_raw, pct_str in pattern.findall(content):
+        asset_class = asset_class_raw.strip()
+        pct = float(pct_str)
+        for key, bucket in ASSET_CLASS_BUCKET_MAP.items():
+            if key.lower() in asset_class.lower():
+                bucket_alloc[bucket] = bucket_alloc.get(bucket, 0.0) + pct
+                break
+
+    # Validate
+    total = sum(bucket_alloc.values())
+    if total > 0 and abs(total - 100.0) <= 5.0:
+        log.info(f"Parsed bucket allocation: {bucket_alloc} (total={total:.1f}%)")
+        return bucket_alloc, mrm_score
+    else:
+        log.error(f"Allocation total={total:.1f}% invalid — aborting rebalance")
+        return {}, mrm_score
 
 
-# ── Rebalance Logic ───────────────────────────────────────────────────────────
-
-def is_quarterly_rebalance_week(target_date: date) -> bool:
+# ── Emergency detection ───────────────────────────────────────────────────────
+def check_emergency(portfolio, mrm_score):
     """
-    Returns True if target_date falls in the last 7 days of a quarterly month
-    (March, June, September, December) — i.e. it's a quarterly rebalance Friday.
+    Returns (triggered, reason) if score has been >= 8.0 or <= 4.0
+    for CONSECUTIVE_WEEKS consecutive weeks.
     """
-    if target_date.month not in QUARTERLY_MONTHS:
-        return False
-    # Last Friday of the month: check if there's no Friday in the next 7 days of same month
-    next_friday = target_date + timedelta(days=7)
-    return next_friday.month != target_date.month
+    if mrm_score is None:
+        return False, None
+
+    history = portfolio.get("history", [])
+    if len(history) < CONSECUTIVE_WEEKS - 1:
+        return False, None
+
+    # Get last N-1 scores from history
+    recent_scores = [h.get("mrm_score") for h in history[-(CONSECUTIVE_WEEKS-1):]]
+    recent_scores.append(mrm_score)  # add current week
+
+    if any(s is None for s in recent_scores):
+        return False, None
+
+    if all(s >= EMERGENCY_SCORE_HIGH for s in recent_scores):
+        return True, f"emergency_critical_{mrm_score}"
+    if all(s <= EMERGENCY_SCORE_LOW for s in recent_scores):
+        return True, f"emergency_resilient_{mrm_score}"
+
+    return False, None
 
 
-def has_wow_delta(new_alloc: dict, current_alloc: dict) -> bool:
-    """Returns True if any bucket has changed vs current allocation."""
-    for ticker in TICKERS:
-        new_pct = new_alloc.get(ticker, 0.0)
-        cur_pct = current_alloc.get(ticker, 0.0)
-        if abs(new_pct - cur_pct) >= 1.0:  # 1pp threshold to avoid float noise
-            return True
-    return False
-
-
-# ── Main ─────────────────────────────────────────────────────────────────────
-
+# ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     log.info("=== MRM Portfolio Saturday Update ===")
 
-    # Load portfolio state
     if not PORTFOLIO_PATH.exists():
-        log.error("portfolio.json not found. Run bootstrap first.")
+        log.error("portfolio.json not found.")
         sys.exit(1)
 
     with open(PORTFOLIO_PATH) as f:
         portfolio = json.load(f)
 
-    current = portfolio["current"]
-    meta    = portfolio["meta"]
-    inception_value = meta["inception_value"]
+    current        = portfolio["current"]
+    inception_val  = portfolio["meta"]["inception_value"]
+    target_date    = get_last_friday()
 
-    # Determine target date (last Friday)
-    target_date = get_last_friday()
-    log.info(f"Target date (last Friday): {target_date}")
+    log.info(f"Target date: {target_date}")
 
-    # Check if already updated for this week or newer — prevent re-runs on same day or earlier
     if current["date"] >= str(target_date):
-        log.info(f"Portfolio date {current['date']} >= target {target_date}. Already up to date. Exiting.")
+        log.info(f"Already up to date ({current['date']} >= {target_date}). Exiting.")
         sys.exit(0)
 
-    # ── Fetch prices ──────────────────────────────────────────────────────────
-    log.info("Fetching ETF prices...")
-    prices = fetch_prices(TICKERS, target_date)
-
-    # If any critical price missing, abort
-    for ticker in ["SPY", "IEF", "LQD", "BIL"]:
-        if prices.get(ticker) is None:
-            log.error(f"Critical price missing for {ticker}. Aborting.")
-            sys.exit(1)
-    # Non-critical: use last known price if missing
-    for ticker in ["PDBC", "VNQ"]:
-        if prices.get(ticker) is None:
-            prices[ticker] = current["last_prices"].get(ticker, 0.0)
-            log.warning(f"Using last known price for {ticker}: {prices[ticker]}")
-
-    # ── Calculate current portfolio value BEFORE any rebalance ───────────────
-    current_shares = current["shares"]
-    portfolio_value = calculate_portfolio_value(current_shares, prices)
-    pnl_pct = calculate_pnl_pct(portfolio_value, inception_value)
-    log.info(f"Portfolio value: ${portfolio_value:.2f} (P&L: {pnl_pct:+.2f}%)")
-
-    # ── Benchmark ────────────────────────────────────────────────────────────
-    bench_shares = current["benchmark_spy_shares"]
-    bench_value  = round(bench_shares * prices["SPY"], 2)
-    bench_pnl    = calculate_pnl_pct(bench_value, inception_value)
-    alpha        = round(pnl_pct - bench_pnl, 2)
-    log.info(f"Benchmark SPY: ${bench_value:.2f} (P&L: {bench_pnl:+.2f}%) | Alpha: {alpha:+.2f}%")
-
-    # ── Determine issue number ────────────────────────────────────────────────
-    from datetime import date as date_cls
-    inception_date = date_cls(2026, 3, 14)
-    issue_number = ((target_date - inception_date).days // 7) + 1
-    log.info(f"Issue number: {issue_number}")
-
-    # ── Find and parse latest newsletter ─────────────────────────────────────
+    # ── Parse newsletter ──────────────────────────────────────────────────────
     newsletter_path = find_latest_newsletter()
-    new_alloc = {}
-    mrm_score = None
-
+    bucket_alloc, mrm_score = ({}, None)
     if newsletter_path:
-        new_alloc = parse_newsletter_allocation(newsletter_path)
-        mrm_score = parse_mrm_score(newsletter_path)
-        log.info(f"MRM Score from newsletter: {mrm_score}")
+        bucket_alloc, mrm_score = parse_newsletter(newsletter_path)
 
-    current_alloc = current["allocation_pct"]
+    regime = classify_regime(mrm_score)
+    log.info(f"Regime: {regime} (score={mrm_score})")
 
-    # ── Rebalance decision ───────────────────────────────────────────────────
+    # ── Fetch prices for current regime tickers + all held tickers ────────────
+    current_shares  = current.get("shares", {})
+    tickers_needed  = list(set(get_active_tickers(regime)) | set(current_shares.keys()) | {"SPY"})
+    log.info(f"Fetching prices for: {tickers_needed}")
+    prices = fetch_prices(tickers_needed, target_date)
+
+    # Fallback: use last known price if fetch failed
+    for t in tickers_needed:
+        if prices.get(t) is None:
+            prices[t] = current.get("last_prices", {}).get(t)
+            if prices[t]:
+                log.warning(f"  {t}: using last known price ${prices[t]}")
+
+    # Abort if SPY missing (needed for benchmark)
+    if not prices.get("SPY"):
+        log.error("SPY price unavailable. Aborting.")
+        sys.exit(1)
+
+    # ── Mark-to-market with CURRENT shares ───────────────────────────────────
+    portfolio_value = calculate_value(current_shares, prices)
+    pnl_pct         = round((portfolio_value - inception_val) / inception_val * 100, 2)
+    bench_shares    = current.get("benchmark_spy_shares", 15.1057)
+    bench_value     = round(bench_shares * prices["SPY"], 2)
+    bench_pnl       = round((bench_value - inception_val) / inception_val * 100, 2)
+    alpha           = round(pnl_pct - bench_pnl, 2)
+
+    log.info(f"Portfolio: ${portfolio_value} ({pnl_pct:+.2f}%) | SPY: ${bench_value} ({bench_pnl:+.2f}%) | Alpha: {alpha:+.2f}%")
+
+    # ── Issue number ──────────────────────────────────────────────────────────
+    inception_date = date(2026, 3, 14)
+    issue_number   = ((target_date - inception_date).days // 7) + 1
+
+    # ── Rebalance decision ────────────────────────────────────────────────────
     rebalance_triggered = False
-    rebalance_reason    = "no_rebalance"
-    final_alloc         = current_alloc.copy()
+    rebalance_reason    = "hold"
+    final_bucket_alloc  = current.get("bucket_allocation_pct", {})
+    final_regime        = current.get("regime", "Turbulence")
 
-    if new_alloc:
-        # Validate parsed allocation sums to ~100% before any rebalance
-        alloc_total = sum(new_alloc.values())
-        alloc_valid = abs(alloc_total - 100.0) <= 5.0
+    if bucket_alloc:
+        semestral        = is_semestral_rebalance_week(target_date)
+        emerg, emerg_why = check_emergency(portfolio, mrm_score)
 
-        if not alloc_valid:
-            log.error(f"Parsed allocation sums to {alloc_total:.1f}% — expected ~100%. Aborting rebalance, holding current allocation.")
-            new_alloc = {}
-
-    if new_alloc:
-        quarterly = is_quarterly_rebalance_week(target_date)
-        wow_delta = has_wow_delta(new_alloc, current_alloc)
-        emergency = mrm_score is not None and mrm_score >= 7.0
-
-        if quarterly:
+        if semestral:
             rebalance_triggered = True
-            rebalance_reason    = "quarterly_rebalance"
-        elif wow_delta:
+            rebalance_reason    = "semestral_rebalance"
+            final_bucket_alloc  = bucket_alloc
+            final_regime        = regime
+            log.info("REBALANCE: semestral")
+        elif emerg:
             rebalance_triggered = True
-            rebalance_reason    = "tactical_wow_delta"
-        elif emergency:
-            rebalance_triggered = True
-            rebalance_reason    = f"emergency_score_{mrm_score}"
-
-        if rebalance_triggered:
-            final_alloc = new_alloc
-            log.info(f"REBALANCE triggered: {rebalance_reason}")
+            rebalance_reason    = emerg_why
+            final_bucket_alloc  = bucket_alloc
+            final_regime        = regime
+            log.info(f"REBALANCE: emergency — {emerg_why}")
         else:
-            log.info("No rebalance needed this week.")
+            log.info(f"No rebalance — next semestral: Jan or Jun. Score={mrm_score}")
     else:
-        log.warning("No newsletter parsed or invalid allocation — holding current allocation.")
+        log.warning("No valid newsletter allocation — holding current positions.")
 
     # ── Calculate new shares ──────────────────────────────────────────────────
-    if rebalance_triggered:
-        candidate_shares = rebalance_shares(portfolio_value, final_alloc, prices)
-        # Safety check: if all shares are 0, something went wrong — abort
-        total_shares_value = sum((candidate_shares.get(t,0) * prices.get(t,0)) for t in TICKERS)
-        if total_shares_value < portfolio_value * 0.5:
-            log.error(f"Rebalanced shares total value ${total_shares_value:.2f} is less than 50% of portfolio — aborting rebalance.")
+    if rebalance_triggered and final_bucket_alloc:
+        candidate = rebalance_shares(portfolio_value, final_bucket_alloc, final_regime, prices)
+        candidate_value = calculate_value(candidate, prices)
+        if candidate_value < portfolio_value * 0.5:
+            log.error(f"Rebalanced value ${candidate_value} < 50% of portfolio — aborting.")
             new_shares = current_shares.copy()
             rebalance_triggered = False
             rebalance_reason = "aborted_invalid_shares"
         else:
-            new_shares = candidate_shares
-            log.info(f"New shares after rebalance: {new_shares}")
+            new_shares = candidate
+            log.info(f"New shares: {new_shares}")
     else:
         new_shares = current_shares.copy()
 
-    # ── Build new history snapshot ────────────────────────────────────────────
+    # ── Build active ETF allocation for display ───────────────────────────────
+    etf_map     = REGIME_ETF_MAP.get(final_regime, REGIME_ETF_MAP["Turbulence"])
+    alloc_pct   = {t: 0.0 for t in ALL_TICKERS}
+    for bucket, pct in final_bucket_alloc.items():
+        ticker = etf_map.get(bucket, "BIL")
+        alloc_pct[ticker] = alloc_pct.get(ticker, 0.0) + pct
+
+    # ── Build snapshot ────────────────────────────────────────────────────────
     snapshot = {
-        "issue":                     issue_number,
-        "date":                      str(target_date),
-        "mrm_score":                 mrm_score,
-        "regime":                    "Turbulence" if mrm_score and 5 <= mrm_score < 7 else (
-                                       "Resilient" if mrm_score and mrm_score < 5 else "Critical"),
-        "prices":                    prices,
-        "prices_confirmed":          {t: True for t in TICKERS},
+        "issue":                      issue_number,
+        "date":                       str(target_date),
+        "mrm_score":                  mrm_score,
+        "regime":                     regime,
+        "prices":                     {t: prices[t] for t in tickers_needed if prices.get(t)},
+        "prices_confirmed":           {t: True for t in tickers_needed if prices.get(t)},
         "portfolio_value_pre_rebalance": round(portfolio_value, 2),
-        "allocation_pct":            final_alloc,
-        "shares":                    new_shares,
-        "portfolio_value":           round(portfolio_value, 2),
-        "portfolio_pnl_pct":         pnl_pct,
-        "benchmark_spy_value":       bench_value,
-        "benchmark_spy_pnl_pct":     bench_pnl,
-        "alpha_vs_benchmark_pct":    alpha,
-        "rebalance_triggered":       rebalance_triggered,
-        "rebalance_reason":          rebalance_reason,
+        "bucket_allocation_pct":      final_bucket_alloc,
+        "allocation_pct":             {t: v for t, v in alloc_pct.items() if v > 0},
+        "active_etf_map":             etf_map,
+        "shares":                     new_shares,
+        "portfolio_value":            round(portfolio_value, 2),
+        "portfolio_pnl_pct":          pnl_pct,
+        "benchmark_spy_value":        bench_value,
+        "benchmark_spy_pnl_pct":      bench_pnl,
+        "alpha_vs_benchmark_pct":     alpha,
+        "rebalance_triggered":        rebalance_triggered,
+        "rebalance_reason":           rebalance_reason,
     }
 
-    # ── Update portfolio.json ──────────────────────────────────────────────────
+    # ── Update portfolio.json ─────────────────────────────────────────────────
     portfolio["history"].append(snapshot)
 
     portfolio["current"] = {
         "issue":                  issue_number,
         "date":                   str(target_date),
+        "regime":                 final_regime,
         "shares":                 new_shares,
-        "allocation_pct":         final_alloc,
-        "last_prices":            prices,
+        "bucket_allocation_pct":  final_bucket_alloc,
+        "allocation_pct":         {t: v for t, v in alloc_pct.items() if v > 0},
+        "active_etf_map":         etf_map,
+        "last_prices":            {t: prices[t] for t in tickers_needed if prices.get(t)},
         "portfolio_value":        round(portfolio_value, 2),
         "portfolio_pnl_pct":      pnl_pct,
         "benchmark_spy_shares":   bench_shares,
@@ -396,7 +398,7 @@ def main():
     with open(PORTFOLIO_PATH, "w") as f:
         json.dump(portfolio, f, indent=2)
 
-    log.info("portfolio.json updated successfully.")
+    log.info("portfolio.json updated.")
     log.info(f"Summary: MRM ${portfolio_value:.2f} ({pnl_pct:+.2f}%) | SPY ${bench_value:.2f} ({bench_pnl:+.2f}%) | Alpha {alpha:+.2f}%")
 
 
