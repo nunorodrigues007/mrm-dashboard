@@ -72,7 +72,23 @@
       "benchmark_spy_value": 10000.0,
       "benchmark_spy_pnl_pct": 0.0,
       "rebalance_triggered": true,
-      "rebalance_reason": "inception"
+      "rebalance_reason": "inception",
+      "bucket_allocation_pct": {
+        "US_EQUITIES": 40.0,
+        "US_TREASURIES": 12.0,
+        "IG_CREDIT": 15.0,
+        "COMMODITIES": 3.0,
+        "CASH": 25.0,
+        "ALTERNATIVES": 5.0
+      },
+      "active_etf_map": {
+        "US_EQUITIES": "SPY",
+        "US_TREASURIES": "IEF",
+        "IG_CREDIT": "LQD",
+        "COMMODITIES": "PDBC",
+        "CASH": "BIL",
+        "ALTERNATIVES": "VNQ"
+      }
     },
     {
       "issue": 2,
@@ -118,7 +134,23 @@
       "benchmark_spy_value": 9758.28,
       "benchmark_spy_pnl_pct": -2.42,
       "rebalance_triggered": true,
-      "rebalance_reason": "allocation_changed_issue2_vs_issue1"
+      "rebalance_reason": "allocation_changed_issue2_vs_issue1",
+      "bucket_allocation_pct": {
+        "US_EQUITIES": 50.0,
+        "US_TREASURIES": 22.0,
+        "IG_CREDIT": 8.0,
+        "COMMODITIES": 7.0,
+        "CASH": 13.0,
+        "ALTERNATIVES": 0.0
+      },
+      "active_etf_map": {
+        "US_EQUITIES": "SPY",
+        "US_TREASURIES": "IEF",
+        "IG_CREDIT": "LQD",
+        "COMMODITIES": "PDBC",
+        "CASH": "BIL",
+        "ALTERNATIVES": "VNQ"
+      }
     },
     {
       "issue": 3,
@@ -164,7 +196,23 @@
       "benchmark_spy_value": 9557.27,
       "benchmark_spy_pnl_pct": -4.43,
       "rebalance_triggered": true,
-      "rebalance_reason": "wow_delta_spy_minus2_ief_plus2"
+      "rebalance_reason": "wow_delta_spy_minus2_ief_plus2",
+      "bucket_allocation_pct": {
+        "US_EQUITIES": 38.0,
+        "US_TREASURIES": 25.0,
+        "IG_CREDIT": 12.0,
+        "COMMODITIES": 5.0,
+        "CASH": 15.0,
+        "ALTERNATIVES": 5.0
+      },
+      "active_etf_map": {
+        "US_EQUITIES": "SPY",
+        "US_TREASURIES": "IEF",
+        "IG_CREDIT": "LQD",
+        "COMMODITIES": "PDBC",
+        "CASH": "BIL",
+        "ALTERNATIVES": "VNQ"
+      }
     },
     {
       "issue": 4,
@@ -211,7 +259,23 @@
       "benchmark_spy_pnl_pct": -0.93,
       "alpha_vs_benchmark_pct": 0.98,
       "rebalance_triggered": true,
-      "rebalance_reason": "tactical_wow_delta_issue4"
+      "rebalance_reason": "tactical_wow_delta_issue4",
+      "bucket_allocation_pct": {
+        "US_EQUITIES": 40.0,
+        "US_TREASURIES": 18.0,
+        "IG_CREDIT": 28.0,
+        "COMMODITIES": 6.0,
+        "CASH": 8.0,
+        "ALTERNATIVES": 0.0
+      },
+      "active_etf_map": {
+        "US_EQUITIES": "SPY",
+        "US_TREASURIES": "IEF",
+        "IG_CREDIT": "LQD",
+        "COMMODITIES": "PDBC",
+        "CASH": "BIL",
+        "ALTERNATIVES": "VNQ"
+      }
     }
   ],
   "current": {
@@ -246,6 +310,23 @@
     "benchmark_spy_shares": 15.1057,
     "benchmark_spy_value": 9906.77,
     "benchmark_spy_pnl_pct": -0.93,
-    "alpha_vs_benchmark_pct": 0.98
+    "alpha_vs_benchmark_pct": 0.98,
+    "bucket_allocation_pct": {
+      "US_EQUITIES": 40.0,
+      "US_TREASURIES": 18.0,
+      "IG_CREDIT": 28.0,
+      "COMMODITIES": 6.0,
+      "CASH": 8.0,
+      "ALTERNATIVES": 0.0
+    },
+    "regime": "Turbulence",
+    "active_etf_map": {
+      "US_EQUITIES": "SPY",
+      "US_TREASURIES": "IEF",
+      "IG_CREDIT": "LQD",
+      "COMMODITIES": "PDBC",
+      "CASH": "BIL",
+      "ALTERNATIVES": "VNQ"
+    }
   }
 }
