@@ -13,7 +13,7 @@ BREVO_KEY     = os.environ["BREVO_API_KEY"]
 
 today      = datetime.utcnow().strftime("%d %B %Y")
 today_file = datetime.utcnow().strftime("%d%b%Y")
-start_date = date(2026, 3, 14)
+start_date = date(2026, 3, 13)
 issue_number = ((date.today() - start_date).days // 7) + 1
 print(f"Generating Issue #{issue_number} — {today}")
 
@@ -212,6 +212,7 @@ subprocess.run(["git", "add", filename, "index.html", "data_prev.json"], check=T
 r = subprocess.run(["git", "diff", "--staged", "--quiet"])
 if r.returncode != 0:
     subprocess.run(["git", "commit", "-m", f"Auto: Newsletter Issue #{issue_number} — {today}"], check=True)
+    subprocess.run(["git", "pull", "--rebase", "origin", "main"], check=True)
     subprocess.run(["git", "push"], check=True)
     print("✅ Pushed to GitHub")
 
@@ -243,10 +244,9 @@ usmrm.net/{filename}
 #MacroInvesting #ERP #FedWatch #Finance #WeekendReading"""
 
 # ── SEND CLEAN NEWSLETTER TO ALL SUBSCRIBERS ──
-# Remove owner from subscriber list for clean send
 clean_subscribers = [e for e in subscribers if e != "usmrm@proton.me"]
 if not clean_subscribers:
-    clean_subscribers = subscribers  # fallback if only owner
+    clean_subscribers = subscribers
 
 print(f"Sending clean newsletter to {len(clean_subscribers)} subscribers...")
 send_r = requests.post("https://api.brevo.com/v3/smtp/email",
