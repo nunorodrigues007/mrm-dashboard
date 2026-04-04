@@ -31,17 +31,25 @@ log = logging.getLogger("mrm_portfolio")
 TICKERS = ["SPY", "IEF", "LQD", "PDBC", "BIL", "VNQ"]
 
 ASSET_CLASS_MAP = {
+    # Issue #3 format
     "US Equities":              "SPY",
     "US Equities (Broad)":      "SPY",
     "US Treasuries":            "IEF",
-    "US Treasuries (7":         "IEF",   # catches "7-10Y" variations
+    "US Treasuries (7":         "IEF",
     "Investment-Grade Credit":  "LQD",
     "Investment Grade Credit":  "LQD",
     "Commodities":              "PDBC",
+    "Real Assets":              "PDBC",
     "Cash":                     "BIL",
     "Cash & Equivalents":       "BIL",
-    "Alternatives":             "VNQ",
     "Alternatives / Real":      "VNQ",
+    "Alternatives":             "VNQ",
+    # Issue #4 format — Tactical Allocation Framework
+    "Domestic Equity":          "SPY",
+    "International Developed":  "SPY",   # folded into SPY
+    "Investment-Grade Fixed":   "LQD",
+    "Sovereign":                "IEF",   # Sovereign / T-Bills Short Duration
+    "Alternatives / Hedge":     "VNQ",
 }
 
 # Quarterly rebalance: last Friday of March, June, September, December
@@ -141,12 +149,12 @@ def parse_newsletter_allocation(newsletter_path: Path) -> dict:
 
     allocation = {}
 
-    # Find the Model Allocation table (Section 06)
-    # We look for lines like: | US Equities (Broad) | 38% | ...
+    # Find the allocation table (Section 06 or Tactical Allocation Framework)
+    # Match rows like: | Asset Class Name | XX% | ...
+    # First column must start with a letter (not a digit or %) to avoid matching numeric columns
     import re
-    # Match table rows with asset class and percentage
     pattern = re.compile(
-        r'\|\s*([^|]+?)\s*\|\s*(\d+(?:\.\d+)?)\s*%\s*\|',
+        r'\|\s*([A-Za-z][^|%]{2,50}?)\s*\|\s*(\d+(?:\.\d+)?)\s*%\s*\|',
         re.IGNORECASE
     )
     matches = pattern.findall(content)
@@ -154,12 +162,10 @@ def parse_newsletter_allocation(newsletter_path: Path) -> dict:
     for asset_class_raw, pct_str in matches:
         asset_class = asset_class_raw.strip()
         pct = float(pct_str)
-        # Map to ticker
+        # Map to ticker — SUM if multiple classes map to same ticker (e.g. Domestic + Intl → SPY)
         for key, ticker in ASSET_CLASS_MAP.items():
             if key.lower() in asset_class.lower():
-                # Only take first match per ticker (avoid double-counting)
-                if ticker not in allocation:
-                    allocation[ticker] = pct
+                allocation[ticker] = allocation.get(ticker, 0.0) + pct
                 break
 
     # Validate total
