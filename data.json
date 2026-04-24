@@ -1,13 +1,13 @@
 {
   "meta": {
-    "lastUpdated": "2026-04-23T18:52:43Z",
+    "lastUpdated": "2026-04-24T18:34:43Z",
     "source": "FRED API (Live)",
     "version": "2.0.0",
     "fredSeriesDates": {
-      "T10Y2Y": "2026-04-22",
+      "T10Y2Y": "2026-04-23",
       "M2SL": "2026-02-01",
       "WILL5000PRFC": null,
-      "DGS10": "2026-04-21",
+      "DGS10": "2026-04-22",
       "DRALACBN": "2025-10-01",
       "TDSP": "2025-10-01",
       "ICSA": "2026-04-18"
