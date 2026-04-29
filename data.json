@@ -1,13 +1,13 @@
 {
   "meta": {
-    "lastUpdated": "2026-04-28T19:15:58Z",
+    "lastUpdated": "2026-04-29T19:05:32Z",
     "source": "FRED API (Live)",
     "version": "2.0.0",
     "fredSeriesDates": {
-      "T10Y2Y": "2026-04-27",
+      "T10Y2Y": "2026-04-28",
       "M2SL": "2026-03-01",
       "WILL5000PRFC": null,
-      "DGS10": "2026-04-24",
+      "DGS10": "2026-04-27",
       "DRALACBN": "2025-10-01",
       "TDSP": "2025-10-01",
       "ICSA": "2026-04-18"
@@ -22,10 +22,10 @@
       "name": "Cycle",
       "score": 4.5,
       "metric": "10Y-2Y Yield Curve",
-      "value": "+0.57%",
+      "value": "+0.52%",
       "fredSeries": "T10Y2Y",
       "trend": "steepening",
-      "delta": "+0.35%",
+      "delta": "+0.30%",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
     },
@@ -48,11 +48,11 @@
       "name": "Premium",
       "score": 9.0,
       "metric": "Equity Risk Premium",
-      "value": "0.24%",
+      "value": "0.20%",
       "fredSeries": "DGS10",
       "trend": "compressed",
-      "delta": "-0.96",
-      "description": "ERP = E/P (4.55%) minus 10Y yield (4.31%). Approaching critical threshold.",
+      "delta": "-1.00",
+      "description": "ERP = E/P (4.55%) minus 10Y yield (4.35%). Approaching critical threshold.",
       "status": "critical"
     },
     {
@@ -102,16 +102,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": 0.24,
+      "value": 0.2,
       "unit": "%",
-      "displayValue": "0.24%",
+      "displayValue": "0.20%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-0.96%",
+      "delta": "-1.00%",
       "alert": true,
-      "description": "ERP at 0.24%. Red alert triggers below 0.80%."
+      "description": "ERP at 0.20%. Red alert triggers below 0.80%."
     }
   ],
   "historicalScores": [
