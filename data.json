@@ -1,31 +1,31 @@
 {
   "meta": {
-    "lastUpdated": "2026-05-06T19:17:47Z",
+    "lastUpdated": "2026-05-07T19:22:48Z",
     "source": "FRED API (Live)",
     "version": "2.0.0",
     "fredSeriesDates": {
-      "T10Y2Y": "2026-05-05",
+      "T10Y2Y": "2026-05-06",
       "M2SL": "2026-03-01",
       "WILL5000PRFC": null,
-      "DGS10": "2026-05-04",
+      "DGS10": "2026-05-05",
       "DRALACBN": "2025-10-01",
       "TDSP": "2025-10-01",
-      "ICSA": "2026-04-25"
+      "ICSA": "2026-05-02"
     }
   },
-  "globalResilienceScore": 6.47,
+  "globalResilienceScore": 6.68,
   "status": "Turbulence",
   "pillars": [
     {
       "id": "cycle",
       "roman": "I",
       "name": "Cycle",
-      "score": 4.5,
+      "score": 5.5,
       "metric": "10Y-2Y Yield Curve",
-      "value": "+0.50%",
+      "value": "+0.49%",
       "fredSeries": "T10Y2Y",
       "trend": "steepening",
-      "delta": "+0.28%",
+      "delta": "+0.27%",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
     },
@@ -48,11 +48,11 @@
       "name": "Premium",
       "score": 9.0,
       "metric": "Equity Risk Premium",
-      "value": "0.10%",
+      "value": "0.12%",
       "fredSeries": "DGS10",
       "trend": "compressed",
-      "delta": "-1.10",
-      "description": "ERP = E/P (4.55%) minus 10Y yield (4.45%). Approaching critical threshold.",
+      "delta": "-1.08",
+      "description": "ERP = E/P (4.55%) minus 10Y yield (4.43%). Approaching critical threshold.",
       "status": "critical"
     },
     {
@@ -87,61 +87,61 @@
       "id": "jobless",
       "name": "Initial Jobless Claims",
       "fredSeries": "ICSA",
-      "value": 189000,
+      "value": 200000,
       "unit": "claims",
-      "displayValue": "189K",
+      "displayValue": "200K",
       "threshold": 275000,
       "thresholdDisplay": "275K",
       "status": "normal",
-      "trend": "falling",
-      "delta": "-26K",
+      "trend": "rising",
+      "delta": "+10K",
       "alert": false,
-      "description": "Weekly initial jobless claims at 189K. Red alert triggers above 275,000."
+      "description": "Weekly initial jobless claims at 200K. Red alert triggers above 275,000."
     },
     {
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": 0.1,
+      "value": 0.12,
       "unit": "%",
-      "displayValue": "0.10%",
+      "displayValue": "0.12%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-1.10%",
+      "delta": "-1.08%",
       "alert": true,
-      "description": "ERP at 0.10%. Red alert triggers below 0.80%."
+      "description": "ERP at 0.12%. Red alert triggers below 0.80%."
     }
   ],
   "historicalScores": [
     {
       "date": "Apr '26",
-      "score": 5.9
+      "score": 6.0
     },
     {
       "date": "Apr '26",
-      "score": 5.9
+      "score": 6.0
     },
     {
       "date": "Apr '26",
-      "score": 5.9
-    },
-    {
-      "date": "Apr '26",
-      "score": 5.9
+      "score": 6.0
     },
     {
       "date": "May '26",
-      "score": 5.9
+      "score": 6.0
     },
     {
       "date": "May '26",
-      "score": 5.9
+      "score": 6.0
     },
     {
       "date": "May '26",
-      "score": 5.9
+      "score": 6.0
+    },
+    {
+      "date": "May '26",
+      "score": 6.3
     }
   ]
 }
