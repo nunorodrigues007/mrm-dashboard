@@ -1,13 +1,13 @@
 {
   "meta": {
-    "lastUpdated": "2026-05-07T19:22:48Z",
+    "lastUpdated": "2026-05-08T19:01:22Z",
     "source": "FRED API (Live)",
     "version": "2.0.0",
     "fredSeriesDates": {
-      "T10Y2Y": "2026-05-06",
+      "T10Y2Y": "2026-05-07",
       "M2SL": "2026-03-01",
       "WILL5000PRFC": null,
-      "DGS10": "2026-05-05",
+      "DGS10": "2026-05-06",
       "DRALACBN": "2025-10-01",
       "TDSP": "2025-10-01",
       "ICSA": "2026-05-02"
@@ -48,11 +48,11 @@
       "name": "Premium",
       "score": 9.0,
       "metric": "Equity Risk Premium",
-      "value": "0.12%",
+      "value": "0.19%",
       "fredSeries": "DGS10",
       "trend": "compressed",
-      "delta": "-1.08",
-      "description": "ERP = E/P (4.55%) minus 10Y yield (4.43%). Approaching critical threshold.",
+      "delta": "-1.01",
+      "description": "ERP = E/P (4.55%) minus 10Y yield (4.36%). Approaching critical threshold.",
       "status": "critical"
     },
     {
@@ -102,16 +102,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": 0.12,
+      "value": 0.19,
       "unit": "%",
-      "displayValue": "0.12%",
+      "displayValue": "0.19%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-1.08%",
+      "delta": "-1.01%",
       "alert": true,
-      "description": "ERP at 0.12%. Red alert triggers below 0.80%."
+      "description": "ERP at 0.19%. Red alert triggers below 0.80%."
     }
   ],
   "historicalScores": [
@@ -124,10 +124,6 @@
       "score": 6.0
     },
     {
-      "date": "Apr '26",
-      "score": 6.0
-    },
-    {
       "date": "May '26",
       "score": 6.0
     },
@@ -138,6 +134,10 @@
     {
       "date": "May '26",
       "score": 6.0
+    },
+    {
+      "date": "May '26",
+      "score": 6.3
     },
     {
       "date": "May '26",
