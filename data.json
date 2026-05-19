@@ -1,19 +1,19 @@
 {
   "meta": {
-    "lastUpdated": "2026-05-18T19:21:05Z",
+    "lastUpdated": "2026-05-19T19:40:57Z",
     "source": "FRED API (Live)",
     "version": "2.0.0",
     "fredSeriesDates": {
-      "T10Y2Y": "2026-05-15",
+      "T10Y2Y": "2026-05-18",
       "M2SL": "2026-03-01",
       "WILL5000PRFC": null,
-      "DGS10": "2026-05-14",
-      "DRALACBN": "2025-10-01",
+      "DGS10": "2026-05-15",
+      "DRALACBN": "2026-01-01",
       "TDSP": "2025-10-01",
       "ICSA": "2026-05-09"
     }
   },
-  "globalResilienceScore": 6.47,
+  "globalResilienceScore": 6.57,
   "status": "Turbulence",
   "pillars": [
     {
@@ -22,10 +22,10 @@
       "name": "Cycle",
       "score": 4.5,
       "metric": "10Y-2Y Yield Curve",
-      "value": "+0.50%",
+      "value": "+0.54%",
       "fredSeries": "T10Y2Y",
       "trend": "steepening",
-      "delta": "+0.28%",
+      "delta": "+0.32%",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
     },
@@ -46,26 +46,26 @@
       "id": "premium",
       "roman": "II",
       "name": "Premium",
-      "score": 9.0,
+      "score": 10.0,
       "metric": "Equity Risk Premium",
-      "value": "0.08%",
+      "value": "-0.04%",
       "fredSeries": "DGS10",
       "trend": "compressed",
-      "delta": "-1.12",
-      "description": "ERP = E/P (4.55%) minus 10Y yield (4.47%). Approaching critical threshold.",
+      "delta": "-1.24",
+      "description": "ERP = E/P (4.55%) minus 10Y yield (4.59%). Approaching critical threshold.",
       "status": "critical"
     },
     {
       "id": "solvency",
       "roman": "III",
       "name": "Solvency",
-      "score": 3.5,
+      "score": 2.5,
       "metric": "Bank Delinquency Rate",
       "value": "1.5%",
       "fredSeries": "DRALACBN",
       "trend": "stable",
       "delta": "+0.02",
-      "description": "FRED DRALACBN delinquency rate at 1.53%. Systemic banking plumbing functioning normally.",
+      "description": "FRED DRALACBN delinquency rate at 1.49%. Systemic banking plumbing functioning normally.",
       "status": "stable"
     },
     {
@@ -102,16 +102,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": 0.08,
+      "value": -0.04,
       "unit": "%",
-      "displayValue": "0.08%",
+      "displayValue": "-0.04%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-1.12%",
+      "delta": "-1.24%",
       "alert": true,
-      "description": "ERP at 0.08%. Red alert triggers below 0.80%."
+      "description": "ERP at -0.04%. Red alert triggers below 0.80%."
     }
   ],
   "historicalScores": [
@@ -137,7 +137,7 @@
     },
     {
       "date": "May '26",
-      "score": 6.2
+      "score": 5.9
     },
     {
       "date": "May '26",
