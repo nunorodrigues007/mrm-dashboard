@@ -1,11 +1,11 @@
 {
   "meta": {
-    "lastUpdated": "2026-05-25T19:12:56Z",
+    "lastUpdated": "2026-05-26T19:51:57Z",
     "source": "FRED API (Live)",
     "version": "2.0.0",
     "fredSeriesDates": {
       "T10Y2Y": "2026-05-22",
-      "M2SL": "2026-03-01",
+      "M2SL": "2026-04-01",
       "WILL5000PRFC": null,
       "DGS10": "2026-05-21",
       "DRALACBN": "2026-01-01",
@@ -39,7 +39,7 @@
       "fredSeries": "M2SL + WILL5000PRFC",
       "trend": "elevated",
       "delta": "+0.03",
-      "description": "Buffett Indicator at 1.82x. M2 at $22.7T. Equity valuations elevated relative to monetary base.",
+      "description": "Buffett Indicator at 1.82x. M2 at $22.8T. Equity valuations elevated relative to monetary base.",
       "status": "critical"
     },
     {
