@@ -1,10 +1,10 @@
 {
   "meta": {
-    "lastUpdated": "2026-05-30T18:56:34Z",
+    "lastUpdated": "2026-05-31T18:59:44Z",
     "source": "FRED API (Live)",
     "version": "2.0.0",
     "fredSeriesDates": {
-      "T10Y2Y": "2026-05-28",
+      "T10Y2Y": "2026-05-29",
       "M2SL": "2026-04-01",
       "WILL5000PRFC": null,
       "DGS10": "2026-05-28",
@@ -22,10 +22,10 @@
       "name": "Cycle",
       "score": 5.5,
       "metric": "10Y-2Y Yield Curve",
-      "value": "+0.46%",
+      "value": "+0.47%",
       "fredSeries": "T10Y2Y",
       "trend": "steepening",
-      "delta": "+0.24%",
+      "delta": "+0.25%",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
     },
@@ -121,7 +121,7 @@
     },
     {
       "date": "May '26",
-      "score": 5.9
+      "score": 6.2
     },
     {
       "date": "May '26",
