@@ -171,11 +171,26 @@ def rebalance_shares(portfolio_value, bucket_alloc_pct, regime, prices):
 
 
 def find_latest_newsletter():
-    candidates = sorted(NEWSLETTER_DIR.glob("MRM_Newsletter*.html"), reverse=True)
-    if candidates:
-        log.info(f"Latest newsletter: {candidates[0]}")
-        return candidates[0]
-    return None
+    """
+    Find the most recent newsletter by ISSUE NUMBER (extracted from filename),
+    not by lexicographic filename sort — "Issue9" sorts after "Issue15" as text,
+    which previously caused the wrong (older) newsletter to be selected.
+    Filename pattern: MRM_Newsletter_Issue{N}_{date}.html (Issue #1 has no "Issue1" in name).
+    """
+    candidates = list(NEWSLETTER_DIR.glob("MRM_Newsletter*.html"))
+    if not candidates:
+        return None
+
+    def extract_issue_num(path):
+        m = re.search(r'Issue(\d+)', path.name)
+        if m:
+            return int(m.group(1))
+        # Issue #1 filename has no "IssueN" — treat as issue 1
+        return 1
+
+    candidates.sort(key=extract_issue_num, reverse=True)
+    log.info(f"Latest newsletter (by issue number): {candidates[0]}")
+    return candidates[0]
 
 
 def parse_newsletter(newsletter_path):
