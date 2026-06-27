@@ -96,24 +96,37 @@ def is_semestral_rebalance_week(target_date):
     return next_friday.month != target_date.month
 
 
-# ── US market holiday calendar ────────────────────────────────────────────────
-US_MARKET_HOLIDAYS_2026 = {
+# ── US market holiday calendar (2026–2027) ───────────────────────────────────
+# NYSE/NASDAQ observed holidays. Extend yearly every January.
+US_MARKET_HOLIDAYS = {
+    # 2026
     date(2026, 1, 1),   # New Year's Day
     date(2026, 1, 19),  # MLK Day
     date(2026, 2, 16),  # Presidents' Day
     date(2026, 4, 3),   # Good Friday
     date(2026, 5, 25),  # Memorial Day
     date(2026, 6, 19),  # Juneteenth
-    date(2026, 7, 3),   # Independence Day (observed)
+    date(2026, 7, 3),   # Independence Day (observed Fri — Jul 4 is Sat)
     date(2026, 9, 7),   # Labor Day
     date(2026, 11, 26), # Thanksgiving
     date(2026, 12, 25), # Christmas
+    # 2027
+    date(2027, 1, 1),   # New Year's Day
+    date(2027, 1, 18),  # MLK Day
+    date(2027, 2, 15),  # Presidents' Day
+    date(2027, 3, 26),  # Good Friday (Easter: Mar 28)
+    date(2027, 5, 31),  # Memorial Day
+    date(2027, 6, 18),  # Juneteenth (observed Fri — Jun 19 is Sat)
+    date(2027, 7, 5),   # Independence Day (observed Mon — Jul 4 is Sun)
+    date(2027, 9, 6),   # Labor Day
+    date(2027, 11, 25), # Thanksgiving
+    date(2027, 12, 24), # Christmas (observed Fri — Dec 25 is Sat)
 }
 
 
 def adjust_for_market_holiday(target_date):
     adjusted = target_date
-    while adjusted in US_MARKET_HOLIDAYS_2026 or adjusted.weekday() >= 5:
+    while adjusted in US_MARKET_HOLIDAYS or adjusted.weekday() >= 5:
         adjusted -= timedelta(days=1)
     if adjusted != target_date:
         log.warning(f"{target_date} is a market holiday — using {adjusted}")
