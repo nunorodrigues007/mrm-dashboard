@@ -276,7 +276,7 @@
       }
     },
     {
-      "issue": 4,
+      "issue": 5,
       "date": "2026-04-10",
       "mrm_score": 6.5,
       "regime": "Turbulence",
@@ -337,7 +337,7 @@
       "rebalance_reason": "hold"
     },
     {
-      "issue": 5,
+      "issue": 6,
       "date": "2026-04-17",
       "mrm_score": 6.5,
       "regime": "Turbulence",
@@ -398,7 +398,7 @@
       "rebalance_reason": "hold"
     },
     {
-      "issue": 6,
+      "issue": 7,
       "date": "2026-04-24",
       "mrm_score": 6.5,
       "regime": "Turbulence",
@@ -459,7 +459,7 @@
       "rebalance_reason": "hold"
     },
     {
-      "issue": 7,
+      "issue": 8,
       "date": "2026-05-01",
       "mrm_score": 6.5,
       "regime": "Turbulence",
@@ -520,7 +520,7 @@
       "rebalance_reason": "hold"
     },
     {
-      "issue": 8,
+      "issue": 9,
       "date": "2026-05-08",
       "mrm_score": 6.7,
       "regime": "Turbulence",
@@ -581,7 +581,7 @@
       "rebalance_reason": "hold"
     },
     {
-      "issue": 9,
+      "issue": 10,
       "date": "2026-05-15",
       "mrm_score": 6.7,
       "regime": "Turbulence",
@@ -642,7 +642,7 @@
       "rebalance_reason": "hold"
     },
     {
-      "issue": 10,
+      "issue": 11,
       "date": "2026-05-22",
       "mrm_score": 6.7,
       "regime": "Turbulence",
@@ -703,7 +703,7 @@
       "rebalance_reason": "hold"
     },
     {
-      "issue": 11,
+      "issue": 12,
       "date": "2026-05-29",
       "mrm_score": 6.7,
       "regime": "Turbulence",
@@ -764,7 +764,7 @@
       "rebalance_reason": "hold"
     },
     {
-      "issue": 12,
+      "issue": 13,
       "date": "2026-06-05",
       "mrm_score": 6.7,
       "regime": "Turbulence",
@@ -825,7 +825,7 @@
       "rebalance_reason": "hold"
     },
     {
-      "issue": 13,
+      "issue": 14,
       "date": "2026-06-12",
       "mrm_score": 6.7,
       "regime": "Turbulence",
@@ -886,7 +886,7 @@
       "rebalance_reason": "hold"
     },
     {
-      "issue": 14,
+      "issue": 15,
       "date": "2026-06-18",
       "mrm_score": 6.7,
       "regime": "Turbulence",
