@@ -47,12 +47,15 @@ ASSET_CLASS_BUCKET_MAP = {
     "US Equities": "US_EQUITIES", "US Equities (Broad)": "US_EQUITIES",
     "Domestic Equity": "US_EQUITIES", "International Developed": "US_EQUITIES",
     "US Large-Cap Equities": "US_EQUITIES", "Large-Cap Equity": "US_EQUITIES",
+    "US Large-Cap Equity": "US_EQUITIES",
     "US Treasuries": "US_TREASURIES", "US Treasuries (7": "US_TREASURIES",
     "Sovereign": "US_TREASURIES", "Intermediate Treasuries": "US_TREASURIES",
     "Investment-Grade Credit": "IG_CREDIT", "Investment Grade Credit": "IG_CREDIT",
     "Investment-Grade Fixed": "IG_CREDIT",
     "Commodities": "COMMODITIES", "Real Assets": "COMMODITIES",
+    "Commodities Broad Basket": "COMMODITIES",
     "Cash": "CASH", "Cash & Equivalents": "CASH", "Cash / Ultra-Short Bills": "CASH",
+    "Short-Duration Bills": "CASH", "Short Duration Bills": "CASH",
     "Alternatives / Real": "ALTERNATIVES", "Alternatives / Hedge": "ALTERNATIVES",
     "Alternatives": "ALTERNATIVES", "Real Estate": "ALTERNATIVES", "REITs": "ALTERNATIVES",
 }
@@ -64,6 +67,9 @@ CONSECUTIVE_WEEKS    = 2
 
 PORTFOLIO_PATH = Path("portfolio.json")
 NEWSLETTER_DIR = Path(".")
+
+# ── Force-rebalance override (set FORCE_REBALANCE=true in env to bypass date check) ──
+FORCE_REBALANCE = os.environ.get("FORCE_REBALANCE", "").lower() in ("1", "true", "yes")
 
 
 def classify_regime(score):
@@ -91,7 +97,6 @@ def is_semestral_rebalance_week(target_date):
 
 
 # ── US market holiday calendar (dates with NO trading — prices will be NaN) ───
-# Maintained manually; extend yearly. Covers federal holidays observed by NYSE/Nasdaq.
 US_MARKET_HOLIDAYS_2026 = {
     date(2026, 1, 1),   # New Year's Day
     date(2026, 1, 19),  # MLK Day
@@ -194,27 +199,63 @@ def find_latest_newsletter():
 
 
 def parse_newsletter(newsletter_path):
+    """
+    Parse allocation table and MRM score from the newsletter HTML file.
+
+    FIX (Jun 2026): The newsletter is generated as HTML with <td> elements,
+    NOT as Markdown pipe tables. The original regex r'|col|pct%|' matched
+    nothing, silently returning empty bucket_alloc and blocking every rebalance.
+    Now uses targeted HTML regex on class="alloc-pct" spans.
+    """
     try:
         content = newsletter_path.read_text(encoding="utf-8")
     except Exception as e:
         log.error(f"Cannot read newsletter: {e}")
         return {}, None
 
+    # ── Extract MRM Score ─────────────────────────────────────────────────────
     mrm_score = None
-    score_match = re.search(r'<[^>]*>\s*(\d\.\d)\s*</[^>]*>', content)
+    # Primary: look for score value wrapped in any tag (e.g. <div class="score-value">6.5</div>)
+    score_match = re.search(r'<[^>]*>\s*(\d+\.\d+)\s*</[^>]*>', content)
     if score_match:
-        mrm_score = float(score_match.group(1))
+        try:
+            mrm_score = float(score_match.group(1))
+        except ValueError:
+            pass
     log.info(f"MRM Score: {mrm_score}")
 
-    pattern = re.compile(r'\|\s*([A-Za-z][^|%]{2,50}?)\s*\|\s*(\d+(?:\.\d+)?)\s*%\s*\|', re.IGNORECASE)
+    # ── Extract Allocation Table (HTML <td> rows) ─────────────────────────────
+    # Newsletter HTML structure:
+    #   <td style="font-weight:600;">US Large-Cap Equity</td>
+    #   <td><span class="alloc-pct">10%</span></td>
+    #
+    # We match asset-class cell followed immediately by the alloc-pct span cell.
+    # Using class="alloc-pct" ensures we only match the target allocation table,
+    # not the Sector Tilt Matrix or other tables.
+    row_pattern = re.compile(
+        r'<td[^>]*>\s*([A-Za-z][^<]{2,80}?)\s*</td>\s*'   # asset class cell
+        r'<td[^>]*>.*?'                                      # open weight cell
+        r'<span[^>]*class=["\']alloc-pct["\'][^>]*>\s*'    # alloc-pct span open
+        r'(\d+(?:\.\d+)?)\s*%\s*</span>',                  # percentage value
+        re.IGNORECASE | re.DOTALL
+    )
+
     bucket_alloc = {}
-    for asset_class_raw, pct_str in pattern.findall(content):
+    for asset_class_raw, pct_str in row_pattern.findall(content):
         asset_class = asset_class_raw.strip()
-        pct = float(pct_str)
+        try:
+            pct = float(pct_str)
+        except ValueError:
+            continue
+        matched = False
         for key, bucket in ASSET_CLASS_BUCKET_MAP.items():
             if key.lower() in asset_class.lower():
                 bucket_alloc[bucket] = bucket_alloc.get(bucket, 0.0) + pct
+                log.info(f"  Mapped '{asset_class}' → {bucket} ({pct}%)")
+                matched = True
                 break
+        if not matched:
+            log.warning(f"  Unmatched asset class: '{asset_class}' ({pct}%) — skipped")
 
     total = sum(bucket_alloc.values())
     if total > 0 and abs(total - 100.0) <= 5.0:
@@ -255,6 +296,8 @@ def _has_invalid_float(obj):
 
 def main():
     log.info("=== MRM Portfolio Saturday Update ===")
+    if FORCE_REBALANCE:
+        log.info("FORCE_REBALANCE=true — bypassing date guard")
 
     if not PORTFOLIO_PATH.exists():
         log.error("portfolio.json not found.")
@@ -270,7 +313,8 @@ def main():
 
     log.info(f"Target date (last Friday): {raw_target} → adjusted for trading: {target_date}")
 
-    if current["date"] >= str(target_date):
+    # ── Date guard: skip if already up-to-date (bypass with FORCE_REBALANCE) ──
+    if not FORCE_REBALANCE and current["date"] >= str(target_date):
         log.info(f"Already up to date ({current['date']} >= {target_date}). Exiting.")
         sys.exit(0)
 
@@ -313,7 +357,9 @@ def main():
 
     log.info(f"Portfolio: ${portfolio_value} ({pnl_pct:+.2f}%) | SPY: ${bench_value} ({bench_pnl:+.2f}%) | Alpha: {alpha:+.2f}%")
 
-    inception_date = date(2026, 3, 14)
+    # ── FIX: inception_date corrected to 2026-03-13 (matches send_newsletter.py) ──
+    # Old value was 2026-03-14, causing issue_number to be 1 less than newsletter's count.
+    inception_date = date(2026, 3, 13)
     issue_number   = ((target_date - inception_date).days // 7) + 1
 
     rebalance_triggered = False
@@ -363,24 +409,24 @@ def main():
         alloc_pct[ticker] = alloc_pct.get(ticker, 0.0) + pct
 
     snapshot = {
-        "issue":                      issue_number,
-        "date":                       str(target_date),
-        "mrm_score":                  mrm_score,
-        "regime":                     regime,
-        "prices":                     {t: prices[t] for t in tickers_needed if prices.get(t) is not None},
-        "prices_confirmed":           {t: True for t in tickers_needed if prices.get(t) is not None},
+        "issue":                         issue_number,
+        "date":                          str(target_date),
+        "mrm_score":                     mrm_score,
+        "regime":                        regime,
+        "prices":                        {t: prices[t] for t in tickers_needed if prices.get(t) is not None},
+        "prices_confirmed":              {t: True for t in tickers_needed if prices.get(t) is not None},
         "portfolio_value_pre_rebalance": round(portfolio_value, 2),
-        "bucket_allocation_pct":      final_bucket_alloc,
-        "allocation_pct":             {t: v for t, v in alloc_pct.items() if v > 0},
-        "active_etf_map":             etf_map,
-        "shares":                     new_shares,
-        "portfolio_value":            round(portfolio_value, 2),
-        "portfolio_pnl_pct":          pnl_pct,
-        "benchmark_spy_value":        bench_value,
-        "benchmark_spy_pnl_pct":      bench_pnl,
-        "alpha_vs_benchmark_pct":     alpha,
-        "rebalance_triggered":        rebalance_triggered,
-        "rebalance_reason":           rebalance_reason,
+        "bucket_allocation_pct":         final_bucket_alloc,
+        "allocation_pct":                {t: v for t, v in alloc_pct.items() if v > 0},
+        "active_etf_map":                etf_map,
+        "shares":                        new_shares,
+        "portfolio_value":               round(portfolio_value, 2),
+        "portfolio_pnl_pct":             pnl_pct,
+        "benchmark_spy_value":           bench_value,
+        "benchmark_spy_pnl_pct":         bench_pnl,
+        "alpha_vs_benchmark_pct":        alpha,
+        "rebalance_triggered":           rebalance_triggered,
+        "rebalance_reason":              rebalance_reason,
     }
 
     new_current = {
