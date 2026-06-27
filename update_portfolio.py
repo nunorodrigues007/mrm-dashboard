@@ -96,7 +96,7 @@ def is_semestral_rebalance_week(target_date):
     return next_friday.month != target_date.month
 
 
-# ── US market holiday calendar (dates with NO trading — prices will be NaN) ───
+# ── US market holiday calendar ────────────────────────────────────────────────
 US_MARKET_HOLIDAYS_2026 = {
     date(2026, 1, 1),   # New Year's Day
     date(2026, 1, 19),  # MLK Day
@@ -112,17 +112,15 @@ US_MARKET_HOLIDAYS_2026 = {
 
 
 def adjust_for_market_holiday(target_date):
-    """If target_date is a known market holiday, roll back to the previous trading day."""
     adjusted = target_date
     while adjusted in US_MARKET_HOLIDAYS_2026 or adjusted.weekday() >= 5:
         adjusted -= timedelta(days=1)
     if adjusted != target_date:
-        log.warning(f"{target_date} is a market holiday — using last trading day {adjusted} instead")
+        log.warning(f"{target_date} is a market holiday — using {adjusted}")
     return adjusted
 
 
 def fetch_prices(tickers, target_date, retries=3):
-    """Fetch closing prices. Detects NaN/Inf (e.g. from market holidays) as failures."""
     prices = {}
     start = target_date - timedelta(days=7)
     end   = target_date + timedelta(days=1)
@@ -138,7 +136,7 @@ def fetch_prices(tickers, target_date, retries=3):
                 else:
                     price = float(hist["Close"].iloc[-1])
                 if math.isnan(price) or math.isinf(price):
-                    raise ValueError(f"Invalid price (NaN/Inf) for {ticker} on {target_date} — likely market holiday or data gap")
+                    raise ValueError(f"Invalid price for {ticker}")
                 prices[ticker] = round(price, 4)
                 log.info(f"  {ticker}: ${price:.4f}")
                 break
@@ -147,7 +145,7 @@ def fetch_prices(tickers, target_date, retries=3):
                 time.sleep(2 ** attempt)
         else:
             prices[ticker] = None
-            log.error(f"  {ticker}: all retries failed — no valid price")
+            log.error(f"  {ticker}: all retries failed")
     return prices
 
 
@@ -177,10 +175,8 @@ def rebalance_shares(portfolio_value, bucket_alloc_pct, regime, prices):
 
 def find_latest_newsletter():
     """
-    Find the most recent newsletter by ISSUE NUMBER (extracted from filename),
-    not by lexicographic filename sort — "Issue9" sorts after "Issue15" as text,
-    which previously caused the wrong (older) newsletter to be selected.
-    Filename pattern: MRM_Newsletter_Issue{N}_{date}.html (Issue #1 has no "Issue1" in name).
+    Find the most recent newsletter by ISSUE NUMBER extracted from filename.
+    Avoids lexicographic sort bug where 'Issue9' > 'Issue15' as text.
     """
     candidates = list(NEWSLETTER_DIR.glob("MRM_Newsletter*.html"))
     if not candidates:
@@ -188,24 +184,20 @@ def find_latest_newsletter():
 
     def extract_issue_num(path):
         m = re.search(r'Issue(\d+)', path.name)
-        if m:
-            return int(m.group(1))
-        # Issue #1 filename has no "IssueN" — treat as issue 1
-        return 1
+        return int(m.group(1)) if m else 1
 
     candidates.sort(key=extract_issue_num, reverse=True)
-    log.info(f"Latest newsletter (by issue number): {candidates[0]}")
+    log.info(f"Latest newsletter (by issue number): {candidates[0].name}")
     return candidates[0]
 
 
 def parse_newsletter(newsletter_path):
     """
-    Parse allocation table and MRM score from the newsletter HTML file.
+    Parse MRM score and allocation table from the newsletter HTML file.
 
-    FIX (Jun 2026): The newsletter is generated as HTML with <td> elements,
-    NOT as Markdown pipe tables. The original regex r'|col|pct%|' matched
-    nothing, silently returning empty bucket_alloc and blocking every rebalance.
-    Now uses targeted HTML regex on class="alloc-pct" spans.
+    Uses a TR-based approach: finds the 'Regime-Based Asset Allocation' table
+    section, then extracts cells row-by-row. This avoids cross-cell regex
+    matching bugs that occurred when using a single regex with re.DOTALL.
     """
     try:
         content = newsletter_path.read_text(encoding="utf-8")
@@ -215,38 +207,55 @@ def parse_newsletter(newsletter_path):
 
     # ── Extract MRM Score ─────────────────────────────────────────────────────
     mrm_score = None
-    # Primary: look for score value wrapped in any tag (e.g. <div class="score-value">6.5</div>)
     score_match = re.search(r'<[^>]*>\s*(\d+\.\d+)\s*</[^>]*>', content)
     if score_match:
         try:
             mrm_score = float(score_match.group(1))
         except ValueError:
             pass
-    log.info(f"MRM Score: {mrm_score}")
+    log.info(f"MRM Score parsed: {mrm_score}")
 
-    # ── Extract Allocation Table (HTML <td> rows) ─────────────────────────────
-    # Newsletter HTML structure:
-    #   <td style="font-weight:600;">US Large-Cap Equity</td>
-    #   <td><span class="alloc-pct">10%</span></td>
-    #
-    # We match asset-class cell followed immediately by the alloc-pct span cell.
-    # Using class="alloc-pct" ensures we only match the target allocation table,
-    # not the Sector Tilt Matrix or other tables.
-    row_pattern = re.compile(
-        r'<td[^>]*>\s*([A-Za-z][^<]{2,80}?)\s*</td>\s*'   # asset class cell
-        r'<td[^>]*>.*?'                                      # open weight cell
-        r'<span[^>]*class=["\']alloc-pct["\'][^>]*>\s*'    # alloc-pct span open
-        r'(\d+(?:\.\d+)?)\s*%\s*</span>',                  # percentage value
-        re.IGNORECASE | re.DOTALL
+    # ── Extract Allocation Table (TR-based) ───────────────────────────────────
+    # Step 1: isolate the allocation table section to avoid matching other tables
+    alloc_section_match = re.search(
+        r'Regime-Based Asset Allocation.*?</table>',
+        content, re.IGNORECASE | re.DOTALL
+    )
+    if not alloc_section_match:
+        log.error("Allocation table section not found in newsletter HTML")
+        return {}, mrm_score
+
+    alloc_section = alloc_section_match.group(0)
+    log.info(f"Allocation section found ({len(alloc_section)} chars)")
+
+    # Step 2: extract each <tr> within that section
+    row_matches = re.findall(
+        r'<tr[^>]*>(.*?)</tr>',
+        alloc_section, re.IGNORECASE | re.DOTALL
     )
 
+    # Step 3: for each row, extract cells and map asset class → bucket
     bucket_alloc = {}
-    for asset_class_raw, pct_str in row_pattern.findall(content):
-        asset_class = asset_class_raw.strip()
-        try:
-            pct = float(pct_str)
-        except ValueError:
+    for row_html in row_matches:
+        # Skip header rows
+        if '<th' in row_html.lower():
             continue
+
+        cells = re.findall(
+            r'<td[^>]*>(.*?)</td>',
+            row_html, re.IGNORECASE | re.DOTALL
+        )
+        if len(cells) < 2:
+            continue
+
+        # Strip all HTML tags to get plain text
+        asset_class = re.sub(r'<[^>]+>', '', cells[0]).strip()
+        pct_match   = re.search(r'(\d+(?:\.\d+)?)\s*%', cells[1])
+        if not pct_match or not asset_class:
+            continue
+
+        pct = float(pct_match.group(1))
+
         matched = False
         for key, bucket in ASSET_CLASS_BUCKET_MAP.items():
             if key.lower() in asset_class.lower():
@@ -259,7 +268,7 @@ def parse_newsletter(newsletter_path):
 
     total = sum(bucket_alloc.values())
     if total > 0 and abs(total - 100.0) <= 5.0:
-        log.info(f"Parsed bucket allocation: {bucket_alloc} (total={total:.1f}%)")
+        log.info(f"Allocation parsed OK: {bucket_alloc} (total={total:.1f}%)")
         return bucket_alloc, mrm_score
     else:
         log.error(f"Allocation total={total:.1f}% invalid — aborting rebalance")
@@ -284,7 +293,6 @@ def check_emergency(portfolio, mrm_score):
 
 
 def _has_invalid_float(obj):
-    """Recursively scan for NaN/Inf — used as final safety net before writing."""
     if isinstance(obj, dict):
         return any(_has_invalid_float(v) for v in obj.values())
     if isinstance(obj, list):
@@ -311,9 +319,8 @@ def main():
     raw_target    = get_last_friday()
     target_date   = adjust_for_market_holiday(raw_target)
 
-    log.info(f"Target date (last Friday): {raw_target} → adjusted for trading: {target_date}")
+    log.info(f"Target date: {raw_target} → adjusted: {target_date}")
 
-    # ── Date guard: skip if already up-to-date (bypass with FORCE_REBALANCE) ──
     if not FORCE_REBALANCE and current["date"] >= str(target_date):
         log.info(f"Already up to date ({current['date']} >= {target_date}). Exiting.")
         sys.exit(0)
@@ -339,10 +346,10 @@ def main():
             fb_valid = fallback is not None and not (isinstance(fallback, float) and (math.isnan(fallback) or math.isinf(fallback)))
             if fb_valid:
                 prices[t] = fallback
-                log.warning(f"  {t}: using last known price ${fallback} (fetch returned invalid)")
+                log.warning(f"  {t}: using last known ${fallback}")
             else:
                 prices[t] = None
-                log.error(f"  {t}: no valid price available (fetch + fallback both invalid)")
+                log.error(f"  {t}: no valid price")
 
     if not prices.get("SPY"):
         log.error("SPY price unavailable. Aborting.")
@@ -357,8 +364,7 @@ def main():
 
     log.info(f"Portfolio: ${portfolio_value} ({pnl_pct:+.2f}%) | SPY: ${bench_value} ({bench_pnl:+.2f}%) | Alpha: {alpha:+.2f}%")
 
-    # ── FIX: inception_date corrected to 2026-03-13 (matches send_newsletter.py) ──
-    # Old value was 2026-03-14, causing issue_number to be 1 less than newsletter's count.
+    # FIX: inception_date corrected to 2026-03-13 (aligns with send_newsletter.py)
     inception_date = date(2026, 3, 13)
     issue_number   = ((target_date - inception_date).days // 7) + 1
 
@@ -392,7 +398,7 @@ def main():
         candidate = rebalance_shares(portfolio_value, final_bucket_alloc, final_regime, prices)
         candidate_value = calculate_value(candidate, prices)
         if candidate_value < portfolio_value * 0.5:
-            log.error(f"Rebalanced value ${candidate_value} < 50% of portfolio — aborting.")
+            log.error(f"Rebalanced value ${candidate_value} < 50% — aborting.")
             new_shares = current_shares.copy()
             rebalance_triggered = False
             rebalance_reason = "aborted_invalid_shares"
@@ -446,10 +452,8 @@ def main():
         "alpha_vs_benchmark_pct": alpha,
     }
 
-    # ── Final safety net: never write NaN/Inf to disk ─────────────────────────
     if _has_invalid_float(snapshot) or _has_invalid_float(new_current):
-        log.error("NaN/Inf detected in final snapshot — ABORTING WRITE to prevent corrupting portfolio.json.")
-        log.error("This usually means a price fetch silently failed. Investigate prices dict above and re-run.")
+        log.error("NaN/Inf detected — ABORTING WRITE.")
         sys.exit(1)
 
     portfolio["history"].append(snapshot)
@@ -458,8 +462,8 @@ def main():
     with open(PORTFOLIO_PATH, "w") as f:
         json.dump(portfolio, f, indent=2, allow_nan=False)
 
-    log.info("portfolio.json updated.")
-    log.info(f"Summary: MRM ${portfolio_value:.2f} ({pnl_pct:+.2f}%) | SPY ${bench_value:.2f} ({bench_pnl:+.2f}%) | Alpha {alpha:+.2f}%")
+    log.info("portfolio.json updated successfully.")
+    log.info(f"Summary: ${portfolio_value:.2f} ({pnl_pct:+.2f}%) | SPY ${bench_value:.2f} ({bench_pnl:+.2f}%) | Alpha {alpha:+.2f}%")
 
 
 if __name__ == "__main__":
