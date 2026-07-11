@@ -1,19 +1,19 @@
 {
   "meta": {
-    "lastUpdated": "2026-07-10T19:12:35Z",
+    "lastUpdated": "2026-07-11T18:41:23Z",
     "source": "FRED API (Live)",
     "version": "2.0.0",
     "fredSeriesDates": {
-      "T10Y2Y": "2026-07-09",
+      "T10Y2Y": "2026-07-10",
       "M2SL": "2026-05-01",
       "WILL5000PRFC": null,
-      "DGS10": "2026-07-08",
+      "DGS10": "2026-07-09",
       "DRALACBN": "2026-01-01",
       "TDSP": "2026-01-01",
       "ICSA": "2026-07-04"
     }
   },
-  "globalResilienceScore": 6.78,
+  "globalResilienceScore": 6.53,
   "status": "Turbulence",
   "pillars": [
     {
@@ -22,10 +22,10 @@
       "name": "Cycle",
       "score": 5.5,
       "metric": "10Y-2Y Yield Curve",
-      "value": "+0.38%",
+      "value": "+0.35%",
       "fredSeries": "T10Y2Y",
       "trend": "steepening",
-      "delta": "+0.16%",
+      "delta": "+0.13%",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
     },
@@ -46,13 +46,13 @@
       "id": "premium",
       "roman": "II",
       "name": "Premium",
-      "score": 10.0,
+      "score": 9.0,
       "metric": "Equity Risk Premium",
-      "value": "-0.01%",
+      "value": "0.01%",
       "fredSeries": "DGS10",
       "trend": "compressed",
-      "delta": "-1.21",
-      "description": "ERP = E/P (4.55%) minus 10Y yield (4.56%). Approaching critical threshold.",
+      "delta": "-1.19",
+      "description": "ERP = E/P (4.55%) minus 10Y yield (4.54%). Approaching critical threshold.",
       "status": "critical"
     },
     {
@@ -102,46 +102,46 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -0.01,
+      "value": 0.01,
       "unit": "%",
-      "displayValue": "-0.01%",
+      "displayValue": "0.01%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-1.21%",
+      "delta": "-1.19%",
       "alert": true,
-      "description": "ERP at -0.01%. Red alert triggers below 0.80%."
+      "description": "ERP at 0.01%. Red alert triggers below 0.80%."
     }
   ],
   "historicalScores": [
     {
-      "date": "Jun '26",
-      "score": 6.4
+      "date": "Jul '26",
+      "score": 6.2
     },
     {
       "date": "Jul '26",
-      "score": 6.4
+      "score": 6.2
     },
     {
       "date": "Jul '26",
-      "score": 6.4
+      "score": 6.2
     },
     {
       "date": "Jul '26",
-      "score": 6.4
+      "score": 6.2
     },
     {
       "date": "Jul '26",
-      "score": 6.4
+      "score": 6.2
     },
     {
       "date": "Jul '26",
-      "score": 6.4
+      "score": 6.2
     },
     {
       "date": "Jul '26",
-      "score": 6.4
+      "score": 6.2
     }
   ]
 }
