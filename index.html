@@ -990,9 +990,9 @@
 
           <p>When the curve is deeply inverted, monetary conditions are extremely tight. As the Fed begins cutting rates in response to economic weakness, short-term yields fall faster than long-term yields. The spread widens — but this steepening typically occurs concurrent with rising unemployment, credit defaults, and equity market stress. The "good-looking" yield curve is often recording its best reading just as the recession is officially arriving.</p>
 
-          <div class="callout orange">
+          <div class="callout orange" id="callout-cycle">
             <div class="callout-label">⚡ Current Reading</div>
-            <p>The 10Y–2Y spread is currently at <span class="inline-metric">+0.34%</span> — the normalization phase. The curve has re-steepened from its 2022–2023 deep inversion. The Cycle Pillar scores 5.8/10, reflecting the historical pattern that this normalization phase requires elevated vigilance.</p>
+            <p>The 10Y–2Y spread is currently at <span class="inline-metric" id="value-cycle">+0.34%</span> — the normalization phase. The curve has re-steepened from its 2022–2023 deep inversion. The Cycle Pillar scores <span id="score-cycle">5.8</span>/10, reflecting the historical pattern that this normalization phase requires elevated vigilance.</p>
           </div>
 
           <h2>The FRED Series: T10Y2Y</h2>
@@ -1071,9 +1071,9 @@
             </tbody>
           </table>
 
-          <div class="callout orange">
+          <div class="callout orange" id="callout-liquidity">
             <div class="callout-label">⚡ Current Reading</div>
-            <p>The Market Cap / M2 Ratio currently stands at <span class="inline-metric">1.82x</span>, placing it in historical territory previously seen only during the 1999–2000 equity bubble and briefly in 2021. The Liquidity Pillar scores 7.1/10, reflecting significant elevation in equity valuation relative to the monetary support structure.</p>
+            <p>The Market Cap / M2 Ratio currently stands at <span class="inline-metric" id="value-liquidity">1.82x</span>, placing it in historical territory previously seen only during the 1999–2000 equity bubble and briefly in 2021. The Liquidity Pillar scores <span id="score-liquidity">7.1</span>/10, reflecting significant elevation in equity valuation relative to the monetary support structure.</p>
           </div>
 
           <h2>FRED Series</h2>
@@ -1150,9 +1150,9 @@
             </tbody>
           </table>
 
-          <div class="callout orange">
-            <div class="callout-label">⚡ Current Reading — Approaching Alert Zone</div>
-            <p>The current ERP stands at <span class="inline-metric">1.02%</span> — within the Compressed range and approaching the <strong>Red Alert threshold of 0.80%</strong>. At this level, a 22bps further compression (from either falling earnings or rising rates) would trigger a Sentinel alert. The Premium Pillar scores 7.9/10 — the highest current stress reading in the framework.</p>
+          <div class="callout orange" id="callout-premium">
+            <div class="callout-label" id="callout-label-premium">⚡ Current Reading — Approaching Alert Zone</div>
+            <p>The current ERP stands at <span class="inline-metric" id="value-premium">1.02%</span> — within the Compressed range and approaching the <strong>Red Alert threshold of 0.80%</strong>. At this level, a 22bps further compression (from either falling earnings or rising rates) would trigger a Sentinel alert. The Premium Pillar scores <span id="score-premium">7.9</span>/10 — the highest current stress reading in the framework.</p>
           </div>
 
           <h2>The Sentinel Connection</h2>
@@ -1233,9 +1233,9 @@
             </tbody>
           </table>
 
-          <div class="callout green">
+          <div class="callout green" id="callout-solvency">
             <div class="callout-label">✓ Current Reading</div>
-            <p>Bank NPL ratios currently stand at approximately <span class="inline-metric">1.8%</span> — within the normal range, reflecting the post-2020 credit quality improvement driven by strong employment and government support programs. The Solvency Pillar scores 4.2/10, the healthiest reading in the current framework. However, the trajectory warrants monitoring as higher interest rates extend their impact on variable-rate commercial real estate and leveraged loan portfolios.</p>
+            <p>Bank NPL ratios currently stand at approximately <span class="inline-metric" id="value-solvency">1.8%</span> — within the normal range, reflecting the post-2020 credit quality improvement driven by strong employment and government support programs. The Solvency Pillar scores <span id="score-solvency">4.2</span>/10, the healthiest reading in the current framework. However, the trajectory warrants monitoring as higher interest rates extend their impact on variable-rate commercial real estate and leveraged loan portfolios.</p>
           </div>
 
           <h2>FRED Series and Data Notes</h2>
@@ -1312,17 +1312,17 @@
             </tbody>
           </table>
 
-          <div class="callout orange">
-            <div class="callout-label">⚡ Current Reading — Rising Trajectory</div>
-            <p>The Household DSR currently stands at <span class="inline-metric">11.4%</span> and has been trending higher for six consecutive quarters. This trajectory — rather than the absolute level — is the primary concern. If the rate of increase continues at its current pace, the 12.5% critical threshold would be reached within 18–24 months, coinciding with the typical lag between monetary tightening and its full consumer impact. The Debt Pillar scores 6.1/10.</p>
+          <div class="callout orange" id="callout-debt">
+            <div class="callout-label" id="callout-label-debt">⚡ Current Reading — Rising Trajectory</div>
+            <p>The Household DSR currently stands at <span class="inline-metric" id="value-debt">11.4%</span> and has been trending higher for six consecutive quarters. This trajectory — rather than the absolute level — is the primary concern. If the rate of increase continues at its current pace, the 12.5% critical threshold would be reached within 18–24 months, coinciding with the typical lag between monetary tightening and its full consumer impact. The Debt Pillar scores <span id="score-debt">6.1</span>/10.</p>
           </div>
 
           <h2>The Interaction Effect: DSR and Credit Cycles</h2>
           <p>The Debt Pillar's most dangerous contribution to systemic risk is not its standalone score but its interaction with the Cycle and Solvency Pillars. When DSR is elevated and rising simultaneously with a normalizing yield curve (post-inversion) and rising NPL ratios, the three signals form a self-reinforcing triangle: household cash flow stress increases loan delinquencies, which impairs bank solvency, which tightens credit conditions, which further stresses household cash flows. This feedback loop is precisely the mechanism that transformed the 2006–2007 DSR deterioration into the 2008–2009 financial crisis.</p>
 
-          <div class="callout red">
+          <div class="callout red" id="callout-convergence">
             <div class="callout-label">✕ Critical Monitor: Multi-Pillar Convergence Risk</div>
-            <p>The current framework shows simultaneous elevation in Cycle (5.8), Liquidity (7.1), Premium (7.9), and Debt (6.1) Pillars — four of five showing significant stress. Only Solvency remains contained. Historical analysis of multi-pillar convergence suggests this configuration materially elevates the probability of a rapid system state transition if a catalyst event occurs. Maintain elevated alertness on Sentinel indicators.</p>
+            <p id="text-convergence">The current framework shows simultaneous elevation in Cycle (5.8), Liquidity (7.1), Premium (7.9), and Debt (6.1) Pillars — four of five showing significant stress. Only Solvency remains contained. Historical analysis of multi-pillar convergence suggests this configuration materially elevates the probability of a rapid system state transition if a catalyst event occurs. Maintain elevated alertness on Sentinel indicators.</p>
           </div>
 
           <h2>FRED Series</h2>
@@ -1438,6 +1438,69 @@ function getSampleData() {
 function renderTerminal(data) {
   renderMain(data);
   renderSidebar(data);
+  renderChapters(data);
+}
+
+// ──────────────────────────────────────────
+// RENDER METHODOLOGY CHAPTER "CURRENT READING" CALLOUTS
+// Keeps Chapters 2–6 in sync with live data.json instead of static launch-day text.
+// ──────────────────────────────────────────
+function renderChapters(data) {
+  const pillars = {};
+  (data.pillars || []).forEach(p => { pillars[p.id] = p; });
+
+  const calloutColorClass = (status) => {
+    if (status === 'stable') return 'green';
+    if (status === 'critical') return 'red';
+    return 'orange'; // caution / warning
+  };
+
+  ['cycle', 'liquidity', 'premium', 'solvency', 'debt'].forEach(id => {
+    const p = pillars[id];
+    if (!p) return;
+    const valueEl = document.getElementById(`value-${id}`);
+    const scoreEl = document.getElementById(`score-${id}`);
+    const calloutEl = document.getElementById(`callout-${id}`);
+    if (valueEl) valueEl.textContent = p.value;
+    if (scoreEl) scoreEl.textContent = p.score.toFixed(1);
+    if (calloutEl) {
+      calloutEl.classList.remove('green', 'orange', 'red');
+      calloutEl.classList.add(calloutColorClass(p.status));
+    }
+  });
+
+  // Premium callout label: only call it "Approaching Alert Zone" if actually near/past the ERP sentinel threshold
+  const premiumLabelEl = document.getElementById('callout-label-premium');
+  if (premiumLabelEl && pillars.premium) {
+    const erpSentinel = (data.sentinels || []).find(s => s.id === 'erp');
+    const alert = erpSentinel ? erpSentinel.alert : (pillars.premium.status === 'critical');
+    premiumLabelEl.textContent = alert ? '⚡ Current Reading — Alert Zone Breached' : '⚡ Current Reading';
+  }
+
+  // Debt callout label: only flag "Rising Trajectory" if delta is actually positive
+  const debtLabelEl = document.getElementById('callout-label-debt');
+  if (debtLabelEl && pillars.debt) {
+    const rising = pillars.debt.delta && pillars.debt.delta.toString().startsWith('+');
+    debtLabelEl.textContent = rising ? '⚡ Current Reading — Rising Trajectory' : '⚡ Current Reading';
+  }
+
+  // Multi-Pillar Convergence Risk: recompute which pillars are actually elevated (score >= 6)
+  const convergenceEl = document.getElementById('text-convergence');
+  const convergenceBox = document.getElementById('callout-convergence');
+  if (convergenceEl && convergenceBox) {
+    const names = { cycle: 'Cycle', liquidity: 'Liquidity', premium: 'Premium', solvency: 'Solvency', debt: 'Debt' };
+    const elevated = Object.keys(names).filter(id => pillars[id] && pillars[id].score >= 6);
+    const contained = Object.keys(names).filter(id => !elevated.includes(id));
+    if (elevated.length >= 3) {
+      convergenceBox.style.display = '';
+      const elevatedStr = elevated.map(id => `${names[id]} (${pillars[id].score.toFixed(1)})`).join(', ');
+      const containedStr = contained.map(id => names[id]).join(' and ');
+      convergenceEl.textContent = `The current framework shows simultaneous elevation in ${elevatedStr} Pillars — ${elevated.length} of five showing significant stress.${contained.length ? ` Only ${containedStr} remain${contained.length === 1 ? 's' : ''} contained.` : ''} Historical analysis of multi-pillar convergence suggests this configuration materially elevates the probability of a rapid system state transition if a catalyst event occurs. Maintain elevated alertness on Sentinel indicators.`;
+    } else {
+      // Fewer than 3 pillars elevated: convergence risk doesn't apply right now, hide the box rather than show stale/misleading text
+      convergenceBox.style.display = 'none';
+    }
+  }
 }
 
 function renderMain(data) {
@@ -3595,7 +3658,7 @@ document.getElementById('contact-form').addEventListener('submit', async functio
       document.getElementById('form-success').style.display = 'block';
     } else {
       btn.textContent = 'Error. Try again.';
-      bt      btn.disabled = false;
+      btn.disabled = false;
     }
   } catch (err) {
     btn.textContent = 'Error. Try again.';
