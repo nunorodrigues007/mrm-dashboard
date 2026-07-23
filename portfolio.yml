@@ -1,9 +1,10 @@
-name: MRM Portfolio Saturday Update
+name: MRM Portfolio Friday Update
 
 on:
   schedule:
-    # Every Saturday at 10:00 UTC (6:00 AM ET — Friday markets long closed)
-    - cron: "0 10 * * 6"
+    # Every Friday at 22:00 UTC — safely after the 4pm ET US market close
+    # in both EDT (20:00 UTC close) and EST (21:00 UTC close)
+    - cron: "0 22 * * 5"
   workflow_dispatch:
     # Allow manual trigger for testing
 
