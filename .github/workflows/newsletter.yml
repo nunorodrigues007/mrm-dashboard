@@ -1,8 +1,9 @@
 name: 📧 MRM Weekly Newsletter
 
 on:
-  schedule:
-    - cron: '0 18 * * 5'
+  workflow_run:
+    workflows: ["MRM Portfolio Friday Update"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -11,6 +12,7 @@ permissions:
 jobs:
   send-newsletter:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: 🛸 Checkout Repository
         uses: actions/checkout@v4
