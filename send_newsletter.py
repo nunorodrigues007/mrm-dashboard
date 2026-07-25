@@ -5,7 +5,7 @@ Reads data.json → calculates issue number → calls Claude API →
 saves newsletter HTML → updates index.html archive → sends via Brevo
 """
 
-import json, os, subprocess, requests, shutil
+import json, os, re, subprocess, requests, shutil
 from datetime import datetime, date, timedelta
 
 ANTHROPIC_KEY = os.environ["ANTHROPIC_API_KEY"]
@@ -292,6 +292,16 @@ new_card = f"""
 
 marker = "<!-- NEWSLETTER_ARCHIVE_START -->"
 if marker in index:
+    # Remove any existing card for this same issue number first, so a corrective
+    # re-run (e.g. after a stale-data fix) replaces it instead of creating a
+    # visible duplicate card in the archive.
+    index = re.sub(
+        rf'\s*<!-- ISSUE #{issue_number} -->.*?(?=<!-- ISSUE #|\Z)',
+        '',
+        index,
+        count=1,
+        flags=re.S,
+    )
     index = index.replace(marker, marker + "\n\n      " + new_card)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(index)
