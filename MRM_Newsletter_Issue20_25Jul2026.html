@@ -57,7 +57,7 @@ td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
 .footer-links a{font-family:'Courier New',monospace;font-size:10px;color:#586068;margin:0 8px;}
 .footer-disclaimer{font-family:'Courier New',monospace;font-size:9px;color:#3D4450;line-height:1.6;max-width:480px;margin:0 auto;}
 .spacer{height:20px;}
-.rebalance-box{background:#122008;border-left:4px solid #34D058;border-radius:0 8px 8px 0;padding:16px 18px;margin-top:20px;}
+.rebalance-box{background:#122008;border-left:4px solid #34D058;border-radius:0 8px 8px 0;padding:16px 18px;margin-top:24px;}
 .rebalance-box .rb-header{font-family:'Courier New',monospace;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#34D058;margin-bottom:10px;}
 .rebalance-box .rb-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(52,208,88,0.15);}
 .rebalance-box .rb-row:last-child{border-bottom:none;}
@@ -88,28 +88,29 @@ td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
 <div class="score-info">
 <div class="regime">● TURBULENCE REGIME</div>
 <div class="score-label">Global Resilience Score</div>
-<div class="score-sub">Updated: 25 July 2026 · FRED API Live · 5/5 Pillars Active · ▲ +0.2 WoW</div>
+<div class="score-sub">Updated: 25 July 2026 · FRED API Live · 5/5 Pillars Active · WoW: — 0.0</div>
 </div>
 </div>
 
 <div class="content">
 
 <!-- EXECUTIVE SUMMARY -->
-<div class="section-label">Executive Summary</div>
+<div class="section-label">I · Executive Summary</div>
 <div class="summary">
-<p>The composite resilience score ticked higher to 6.8/10, a marginal +0.2 improvement week-over-week, yet the system remains locked in a <strong>Turbulence</strong> regime. The uptick was driven entirely by a sharp deterioration in the Equity Risk Premium, which flipped to negative territory at -0.12% and pushed its pillar score to a maximum-stress 10.0/10. This is not a contradiction: the scoring framework treats negative ERP as an extreme-risk signal, elevating the composite precisely because the system is flagging elevated danger that demands defensive positioning.</p>
-<p>Liquidity conditions remain critically strained at 1.82x coverage, unchanged week-over-week but firmly in the red zone. The business cycle indicator sits at a tepid +0.34%, consistent with near-stall speed expansion. Solvency remains the sole pocket of structural comfort at 2.5/10, while Debt Service holds at a cautionary 5.5/10. The ERP Sentinel has triggered an active alert—the only early warning system currently firing. Overall: a regime that demands capital preservation, convexity hedging, and extreme selectivity in risk deployment.</p>
+<p>The US Macro-Resilience Matrix holds steady at <strong>6.8/10</strong> for the second consecutive week, confirming an entrenched <strong>Turbulence</strong> regime with no directional momentum in any pillar. The score reflects a deeply bifurcated risk landscape: structural solvency remains the sole bright spot while liquidity stress and a negative equity risk premium continue to flash critical warnings. The absence of week-over-week movement across all five pillars is itself diagnostic — the system is in a state of compressed volatility equilibrium, historically a precursor to sharp directional resolution.</p>
+<p>The Equity Risk Premium remains inverted at <strong>-0.12%</strong>, meaning investors are being compensated less for holding equities than risk-free alternatives. This condition, now persisting into a second week, constitutes the single most consequential risk signal in the matrix. The ERP Sentinel alert remains active. Liquidity coverage at <strong>1.82x</strong> continues to sit in critical territory, reflecting tightening financial conditions that have yet to translate into credit market dislocations but are compressing the margin of safety for leveraged balance sheets.</p>
+<p>No rebalance has been triggered. The portfolio maintains its defensive multi-asset posture across equities, duration, credit, commodities, cash-equivalents, and real assets. Year-to-date performance stands at <strong>+5.17%</strong>, trailing the broad equity benchmark by <strong>-7.11%</strong> — a cost of insurance that remains appropriate given the regime diagnosis.</p>
 </div>
 
 <div class="spacer"></div>
 
 <!-- PILLARS TABLE -->
-<div class="section-label">Pillar Decomposition</div>
+<div class="section-label">II · Pillar Diagnostics</div>
 <table>
 <thead>
 <tr>
 <th>Pillar</th>
-<th>Value</th>
+<th>Reading</th>
 <th>Score</th>
 <th>WoW</th>
 <th>Status</th>
@@ -134,7 +135,7 @@ td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
 <td style="font-weight:600;">Premium (ERP)</td>
 <td>-0.12%</td>
 <td>10.0 / 10</td>
-<td>▲ +1.0</td>
+<td>— 0.0</td>
 <td><span class="pill red">CRITICAL</span></td>
 </tr>
 <tr>
@@ -145,7 +146,7 @@ td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
 <td><span class="pill green">STABLE</span></td>
 </tr>
 <tr>
-<td style="font-weight:600;">Debt Service</td>
+<td style="font-weight:600;">Debt</td>
 <td>11.2%</td>
 <td>5.5 / 10</td>
 <td>— 0.0</td>
@@ -157,12 +158,14 @@ td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
 <div class="spacer"></div>
 
 <!-- DEEP DIVE -->
-<div class="section-label">Deep Dive — Biggest WoW Mover</div>
+<div class="section-label">III · Deep Dive — Equity Risk Premium (Biggest Structural Risk)</div>
 <div class="deep-dive">
-<p><strong>Equity Risk Premium (ERP): ▲ +1.0 WoW → 10.0/10 — Maximum Stress</strong></p>
-<p>The Equity Risk Premium deteriorated sharply this week, crossing below zero to -0.12%. This means that the implied forward return on broad equities has fallen beneath the risk-free rate—a condition historically associated with late-cycle euphoria, valuation compression events, or outright mispricing of risk. In the MRM framework, a negative ERP is the single most dangerous signal the system can produce.</p>
-<p>The mechanical interpretation is unambiguous: investors are no longer being compensated for bearing equity risk relative to sovereign duration. This condition has preceded every major drawdown of the past two decades when sustained for more than four consecutive weeks. The ERP Sentinel—a dedicated early-warning module—has triggered an active alert for the first time in this cycle.</p>
-<p>Tactically, this reading reinforces the case for maximal defensive allocation within the Turbulence regime sleeve. It argues against any incremental equity exposure and supports maintaining elevated positions in short-duration sovereign instruments and inflation-linked commodities. The risk is asymmetric: if equities correct from current valuations, losses compound quickly in a negative-ERP environment because the starting compensation was already insufficient. We monitor this pillar with weekly granularity and will escalate to an intra-week review if ERP breaches -0.25%.</p>
+<p><strong>Pillar: Equity Risk Premium | Score: 10.0/10 (Maximum Risk) | Reading: -0.12% | WoW: — 0.0</strong></p>
+<p>With all five pillars unchanged week-over-week, no single pillar qualifies as the "biggest WoW mover" in the traditional sense. We therefore direct this week's deep dive to the pillar carrying the highest absolute risk score: the <strong>Equity Risk Premium</strong>, which registers a perfect 10.0/10 — the maximum possible stress reading in the MRM framework.</p>
+<p>A negative ERP of -0.12% indicates that the implied forward return on broad equities has fallen <em>below</em> the yield available on risk-free government debt. This inversion is not merely an academic abstraction. It signals that equity valuations have absorbed an extraordinary degree of optimism — earnings growth expectations, multiple expansion, or both — to the point where the market is offering negative compensation for bearing equity risk.</p>
+<p>Historically, sustained negative ERP readings have preceded periods of elevated drawdown probability. The 2000 and 2007 episodes both featured extended negative ERP windows before major corrections materialized. The critical variable is <strong>duration of inversion</strong>: brief excursions below zero can self-correct through earnings delivery; persistent inversions tend to resolve via price adjustment.</p>
+<p>The ERP Sentinel remains <strong>active</strong>, confirming that this condition has breached our structural alert threshold. While no immediate catalyst is required for repricing, the combination of a negative ERP with tightening liquidity (1.82x) creates a fragile equilibrium. Any exogenous shock — geopolitical, monetary, or earnings-related — would encounter a market with minimal valuation cushion and reduced liquidity absorption capacity.</p>
+<p><strong>Implication:</strong> The negative ERP is the primary reason the MRM framework maintains a Turbulence regime classification. Until equity valuations decompress or risk-free rates decline sufficiently to restore a positive premium, the strategic posture remains defensive. Overweight duration and cash-equivalents; underweight equity beta.</p>
 </div>
 
 </div>
@@ -172,8 +175,8 @@ td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
 
 <div class="content" style="padding-top:0;">
 
-<!-- EWS TABLE -->
-<div class="section-label">Early Warning Systems</div>
+<!-- EARLY WARNING SYSTEMS -->
+<div class="section-label">IV · Early Warning Systems</div>
 <table>
 <thead>
 <tr>
@@ -186,63 +189,62 @@ td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
 </thead>
 <tbody>
 <tr>
-<td style="font-weight:600;">ICSA (Claims Spike)</td>
+<td style="font-weight:600;">ICSA (Initial Claims)</td>
 <td>N/A</td>
-<td><span class="pill green">INACTIVE</span></td>
+<td><span class="pill green">FALSE</span></td>
 <td>— 0.0</td>
-<td><span class="pill green">CLEAR</span></td>
+<td><span class="pill green">INACTIVE</span></td>
 </tr>
 <tr>
 <td style="font-weight:600;">ERP Sentinel</td>
-<td>-0.12%</td>
+<td>-0.12</td>
+<td><span class="pill red">TRUE</span></td>
+<td>— 0.0</td>
 <td><span class="pill red">ACTIVE</span></td>
-<td>▲ New</td>
-<td><span class="pill red">ALERT</span></td>
 </tr>
 </tbody>
 </table>
-
 <div class="spacer"></div>
 
 <!-- SECTOR MATRIX -->
-<div class="section-label">Sector &amp; Factor Tilt Matrix</div>
+<div class="section-label">V · Sector &amp; Factor Matrix</div>
 <div class="sector-grid">
 <div class="sector-col-ow">
 <div class="sector-col-header">▲ Overweight</div>
 <div class="sector-item">
-<div class="sector-name">Short-Duration Sovereigns</div>
-<div class="sector-rationale">Capital preservation anchor; risk-free rate exceeds equity premium</div>
+<div class="sector-name">Intermediate Duration Govt Bonds</div>
+<div class="sector-rationale">Positive carry vs. negative ERP; safe-haven demand in Turbulence regime.</div>
 </div>
 <div class="sector-item">
-<div class="sector-name">Intermediate Treasuries</div>
-<div class="sector-rationale">Duration hedge against equity repricing; curve positioning</div>
+<div class="sector-name">Cash &amp; Cash-Equivalents</div>
+<div class="sector-rationale">Risk-free rate exceeds equity premium; optionality preservation.</div>
 </div>
 <div class="sector-item">
-<div class="sector-name">Broad Commodities</div>
-<div class="sector-rationale">Inflation persistence hedge; uncorrelated return stream</div>
+<div class="sector-name">Commodities (Broad Basket)</div>
+<div class="sector-rationale">Inflation hedge; low correlation to duration and equity beta in late-cycle.</div>
 </div>
 <div class="sector-item">
 <div class="sector-name">Investment-Grade Credit</div>
-<div class="sector-rationale">Carry advantage vs. equities; solvency pillar supportive</div>
+<div class="sector-rationale">Solvency pillar stable at 2.5/10; spread compensation adequate vs. default risk.</div>
 </div>
 </div>
 <div class="sector-col-uw">
 <div class="sector-col-header">▼ Underweight</div>
 <div class="sector-item">
-<div class="sector-name">Broad Equities</div>
-<div class="sector-rationale">Negative ERP; no compensation for risk; Sentinel active</div>
-</div>
-<div class="sector-item">
-<div class="sector-name">Real Estate (REITs)</div>
-<div class="sector-rationale">Rate-sensitive; liquidity pillar in critical zone; cycle near stall</div>
+<div class="sector-name">Broad Equity Beta</div>
+<div class="sector-rationale">Negative ERP; maximum valuation risk score; no compensation for drawdown exposure.</div>
 </div>
 <div class="sector-item">
 <div class="sector-name">High-Yield Credit</div>
-<div class="sector-rationale">Spread compression inconsistent with turbulence regime</div>
+<div class="sector-rationale">Liquidity at 1.82x critical; spread compression leaves insufficient margin of safety.</div>
 </div>
 <div class="sector-item">
-<div class="sector-name">Small-Cap / Cyclicals</div>
-<div class="sector-rationale">Maximum beta exposure in a negative-ERP, low-cycle environment</div>
+<div class="sector-name">Small-Cap Growth</div>
+<div class="sector-rationale">Maximum sensitivity to liquidity tightening and cycle deceleration.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">Leveraged / Speculative Factors</div>
+<div class="sector-rationale">Turbulence regime structurally hostile to leverage and momentum crowding.</div>
 </div>
 </div>
 </div>
@@ -250,51 +252,51 @@ td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
 <div class="spacer"></div>
 
 <!-- ALLOCATION TABLE -->
-<div class="section-label">Regime Allocation Framework — Turbulence</div>
+<div class="section-label">VI · Strategic Asset Allocation — Turbulence Regime</div>
 <table>
 <thead>
 <tr>
 <th>Asset Class</th>
-<th>Target Weight</th>
-<th>Rationale</th>
+<th>Role</th>
+<th>Allocation</th>
 <th>WoW Δ</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="font-weight:600;">US Large-Cap Equity</td>
-<td><span class="alloc-pct">15%</span></td>
-<td>Minimum structural exposure; ERP negative</td>
+<td>Core beta exposure (reduced)</td>
+<td><span class="alloc-pct">22%</span></td>
 <td>— 0.0</td>
 </tr>
 <tr>
-<td style="font-weight:600;">Intermediate Treasuries</td>
+<td style="font-weight:600;">Intermediate Treasury Bonds</td>
+<td>Duration / safe-haven anchor</td>
 <td><span class="alloc-pct">25%</span></td>
-<td>Duration hedge; convexity in drawdown</td>
 <td>— 0.0</td>
 </tr>
 <tr>
-<td style="font-weight:600;">Investment-Grade Credit</td>
-<td><span class="alloc-pct">15%</span></td>
-<td>Carry with manageable spread risk</td>
+<td style="font-weight:600;">Investment-Grade Corporate Bonds</td>
+<td>Carry / credit spread capture</td>
+<td><span class="alloc-pct">18%</span></td>
 <td>— 0.0</td>
 </tr>
 <tr>
 <td style="font-weight:600;">Broad Commodities</td>
-<td><span class="alloc-pct">10%</span></td>
-<td>Inflation persistence; regime diversifier</td>
+<td>Real asset diversification</td>
+<td><span class="alloc-pct">12%</span></td>
 <td>— 0.0</td>
 </tr>
 <tr>
-<td style="font-weight:600;">Short-Duration Bills</td>
-<td><span class="alloc-pct">25%</span></td>
-<td>Capital preservation; dry powder for reentry</td>
+<td style="font-weight:600;">Cash-Equivalents (T-Bills)</td>
+<td>Liquidity buffer / optionality</td>
+<td><span class="alloc-pct">15%</span></td>
 <td>— 0.0</td>
 </tr>
 <tr>
 <td style="font-weight:600;">Real Estate (REITs)</td>
-<td><span class="alloc-pct">10%</span></td>
-<td>Minimum allocation; liquidity stress limits sizing</td>
+<td>Real asset income / inflation hedge</td>
+<td><span class="alloc-pct">8%</span></td>
 <td>— 0.0</td>
 </tr>
 </tbody>
@@ -303,15 +305,14 @@ td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
 <div class="spacer"></div>
 
 <!-- CIO VERDICT -->
-<div class="section-label">CIO Verdict</div>
+<div class="section-label">VII · CIO Verdict</div>
 <div class="verdict-box">
-<p><strong>Verdict: Hold defensive posture. No incremental risk.</strong></p>
-<p>The system is sending a clear, internally consistent message: the Turbulence regime persists, and the margin of safety has narrowed further. The ERP crossing into negative territory is the dominant signal this week and the primary constraint on any risk-on pivot. When the market offers less than the risk-free rate for bearing equity volatility, the rational institutional response is to wait—not to chase.</p>
-<p>Liquidity at 1.82x remains a structural vulnerability that could amplify any repricing event. The cycle at +0.34% offers no growth cushion. The only constructive reading is Solvency at 2.5/10, which suggests the banking system retains adequate buffers—but this is a necessary, not sufficient, condition for re-risking.</p>
-<p>We maintain current allocations with no changes. The next scheduled semestral rebalance is January 2027. Any intra-cycle rebalance would require either (a) a regime change to Expansion or Recovery, or (b) a confirmed ICSA alert alongside sustained ERP normalization above +0.50%. Neither condition is remotely close to being met. Discipline over conviction. Capital preservation remains the mandate.</p>
+<p><strong>Regime: Turbulence | Conviction: Hold | Signal Clarity: Low</strong></p>
+<p>The matrix is frozen. Five pillars, zero movement, maximum ambiguity. This is not the calm of resolution — it is the stillness of compressed risk awaiting a catalyst. The negative ERP at -0.12% remains the dominant signal: equity markets are priced for perfection in a macro environment that offers anything but certainty.</p>
+<p>We maintain the defensive multi-asset allocation without modification. The portfolio's +5.17% year-to-date return against a -7.11% alpha deficit to broad equities reflects the deliberate cost of hedging against tail risk in a regime where tail risk is structurally elevated. This is not underperformance — it is insurance premium paid during a period when the probability of collection remains non-trivial.</p>
+<p>The next semestral rebalance window opens in January 2027. Absent a regime change trigger — which would require a material shift in at least two pillars — we hold positions, monitor weekly, and preserve capital. In a Turbulence regime with a negative equity risk premium and tightening liquidity, the greatest risk is not missing upside. It is being fully exposed when the equilibrium breaks.</p>
+<p style="margin-bottom:0;"><strong>Directive: No action. Hold all positions. Reassess on next data release.</strong></p>
 </div>
-
-<div class="spacer"></div>
 
 <!-- PORTFOLIO REBALANCE STATUS -->
 <div class="rebalance-box">
@@ -334,23 +335,23 @@ td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
 </div>
 <div class="rb-row">
 <span class="rb-label">Active Asset Classes</span>
-<span class="rb-value">Large-Cap Equity · Intermediate Treasuries · IG Credit · Broad Commodities · Short-Duration Bills · REITs</span>
+<span class="rb-value">US Lg-Cap Eq · Int. Treasury · IG Credit · Broad Cmdty · T-Bills · REITs</span>
 </div>
 <div class="rb-row">
 <span class="rb-label">Portfolio Value</span>
 <span class="rb-value">$10,516.56</span>
 </div>
 <div class="rb-row">
-<span class="rb-label">Total P&amp;L</span>
+<span class="rb-label">P&amp;L (YTD)</span>
 <span class="rb-value green-text">+5.17%</span>
 </div>
 <div class="rb-row">
-<span class="rb-label">Alpha vs. Broad Equity Benchmark</span>
+<span class="rb-label">Alpha vs Broad Equity</span>
 <span class="rb-value red-text">-7.11%</span>
 </div>
 <div class="rb-row">
-<span class="rb-label">Composite Score</span>
-<span class="rb-value">6.78 (prev. 6.53 · ▲ +0.25)</span>
+<span class="rb-label">Score This Week / Last Week</span>
+<span class="rb-value">6.78 / 6.78</span>
 </div>
 </div>
 
