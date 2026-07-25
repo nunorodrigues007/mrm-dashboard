@@ -7,7 +7,14 @@ on:
     # after the daily 18:00 UTC data.json refresh (update.yml).
     - cron: "0 22 * * 5"
   workflow_dispatch:
-    # Allow manual trigger for testing
+    # Allow manual trigger for testing, with an optional override to force a
+    # re-run even if this week's portfolio.json is already marked up to date
+    # (useful for correcting a week that was published with stale/bad data).
+    inputs:
+      force_rebalance:
+        description: "Force portfolio update to re-run even if already up to date this week"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -31,6 +38,8 @@ jobs:
         run: pip install yfinance requests
 
       - name: Run portfolio updater
+        env:
+          FORCE_REBALANCE: ${{ github.event.inputs.force_rebalance }}
         run: python update_portfolio.py
 
       - name: Commit updated portfolio.json
