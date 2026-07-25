@@ -166,6 +166,15 @@ def build_data():
     print("  📡 M2SL    (M2 Money Supply, billions)...")
     m2_val, m2_date = latest_value("M2SL", limit=3)
 
+    print("  📡 M2SL YoY history (BDC Golden Rule filter)...")
+    m2_hist_obs = fetch_fred("M2SL", limit=14)  # monthly series — 14 points covers just over a year
+    m2_yoy_growth_pct = None
+    if len(m2_hist_obs) >= 13:
+        _latest_m2 = float(m2_hist_obs[0]["value"])
+        _year_ago_m2 = float(m2_hist_obs[12]["value"])
+        if _year_ago_m2:
+            m2_yoy_growth_pct = round((_latest_m2 - _year_ago_m2) / _year_ago_m2 * 100, 2)
+
     print("  📡 WILL5000PRFC (Wilshire 5000 Market Cap)...")
     will_val, will_date = latest_value("WILL5000PRFC", limit=3)
 
@@ -299,6 +308,7 @@ def build_data():
                 "fredSeries": "M2SL + WILL5000PRFC",
                 "trend": "elevated" if mc_m2_ratio > 1.4 else "normal",
                 "delta": "+0.03",
+                "m2YoyGrowthPct": m2_yoy_growth_pct,
                 "description": f"Buffett Indicator at {mc_m2_ratio:.2f}x. M2 at ${f'{m2_val/1000:.1f}' if m2_val is not None else 'N/A'}T. Equity valuations elevated relative to monetary base.",
                 "status": pillar_status(s_liquidity)
             },
