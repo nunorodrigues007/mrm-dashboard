@@ -1193,11 +1193,73 @@
       "alpha_vs_benchmark_pct": -7.11,
       "rebalance_triggered": false,
       "rebalance_reason": "hold"
+    },
+    {
+      "issue": 20,
+      "date": "2026-07-24",
+      "mrm_score": 6.5,
+      "regime": "Turbulence",
+      "prices": {
+        "VNQ": 100.02,
+        "BIL": 91.55,
+        "IEF": 93.84,
+        "PDBC": 17.25,
+        "LQD": 107.56,
+        "SPY": 743.29
+      },
+      "prices_confirmed": {
+        "VNQ": true,
+        "BIL": true,
+        "IEF": true,
+        "PDBC": true,
+        "LQD": true,
+        "SPY": true
+      },
+      "portfolio_value_pre_rebalance": 10516.56,
+      "bucket_allocation_pct": {
+        "US_EQUITIES": 10.0,
+        "US_TREASURIES": 20.0,
+        "IG_CREDIT": 15.0,
+        "COMMODITIES": 15.0,
+        "CASH": 30.0,
+        "ALTERNATIVES": 10.0
+      },
+      "allocation_pct": {
+        "VNQ": 10.0,
+        "PDBC": 15.0,
+        "SPY": 10.0,
+        "BIL": 30.0,
+        "LQD": 15.0,
+        "IEF": 20.0
+      },
+      "active_etf_map": {
+        "US_EQUITIES": "SPY",
+        "US_TREASURIES": "IEF",
+        "IG_CREDIT": "LQD",
+        "COMMODITIES": "PDBC",
+        "CASH": "BIL",
+        "ALTERNATIVES": "VNQ"
+      },
+      "shares": {
+        "SPY": 1.427,
+        "IEF": 21.8934,
+        "LQD": 14.2502,
+        "PDBC": 98.3238,
+        "BIL": 34.0587,
+        "VNQ": 10.5429
+      },
+      "portfolio_value": 10516.56,
+      "portfolio_pnl_pct": 5.17,
+      "benchmark_spy_value": 11227.92,
+      "benchmark_spy_pnl_pct": 12.28,
+      "alpha_vs_benchmark_pct": -7.11,
+      "rebalance_triggered": false,
+      "rebalance_reason": "hold"
     }
   ],
   "current": {
-    "issue": 19,
-    "date": "2026-07-17",
+    "issue": 20,
+    "date": "2026-07-24",
     "regime": "Turbulence",
     "shares": {
       "SPY": 1.427,
@@ -1216,12 +1278,12 @@
       "ALTERNATIVES": 10.0
     },
     "allocation_pct": {
-      "IEF": 20.0,
-      "BIL": 30.0,
       "VNQ": 10.0,
       "PDBC": 15.0,
+      "SPY": 10.0,
+      "BIL": 30.0,
       "LQD": 15.0,
-      "SPY": 10.0
+      "IEF": 20.0
     },
     "active_etf_map": {
       "US_EQUITIES": "SPY",
@@ -1232,12 +1294,12 @@
       "ALTERNATIVES": "VNQ"
     },
     "last_prices": {
-      "IEF": 93.84,
-      "LQD": 107.56,
-      "BIL": 91.55,
-      "SPY": 743.29,
       "VNQ": 100.02,
-      "PDBC": 17.25
+      "BIL": 91.55,
+      "IEF": 93.84,
+      "PDBC": 17.25,
+      "LQD": 107.56,
+      "SPY": 743.29
     },
     "portfolio_value": 10516.56,
     "portfolio_pnl_pct": 5.17,
