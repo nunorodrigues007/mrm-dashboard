@@ -1,0 +1,73 @@
+name: 🗓️ MRM Friday Pipeline (Portfolio + Newsletter)
+
+on:
+  schedule:
+    # Every Friday at 22:00 UTC — safely after the 4pm ET US market close
+    # in both EDT (20:00 UTC close) and EST (21:00 UTC close), and safely
+    # after the daily 18:00 UTC data.json refresh (update.yml).
+    - cron: "0 22 * * 5"
+  workflow_dispatch:
+    # Allow manual trigger for testing
+
+permissions:
+  contents: write
+
+jobs:
+  # ── JOB 1: Update the virtual ETF portfolio using Friday's closing prices ──
+  update-portfolio:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install yfinance requests
+
+      - name: Run portfolio updater
+        run: python update_portfolio.py
+
+      - name: Commit updated portfolio.json
+        run: |
+          git config user.name  "MRM Portfolio Bot"
+          git config user.email "noreply@usmrm.net"
+          git add portfolio.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: portfolio update $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+  # ── JOB 2: Generate & send the newsletter, using this week's own portfolio.json ──
+  # `needs: update-portfolio` guarantees this job only starts after Job 1 has
+  # fully finished (including its git push), so the checkout below always
+  # picks up this week's fresh portfolio.json — never last week's stale data.
+  send-newsletter:
+    needs: update-portfolio
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛸 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Dependencies
+        run: pip install requests
+
+      - name: 📧 Generate & Send Newsletter
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: python send_newsletter.py
