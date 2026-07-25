@@ -802,6 +802,13 @@
           <div class="chapter-nav-sub">Household DSR</div>
         </div>
       </button>
+      <button class="chapter-nav-item" onclick="showChapter(6, this)">
+        <span class="chapter-num">CH 7</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">Critical Sub-Regime</div>
+          <div class="chapter-nav-sub">Flight-to-Quality vs. Stress</div>
+        </div>
+      </button>
     </aside>
 
     <!-- Chapter Content -->
@@ -820,6 +827,7 @@
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
+                  <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>Resilience vs. Robustness</h2>
@@ -927,6 +935,7 @@
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
+                  <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>The 10Y–2Y Yield Curve: A Compressed History of Economic Cycles</h2>
@@ -1017,6 +1026,7 @@
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
+                  <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>M2 Money Supply: The Economy's Blood Volume</h2>
@@ -1098,6 +1108,7 @@
           <div class="progress-dot active"></div>
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
+                  <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>The Equity Risk Premium: Compensation for Uncertainty</h2>
@@ -1179,6 +1190,7 @@
           <div class="progress-dot done"></div>
           <div class="progress-dot active"></div>
           <div class="progress-dot"></div>
+                  <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>The Banking System as Systemic Plumbing</h2>
@@ -1260,6 +1272,7 @@
           <div class="progress-dot done"></div>
           <div class="progress-dot done"></div>
           <div class="progress-dot active"></div>
+                  <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>The Household Debt Service Ratio: The Economy's Structural Foundation</h2>
@@ -1330,7 +1343,181 @@
         </div>
         <div class="chapter-footer">
           <button class="chapter-nav-btn" onclick="navChapter(4)">← Chapter 5</button>
-          <button class="chapter-nav-btn" onclick="switchView('terminal', document.querySelector(\'.nav-tab\'))" style="color: var(--blue); border-color: var(--blue);">
+          <button class="chapter-nav-btn" onclick="navChapter(6)">Next: Critical Sub-Regime →</button>
+        </div>
+      </article>
+
+      <!-- ── CHAPTER 7 ── -->
+      <article class="chapter-view" id="chapter-6">
+        <span class="chapter-tag">Chapter 07 — Critical Zone Extension</span>
+        <h1 class="chapter-h1">Critical<br>Sub-Regime</h1>
+        <p class="chapter-subtitle">Flight-to-Quality vs. Stress-without-relief — the same composite score can hide two opposite duration regimes.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+        </div>
+
+        <div id="subregime-live-status" style="margin-bottom:28px;"></div>
+
+        <div class="content-body">
+          <h2>Not All Critical Readings Are the Same</h2>
+          <p>The MRM classifies the macro regime into three zones — Resilient, Turbulence, and Critical — from a weighted average of five independent pillars (Cycle, Liquidity, Premium, Solvency, Debt). The Critical portfolio (USMV, TLT, SGOV, GLD, BIL, VNQ) is well calibrated for a <strong>flight-to-quality</strong> Critical, where falling long yields (TLT) act as a natural hedge against an equity collapse — the mechanism that worked in 2008 and 2020.</p>
+
+          <p>The problem: a Critical score can also be reached <strong>without</strong> the 10-Year yield falling — a scenario of persistent monetary tightening where the Fed does not ease despite systemic stress. On that path, TLT loses its protective mechanism entirely and can lose value at the same time equities are falling. 2022 is the clearest real-world example: the yield curve inverted, liquidity contracted, and the equity risk premium compressed hard — a textbook stress profile — yet the 10-Year rose almost the entire year, and TLT lost approximately <strong>-31%</strong>, one of the worst annual performances in its history.</p>
+
+          <div class="blockquote">
+            <p>"Not all Criticals are equal. The same composite score (8–10) can hide two opposite market regimes from a duration standpoint — and a portfolio built for only one of them will fail in the other."</p>
+            <cite>— US MRM Framework, Critical Sub-Regime Extension</cite>
+          </div>
+
+          <h2>Why Pillar Composition Isn't a Reliable Signal</h2>
+          <p>An earlier version of this framework used two combined filters — 10Y direction <em>and</em> which pillars were dominant — as a joint condition for the trigger. Backtesting against 2022 showed that condition does not hold: the dominant pillars that year were Liquidity and Premium, the same ones you would expect to associate with a flight-to-quality path — yet the 10Y rose for almost the entire year, not fell. Pillar composition does not reliably predict the direction of the 10Y.</p>
+
+          <p>The corrected rule uses a single decisive filter, with pillar composition reduced to explanatory context rather than a condition of the trigger:</p>
+
+          <div style="margin: 28px 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
+            <div style="text-align:center; font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-secondary); background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:block; margin: 0 auto 20px; max-width:280px;">MRM Global Score 8–10 (Critical)</div>
+            <div style="display:flex; justify-content:center; margin-bottom:20px;">
+              <svg width="24" height="28" viewBox="0 0 24 28"><path d="M12 0 L12 20 M4 12 L12 20 L20 12" stroke="var(--text-muted)" stroke-width="2" fill="none"/></svg>
+            </div>
+            <div style="text-align:center; font-family:var(--sans); font-size:13px; color:var(--text-secondary); border:1px dashed var(--border); border-radius:8px; padding:14px; max-width:360px; margin:0 auto 24px;">10Y Treasury trend — last 4 weeks?</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+              <div>
+                <div style="display:flex; justify-content:center; margin-bottom:8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 0 L12 16 M6 10 L12 16 L18 10" stroke="var(--blue)" stroke-width="2" fill="none"/></svg>
+                </div>
+                <div style="text-align:center; font-family:var(--mono); font-size:10px; font-weight:600; color:var(--blue); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;">Clear decline (≤ -10bp)</div>
+                <div style="background:var(--blue-dim); border:1px solid rgba(56,139,253,0.3); border-radius:8px; padding:14px; text-align:center;">
+                  <div style="font-family:var(--display); font-weight:700; font-size:14px; color:var(--blue); margin-bottom:6px;">Critical — Flight to Quality</div>
+                  <div style="font-family:var(--mono); font-size:10px; color:var(--text-secondary); line-height:1.6;">TLT · SGOV · GLD<br>USMV · BIL · VNQ</div>
+                  <div style="font-family:var(--sans); font-size:10px; color:var(--text-muted); margin-top:8px;">Typical context: 2008, 2020</div>
+                </div>
+              </div>
+              <div>
+                <div style="display:flex; justify-content:center; margin-bottom:8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 24 L12 8 M6 14 L12 8 L18 14" stroke="var(--red)" stroke-width="2" fill="none"/></svg>
+                </div>
+                <div style="text-align:center; font-family:var(--mono); font-size:10px; font-weight:600; color:var(--red); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;">Flat / rising (default)</div>
+                <div style="background:var(--red-dim); border:1px solid rgba(215,58,73,0.3); border-radius:8px; padding:14px; text-align:center;">
+                  <div style="font-family:var(--display); font-weight:700; font-size:14px; color:var(--red); margin-bottom:6px;">Critical — Stress without Relief</div>
+                  <div style="font-family:var(--mono); font-size:10px; color:var(--text-secondary); line-height:1.6;">SHY · SGOV · GLD<br>USMV · BIL · VNQ</div>
+                  <div style="font-family:var(--sans); font-size:10px; color:var(--text-muted); margin-top:8px;">Typical context: 2022</div>
+                </div>
+              </div>
+            </div>
+            <div style="text-align:center; font-family:var(--sans); font-size:11px; font-style:italic; color:var(--text-muted); margin-top:20px;">Pillar composition is explanatory context — not a condition of the trigger.</div>
+          </div>
+
+          <h2>Backtest — Validating Against 2022</h2>
+          <p>2022 is the most informative case available: a full year of aggressive monetary tightening, with the composite score very likely in elevated Turbulence or at the threshold of Critical. Public Fed data (FRED) shows the following pillar-by-pillar reading:</p>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Pillar</th>
+                <th>2022 State</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Cycle</strong></td>
+                <td>10Y–2Y curve inverted July 2022 — the longest inversion since 1976</td>
+                <td class="mono" style="font-size:11px;">FRED T10Y2Y</td>
+              </tr>
+              <tr>
+                <td><strong>Liquidity</strong></td>
+                <td>M2 contracted over 4% from peak — first nominal post-war contraction</td>
+                <td class="mono" style="font-size:11px;">USMRM estimate</td>
+              </tr>
+              <tr>
+                <td><strong>Premium (ERP)</strong></td>
+                <td>Compressed hard — yields rising faster than earnings yields</td>
+                <td class="mono" style="font-size:11px;">Consistent with Pillar II</td>
+              </tr>
+              <tr>
+                <td><strong>Solvency</strong></td>
+                <td>Delinquency rate ~0.95–1.5% in Q4 2022 — healthy zone (&lt;1.5%)</td>
+                <td class="mono" style="font-size:11px;">FRED DRALACBN</td>
+              </tr>
+              <tr>
+                <td><strong>Debt (DSR)</strong></td>
+                <td>Estimated ~9.5–10% — healthy, well below the 12.5% critical threshold</td>
+                <td class="mono" style="font-size:11px;">FRED TDSP (extrapolated)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>The 10Y rose from around 1.5% in January 2022 to around 4.25% in October, easing slightly to near 3.9% by year end — at no point was it in a sustained decline. Real-world outcome: TLT lost approximately <strong>-31%</strong> in 2022, precisely because there was no flight-to-quality to offset the tightening.</p>
+
+          <div class="callout orange">
+            <div class="callout-label">⚡ Backtest Finding</div>
+            <p>Solvency and Debt were healthy in 2022 — the stress was dominated by Cycle, Liquidity and Premium, the exact pillars you'd expect to associate with a flight-to-quality path. Yet the 10Y rose all year. This invalidates the original joint rule: pillar composition is not a reliable proxy for 10Y direction.</p>
+          </div>
+
+          <h2>The Two Critical Sub-Portfolios</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Critical — Flight to Quality</th>
+                <th>Critical — Stress without Relief</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Trigger</strong></td>
+                <td class="mono green">10Y down (last 4 weeks)</td>
+                <td class="mono red">10Y flat or rising (last 4 weeks)</td>
+              </tr>
+              <tr>
+                <td><strong>Historical example</strong></td>
+                <td>2008, 2020</td>
+                <td>2022</td>
+              </tr>
+              <tr>
+                <td><strong>TLT</strong></td>
+                <td>Held — this is where convexity pays off</td>
+                <td>Swapped for SHY — no rate-cut tailwind to offset duration risk</td>
+              </tr>
+              <tr>
+                <td><strong>SGOV / BIL</strong></td>
+                <td>Held — dry powder / optionality</td>
+                <td>Held and reinforced — the one true safe harbor on this path</td>
+              </tr>
+              <tr>
+                <td><strong>GLD</strong></td>
+                <td>Held — tail hedge</td>
+                <td>Held — historically the best-adapted asset for this scenario</td>
+              </tr>
+              <tr>
+                <td><strong>USMV</strong></td>
+                <td>Held — defensive equity</td>
+                <td>Held, with less conviction — equities suffer on either path</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2>Calibration: The Asymmetric Threshold</h2>
+          <p>Two thresholds were considered for classifying the 10Y trend as "stable": a symmetric band (any move within ±15bp over 4 weeks counts as stable) or an asymmetric gate (only a clear decline of at least -10bp counts as flight-to-quality; anything else — flat or rising — stays on the defensive path).</p>
+
+          <div class="callout green" id="callout-subregime-threshold">
+            <div class="callout-label">✓ Decision — Asymmetric, Conservative Gate</div>
+            <p>The framework uses the <strong>asymmetric threshold</strong>: TLT is only "re-earned" on a confirmed 10Y decline of <span class="inline-metric">-10bp or more</span> over the trailing <span class="inline-metric">4 weeks</span>. Anything else — including a fresh entry into Critical from another regime, or a failed data fetch — defaults to the defensive Stress-without-relief path. The two real flight-to-quality episodes (2008, 2020) both saw fast, unambiguous declines well past this threshold within weeks of onset, so the conservative gate costs little upside while fully avoiding a repeat of 2022.</p>
+          </div>
+
+          <h2>FRED Series</h2>
+          <p>The trend uses the 10-Year Treasury Constant Maturity yield, series <span class="fred-tag">DGS10</span> — the same series that feeds the Premium Pillar's Equity Risk Premium calculation. The automated portfolio updater reads it via its market-quoted equivalent (<span class="fred-tag">^TNX</span>) to compute the trailing 4-week change in basis points each time the regime reads Critical.</p>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(5)">← Chapter 6</button>
+          <button class="chapter-nav-btn" onclick="switchView('terminal', document.querySelector('.nav-tab'))" style="color: var(--blue); border-color: var(--blue);">
             ◉ Open Live Terminal →
           </button>
         </div>
@@ -1501,6 +1688,52 @@ function renderChapters(data) {
       convergenceBox.style.display = 'none';
     }
   }
+}
+
+// ──────────────────────────────────────────
+// CRITICAL SUB-REGIME — LIVE STATUS (Chapter 7)
+// Reads portfolio.json's critical_subregime fields (written by update_portfolio.py)
+// to show, in plain terms, which of the two Critical sub-portfolios is currently
+// active — or that the rule isn't in play because the regime isn't Critical.
+// ──────────────────────────────────────────
+function initSubregimeStatus() {
+  const el = document.getElementById('subregime-live-status');
+  if (!el) return;
+  fetch('portfolio.json?v=' + Date.now())
+    .then(r => r.json())
+    .then(data => renderSubregimeStatus(data))
+    .catch(() => {
+      el.innerHTML = '';
+    });
+}
+
+function renderSubregimeStatus(data) {
+  const el = document.getElementById('subregime-live-status');
+  if (!el) return;
+  const c = data.current || {};
+  const regime = c.regime || (data.history && data.history.length ? data.history[data.history.length - 1].regime : null);
+
+  if (regime !== 'Critical') {
+    el.innerHTML = `
+      <div class="callout" style="background:var(--bg-card); border:1px solid var(--border);">
+        <div class="callout-label" style="color:var(--text-secondary);">◎ Live Status</div>
+        <p style="color:var(--text-secondary);">Not currently applicable — the live regime is <strong style="color:var(--text-primary);">${regime || 'unknown'}</strong>. This rule only governs bond selection within the Critical zone (score 8–10). The portfolio is presently using the ${regime || 'active'} ETF map described in the earlier chapters.</p>
+      </div>`;
+    return;
+  }
+
+  const sub = c.critical_subregime;
+  const note = c.critical_subregime_note || '';
+  const isFTQ = sub === 'Critical_FTQ';
+  const label = isFTQ ? 'Critical — Flight to Quality' : 'Critical — Stress without Relief';
+  const colorClass = isFTQ ? 'green' : 'red';
+  const icon = isFTQ ? '✓' : '⚡';
+
+  el.innerHTML = `
+    <div class="callout ${colorClass}">
+      <div class="callout-label">${icon} Live Status — ${label}</div>
+      <p>The regime is currently <strong>Critical</strong>, and the sub-regime filter has resolved to <strong>${isFTQ ? 'Flight to Quality' : 'Stress without Relief'}</strong>. ${note}</p>
+    </div>`;
 }
 
 function renderMain(data) {
@@ -1807,6 +2040,7 @@ function navChapter(index) {
 // INIT
 // ──────────────────────────────────────────
 loadData();
+initSubregimeStatus();
 
 // ──────────────────────────────────────────
 // BDC NAVIGATION
@@ -2176,9 +2410,15 @@ function renderRebalanceLog(data) {
       <td style="font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${s.rebalance_triggered ? (()=>{
         const r=s.rebalance_reason;
         if(r==='inception') return '⟳ Inception';
-        if(r==='quarterly_rebalance') return '⟳ Quarterly';
+        if(r==='quarterly_rebalance'||r==='semestral_rebalance') return '⟳ Semestral rebalance';
         if(r&&r.startsWith('emergency')) return '⚠ Emergency score';
         if(r&&(r.startsWith('tactical')||r.startsWith('wow'))) return '⟳ Tactical WoW delta';
+        if(r&&r.startsWith('critical_subregime_switch')) {
+          const parts = r.split(':')[1] || '';
+          const [from, to] = parts.split('->');
+          const label = to === 'Critical_FTQ' ? 'Flight to Quality' : 'Stress without Relief';
+          return `⟳ Sub-regime → ${label} <a href="#" onclick="switchView('academy', document.querySelector('.nav-tab')); navChapter(6); return false;" style="color:var(--blue); text-decoration:none; margin-left:4px;">why?</a>`;
+        }
         return '⟳ '+r.replace(/_/g,' ');
       })() : '— hold'}</td>
       <td style="font-family:var(--mono);color:var(--text-primary);padding:8px 8px 8px 0;">${fmtUSD(s.portfolio_value)}</td>
