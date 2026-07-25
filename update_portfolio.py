@@ -120,9 +120,22 @@ def adjust_for_market_holiday(target_date):
     return adjusted
 
 
+MAX_STALE_DAYS = 4  # A confirmed close more than this many days before target_date
+                     # is rejected as stale rather than silently accepted (guards against
+                     # yfinance returning an old cached window with nothing newer, e.g.
+                     # a rate limit or outage that still returns a non-empty, non-NaN result).
+
+
 def fetch_prices(tickers, target_date, retries=3):
+    """Returns (prices, price_dates, stale). `stale[ticker]` is True whenever the
+    close actually used is older than MAX_STALE_DAYS relative to target_date — in
+    that case prices[ticker] is set to None so the caller's existing last_prices
+    fallback (and its staleness check) takes over, instead of silently treating
+    a week-old close as if it were fresh."""
     prices = {}
-    start = target_date - timedelta(days=7)
+    price_dates = {}
+    stale = {}
+    start = target_date - timedelta(days=10)
     end   = target_date + timedelta(days=1)
     for ticker in tickers:
         for attempt in range(retries):
@@ -132,21 +145,32 @@ def fetch_prices(tickers, target_date, retries=3):
                     raise ValueError(f"No data for {ticker}")
                 hist.index = hist.index.date
                 if target_date in hist.index:
-                    price = float(hist.loc[target_date]["Close"])
+                    used_date = target_date
                 else:
-                    price = float(hist["Close"].iloc[-1])
+                    used_date = max(hist.index)
+                price = float(hist.loc[used_date]["Close"])
                 if math.isnan(price) or math.isinf(price):
                     raise ValueError(f"Invalid price for {ticker}")
+                staleness_days = (target_date - used_date).days
+                if staleness_days > MAX_STALE_DAYS:
+                    raise ValueError(
+                        f"Latest available close for {ticker} is {used_date} "
+                        f"({staleness_days}d before target {target_date}) — treating as fetch failure"
+                    )
                 prices[ticker] = round(price, 4)
-                log.info(f"  {ticker}: ${price:.4f}")
+                price_dates[ticker] = str(used_date)
+                stale[ticker] = False
+                log.info(f"  {ticker}: ${price:.4f} (as of {used_date})")
                 break
             except Exception as e:
                 log.warning(f"  {ticker} attempt {attempt+1} failed: {e}")
                 time.sleep(2 ** attempt)
         else:
             prices[ticker] = None
-            log.error(f"  {ticker}: all retries failed")
-    return prices
+            price_dates[ticker] = None
+            stale[ticker] = True
+            log.error(f"  {ticker}: all retries failed or only stale data available")
+    return prices, price_dates, stale
 
 
 def calculate_value(shares, prices):
@@ -336,7 +360,12 @@ def main():
     current_shares = current.get("shares", {})
     tickers_needed = list(set(get_active_tickers(regime)) | set(current_shares.keys()) | {"SPY"})
     log.info(f"Fetching prices for: {tickers_needed}")
-    prices = fetch_prices(tickers_needed, target_date)
+    prices, price_dates, stale = fetch_prices(tickers_needed, target_date)
+
+    # current["date"] is the date of the *last successful* update — if the last known
+    # price is from that same run, it's exactly as stale as the failed fresh fetch would
+    # have been, so falling back to it would just reproduce this week's bug silently.
+    last_known_date = current.get("date")
 
     for t in tickers_needed:
         p = prices.get(t)
@@ -344,16 +373,23 @@ def main():
         if is_invalid:
             fallback = current.get("last_prices", {}).get(t)
             fb_valid = fallback is not None and not (isinstance(fallback, float) and (math.isnan(fallback) or math.isinf(fallback)))
-            if fb_valid:
+            fallback_is_stale = last_known_date is not None and last_known_date < str(target_date - timedelta(days=MAX_STALE_DAYS))
+            if fb_valid and not fallback_is_stale:
                 prices[t] = fallback
-                log.warning(f"  {t}: using last known ${fallback}")
+                stale[t] = True
+                log.warning(f"  {t}: fresh fetch failed — using last known ${fallback} ({last_known_date})")
             else:
                 prices[t] = None
-                log.error(f"  {t}: no valid price")
+                log.error(f"  {t}: no valid, sufficiently-fresh price available (fallback dated {last_known_date})")
 
     if not prices.get("SPY"):
-        log.error("SPY price unavailable. Aborting.")
+        log.error("SPY price unavailable or too stale (fresh fetch failed and fallback is also stale). Aborting rather than publish incorrect data.")
         sys.exit(1)
+
+    if any(stale.values()):
+        stale_tickers = [t for t, v in stale.items() if v]
+        log.warning(f"⚠️ Proceeding with STALE fallback prices for: {stale_tickers}. "
+                     f"This week's portfolio figures may not reflect this week's actual market close.")
 
     portfolio_value = calculate_value(current_shares, prices)
     pnl_pct      = round((portfolio_value - inception_val) / inception_val * 100, 2)
@@ -421,7 +457,8 @@ def main():
         "mrm_score":                     mrm_score,
         "regime":                        regime,
         "prices":                        {t: prices[t] for t in tickers_needed if prices.get(t) is not None},
-        "prices_confirmed":              {t: True for t in tickers_needed if prices.get(t) is not None},
+        "prices_confirmed":              {t: not stale.get(t, False) for t in tickers_needed if prices.get(t) is not None},
+        "data_stale":                    any(stale.get(t, False) for t in tickers_needed),
         "portfolio_value_pre_rebalance": round(portfolio_value, 2),
         "bucket_allocation_pct":         final_bucket_alloc,
         "allocation_pct":                {t: v for t, v in alloc_pct.items() if v > 0},
@@ -457,7 +494,12 @@ def main():
         log.error("NaN/Inf detected — ABORTING WRITE.")
         sys.exit(1)
 
+    # Replace any existing entry for this issue number instead of appending a
+    # duplicate — matters for corrective re-runs (e.g. FORCE_REBALANCE=true after
+    # a stale-data fetch failure) where the same issue is legitimately re-processed.
+    portfolio["history"] = [h for h in portfolio["history"] if h.get("issue") != issue_number]
     portfolio["history"].append(snapshot)
+    portfolio["history"].sort(key=lambda h: h.get("issue", 0))
     portfolio["current"] = new_current
 
     with open(PORTFOLIO_PATH, "w") as f:
