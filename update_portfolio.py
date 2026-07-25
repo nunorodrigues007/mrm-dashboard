@@ -31,8 +31,22 @@ REGIME_ETF_MAP = {
         "US_EQUITIES": "SPY", "US_TREASURIES": "IEF", "IG_CREDIT": "LQD",
         "COMMODITIES": "PDBC", "CASH": "BIL", "ALTERNATIVES": "VNQ",
     },
-    "Critical": {
+    # Critical (score 8-10) splits into two sub-regimes — see docs/critical_subregime.md
+    # (Nuno Rodrigues, Jul 2026): the same composite score can mean either a genuine
+    # flight-to-quality (10Y falling, TLT hedges the equity drawdown — 2008, 2020) or
+    # persistent stress with no rate relief (10Y flat/rising, TLT loses its hedge value
+    # and can fall alongside equities — 2022, where TLT lost ~31%). Which one is live is
+    # decided each week by determine_critical_subregime(), never assumed from the score.
+    "Critical_FTQ": {
+        # Confirmed 10Y decline — duration pays as a hedge. Matches the original Critical map.
         "US_EQUITIES": "USMV", "US_TREASURIES": "TLT", "IG_CREDIT": "SGOV",
+        "COMMODITIES": "GLD", "CASH": "BIL", "ALTERNATIVES": "VNQ",
+    },
+    "Critical_Stress": {
+        # 10Y flat/rising, or freshly entering Critical with no confirmation yet (the
+        # conservative default). TLT is swapped for SHY — no rate-cut tailwind to
+        # compensate for duration risk while stress persists.
+        "US_EQUITIES": "USMV", "US_TREASURIES": "SHY", "IG_CREDIT": "SGOV",
         "COMMODITIES": "GLD", "CASH": "BIL", "ALTERNATIVES": "VNQ",
     },
     "Resilient": {
@@ -79,14 +93,90 @@ def classify_regime(score):
     return "Turbulence"
 
 
-def get_active_tickers(regime):
-    return list(REGIME_ETF_MAP.get(regime, REGIME_ETF_MAP["Turbulence"]).values())
+def resolve_etf_map_key(regime, critical_subregime=None):
+    """REGIME_ETF_MAP keys for Critical are split into two sub-regimes; every other
+    regime maps 1:1. Falls back to the conservative Critical_Stress map if regime is
+    Critical but no sub-regime was resolved (should not happen in normal operation)."""
+    if regime == "Critical":
+        return critical_subregime or "Critical_Stress"
+    return regime
+
+
+def get_active_tickers(regime, critical_subregime=None):
+    key = resolve_etf_map_key(regime, critical_subregime)
+    return list(REGIME_ETF_MAP.get(key, REGIME_ETF_MAP["Turbulence"]).values())
 
 
 def get_last_friday():
     today = date.today()
     days_back = (today.weekday() - 4) % 7
     return today - timedelta(days=days_back)
+
+
+# ── Critical sub-regime: Flight-to-Quality vs Stress-without-relief ──────────────
+# Decision confirmed with Nuno, Jul 2026 — see docs/critical_subregime.md.
+# Asymmetric, conservative gate: TLT is only "re-earned" on a clear, confirmed 10Y
+# decline. Anything else — flat, rising, a fresh entry into Critical, or a failed
+# data fetch — defaults to the defensive (Stress-without-relief) path. The two real
+# historical FTQ episodes (2008, 2020) both saw fast, unambiguous declines well past
+# this threshold within weeks, so the conservative gate costs little upside while
+# fully avoiding a repeat of 2022 (TLT -31%, no rate relief the entire year).
+TNX_TICKER = "^TNX"  # CBOE 10-Year Treasury Yield Index via yfinance; value = yield * 10
+CRITICAL_TREND_LOOKBACK_DAYS = 28  # ~4 calendar weeks, per the confirmed rule
+CRITICAL_FTQ_THRESHOLD_BP = -10    # 10Y must have fallen at least this many bps to confirm FTQ
+
+
+def get_10y_trend_bp(target_date, lookback_days=CRITICAL_TREND_LOOKBACK_DAYS, retries=3):
+    """Change in the 10Y yield, in basis points, from ~lookback_days before target_date
+    to target_date, using yfinance's ^TNX index. Returns None if unavailable after
+    retries — callers must treat None as "not confirmed" (defensive default), never
+    as a confirmed decline."""
+    start = target_date - timedelta(days=lookback_days + 10)  # buffer for weekends/holidays
+    end   = target_date + timedelta(days=1)
+    for attempt in range(retries):
+        try:
+            hist = yf.Ticker(TNX_TICKER).history(start=str(start), end=str(end))
+            if hist.empty:
+                raise ValueError("No ^TNX data returned")
+            hist.index = hist.index.date
+            dates = sorted(hist.index)
+            past_or_eq = [d for d in dates if d <= target_date]
+            if not past_or_eq:
+                raise ValueError("No ^TNX data on or before target_date")
+            end_date = past_or_eq[-1]
+            lookback_target = end_date - timedelta(days=lookback_days)
+            start_date = min(dates, key=lambda d: abs((d - lookback_target).days))
+            yield_end   = float(hist.loc[end_date]["Close"]) / 10.0
+            yield_start = float(hist.loc[start_date]["Close"]) / 10.0
+            if any(math.isnan(v) or math.isinf(v) for v in (yield_end, yield_start)):
+                raise ValueError("Invalid ^TNX value")
+            change_bp = round((yield_end - yield_start) * 100, 1)
+            log.info(f"10Y trend: {yield_start:.3f}% ({start_date}) -> {yield_end:.3f}% ({end_date}) = {change_bp:+.1f}bp")
+            return change_bp
+        except Exception as e:
+            log.warning(f"10Y trend fetch attempt {attempt+1} failed: {e}")
+            time.sleep(2 ** attempt)
+    log.error("10Y trend unavailable after retries.")
+    return None
+
+
+def determine_critical_subregime(target_date, was_critical_last_week):
+    """Returns (subregime, note). subregime is 'Critical_FTQ' or 'Critical_Stress'."""
+    if not was_critical_last_week:
+        note = "Fresh entry into Critical — defaulting to Stress-without-relief until a 10Y decline is confirmed."
+        log.info(note)
+        return "Critical_Stress", note
+
+    trend_bp = get_10y_trend_bp(target_date)
+    if trend_bp is not None and trend_bp <= CRITICAL_FTQ_THRESHOLD_BP:
+        note = f"10Y trend {trend_bp:+.1f}bp over {CRITICAL_TREND_LOOKBACK_DAYS}d confirms Flight-to-Quality — TLT retained."
+        log.info(note)
+        return "Critical_FTQ", note
+
+    trend_desc = "unavailable" if trend_bp is None else f"{trend_bp:+.1f}bp"
+    note = f"10Y trend {trend_desc} over {CRITICAL_TREND_LOOKBACK_DAYS}d does not confirm a clear decline — Stress-without-relief (defensive)."
+    log.info(note)
+    return "Critical_Stress", note
 
 
 def is_semestral_rebalance_week(target_date):
@@ -357,8 +447,17 @@ def main():
     regime = classify_regime(mrm_score)
     log.info(f"Regime: {regime} (score={mrm_score})")
 
+    was_regime     = current.get("regime", "Turbulence")
+    was_subregime  = current.get("critical_subregime")
+
+    critical_subregime = None
+    critical_subregime_note = None
+    if regime == "Critical":
+        was_critical_last_week = (was_regime == "Critical")
+        critical_subregime, critical_subregime_note = determine_critical_subregime(target_date, was_critical_last_week)
+
     current_shares = current.get("shares", {})
-    tickers_needed = list(set(get_active_tickers(regime)) | set(current_shares.keys()) | {"SPY"})
+    tickers_needed = list(set(get_active_tickers(regime, critical_subregime)) | set(current_shares.keys()) | {"SPY"})
     log.info(f"Fetching prices for: {tickers_needed}")
     prices, price_dates, stale = fetch_prices(tickers_needed, target_date)
 
@@ -409,6 +508,9 @@ def main():
     rebalance_reason    = "hold"
     final_bucket_alloc  = current.get("bucket_allocation_pct", {})
     final_regime        = current.get("regime", "Turbulence")
+    final_critical_subregime = was_subregime
+
+    subregime_switch = (regime == "Critical" and critical_subregime != was_subregime)
 
     if bucket_alloc:
         semestral        = is_semestral_rebalance_week(target_date)
@@ -419,20 +521,36 @@ def main():
             rebalance_reason    = "semestral_rebalance"
             final_bucket_alloc  = bucket_alloc
             final_regime        = regime
+            final_critical_subregime = critical_subregime
             log.info("REBALANCE: semestral")
         elif emerg:
             rebalance_triggered = True
             rebalance_reason    = emerg_why
             final_bucket_alloc  = bucket_alloc
             final_regime        = regime
+            final_critical_subregime = critical_subregime
             log.info(f"REBALANCE: emergency — {emerg_why}")
+        elif subregime_switch:
+            # Not a macro % rebalance — same bucket allocation, only the instrument
+            # representing US_TREASURIES (and the rest of the Critical map) changes.
+            rebalance_triggered = True
+            rebalance_reason    = f"critical_subregime_switch:{was_subregime or 'none'}->{critical_subregime}"
+            final_regime        = regime
+            final_critical_subregime = critical_subregime
+            log.info(f"REBALANCE: critical sub-regime switch {was_subregime} -> {critical_subregime}")
         else:
             log.info(f"No rebalance — next semestral: Jan or Jun. Score={mrm_score}")
     else:
         log.warning("No valid newsletter allocation — holding current positions.")
+        if subregime_switch:
+            rebalance_triggered = True
+            rebalance_reason    = f"critical_subregime_switch:{was_subregime or 'none'}->{critical_subregime}"
+            final_regime        = regime
+            final_critical_subregime = critical_subregime
+            log.info(f"REBALANCE: critical sub-regime switch {was_subregime} -> {critical_subregime} (no newsletter allocation — keeping existing bucket %)")
 
     if rebalance_triggered and final_bucket_alloc:
-        candidate = rebalance_shares(portfolio_value, final_bucket_alloc, final_regime, prices)
+        candidate = rebalance_shares(portfolio_value, final_bucket_alloc, resolve_etf_map_key(final_regime, final_critical_subregime), prices)
         candidate_value = calculate_value(candidate, prices)
         if candidate_value < portfolio_value * 0.5:
             log.error(f"Rebalanced value ${candidate_value} < 50% — aborting.")
@@ -445,7 +563,7 @@ def main():
     else:
         new_shares = current_shares.copy()
 
-    etf_map   = REGIME_ETF_MAP.get(final_regime, REGIME_ETF_MAP["Turbulence"])
+    etf_map   = REGIME_ETF_MAP.get(resolve_etf_map_key(final_regime, final_critical_subregime), REGIME_ETF_MAP["Turbulence"])
     alloc_pct = {t: 0.0 for t in ALL_TICKERS}
     for bucket, pct in final_bucket_alloc.items():
         ticker = etf_map.get(bucket, "BIL")
@@ -456,6 +574,8 @@ def main():
         "date":                          str(target_date),
         "mrm_score":                     mrm_score,
         "regime":                        regime,
+        "critical_subregime":            critical_subregime,
+        "critical_subregime_note":       critical_subregime_note,
         "prices":                        {t: prices[t] for t in tickers_needed if prices.get(t) is not None},
         "prices_confirmed":              {t: not stale.get(t, False) for t in tickers_needed if prices.get(t) is not None},
         "data_stale":                    any(stale.get(t, False) for t in tickers_needed),
@@ -477,6 +597,7 @@ def main():
         "issue":                  issue_number,
         "date":                   str(target_date),
         "regime":                 final_regime,
+        "critical_subregime":     final_critical_subregime,
         "shares":                 new_shares,
         "bucket_allocation_pct":  final_bucket_alloc,
         "allocation_pct":         {t: v for t, v in alloc_pct.items() if v > 0},
