@@ -1628,6 +1628,7 @@ function renderTerminal(data) {
   renderChapters(data);
   renderBDCRiskStatus(data);
   renderBDCUnrateStatus(data);
+  renderBDCSignal(data);
 }
 
 // ──────────────────────────────────────────
@@ -1786,6 +1787,121 @@ function renderBDCUnrateStatus(data) {
     </div>`;
 }
 
+// ──────────────────────────────────────────
+// BDC SECTION 06 — "MRM SIGNAL" LIVE PANEL
+// This panel had id="signal-score" etc. already in the markup — built for live
+// data but never wired to any JS. It was frozen at a March 2026 snapshot
+// (score 6.4, "MRM Verdict — March 2026") ever since. This wires it to data.json,
+// same pattern as the rest of the site.
+// ──────────────────────────────────────────
+function bdcFilterBadge(el, badgeEl, valueText, level) {
+  // level: 'ok' | 'caution' | 'negative' | 'unknown'
+  const styles = {
+    ok:       { color: 'var(--green)',  bg: 'var(--green-dim)',  border: 'rgba(52,208,88,0.3)',  label: 'OK' },
+    caution:  { color: 'var(--orange)', bg: 'var(--orange-dim)', border: 'rgba(249,140,79,0.3)', label: 'CAUTION' },
+    negative: { color: 'var(--red)',    bg: 'var(--red-dim)',    border: 'rgba(215,58,73,0.3)',  label: 'NEGATIVE' },
+    unknown:  { color: 'var(--text-muted)', bg: 'var(--bg-elevated)', border: 'var(--border)',   label: '—' },
+  };
+  const s = styles[level] || styles.unknown;
+  if (el) { el.textContent = valueText; el.style.color = s.color; }
+  if (badgeEl) {
+    badgeEl.textContent = s.label;
+    badgeEl.style.color = s.color;
+    badgeEl.style.background = s.bg;
+    badgeEl.style.border = `1px solid ${s.border}`;
+  }
+  return level;
+}
+
+function renderBDCSignal(data) {
+  const scoreEl = document.getElementById('signal-score');
+  if (!scoreEl) return;
+
+  const score = data.globalResilienceScore;
+  const statusEl = document.getElementById('signal-status');
+  const allocEl = document.getElementById('signal-allocation');
+  const subEl = document.getElementById('signal-sub');
+
+  scoreEl.textContent = (score !== undefined && score !== null) ? score.toFixed(1) : '—';
+  const statusColor = score <= 4.0 ? 'var(--green)' : (score >= 8.0 ? 'var(--red)' : 'var(--orange)');
+  scoreEl.style.color = statusColor;
+  if (statusEl) { statusEl.textContent = (data.status || '').toUpperCase(); statusEl.style.color = statusColor; }
+
+  let allocLabel, allocSub;
+  if (score <= 4.0) { allocLabel = 'Maximum Exposure'; allocSub = 'Full dividend yield capture — second-tier BDCs eligible.'; }
+  else if (score >= 8.0) { allocLabel = 'Minimum / Zero Allocation'; allocSub = 'Liquidate gradually — capital preservation priority.'; }
+  else { allocLabel = 'Tactical Reduction'; allocSub = 'Tier 1 BDCs only with First Lien >70%'; }
+  if (allocEl) { allocEl.textContent = allocLabel; allocEl.style.color = statusColor; }
+  if (subEl) subEl.textContent = allocSub;
+
+  // ── Filter 1: Yield Curve (10Y-2Y) ──
+  const cycle = (data.pillars || []).find(p => p.id === 'cycle');
+  const yieldVal = cycle ? parseFloat(cycle.value) : null;
+  let yieldLevel = 'unknown';
+  if (yieldVal !== null && !isNaN(yieldVal)) {
+    yieldLevel = yieldVal > 0.50 ? 'ok' : (yieldVal > 0 ? 'caution' : 'negative');
+  }
+  bdcFilterBadge(
+    document.getElementById('filter-yield-value'),
+    document.getElementById('filter-yield-badge'),
+    cycle ? cycle.value : '—',
+    yieldLevel
+  );
+
+  // ── Filter 2: Initial Jobless Claims (reuse the sentinel's own status) ──
+  const jobless = (data.sentinels || []).find(s => s.id === 'jobless');
+  const joblessLevel = jobless ? (jobless.alert ? 'negative' : (jobless.status === 'caution' ? 'caution' : 'ok')) : 'unknown';
+  bdcFilterBadge(
+    document.getElementById('filter-jobless-value'),
+    document.getElementById('filter-jobless-badge'),
+    jobless ? jobless.displayValue : '—',
+    joblessLevel
+  );
+
+  // ── Filter 3: M2 Money Supply YoY Growth ──
+  const liquidity = (data.pillars || []).find(p => p.id === 'liquidity');
+  const m2Growth = liquidity ? liquidity.m2YoyGrowthPct : null;
+  let m2Level = 'unknown';
+  let m2Text = '—';
+  if (m2Growth !== null && m2Growth !== undefined) {
+    m2Level = m2Growth > 1.5 ? 'ok' : (m2Growth >= 0 ? 'caution' : 'negative');
+    m2Text = `${m2Growth >= 0 ? '+' : ''}${m2Growth.toFixed(1)}%`;
+  }
+  bdcFilterBadge(
+    document.getElementById('filter-m2-value'),
+    document.getElementById('filter-m2-badge'),
+    m2Text,
+    m2Level
+  );
+
+  // ── Verdict ──
+  const levels = { yield: yieldLevel, jobless: joblessLevel, m2: m2Level };
+  const names = { yield: 'Yield Curve', jobless: 'Jobless Claims', m2: 'M2 Growth' };
+  const negative = Object.keys(levels).filter(k => levels[k] === 'negative');
+  const caution = Object.keys(levels).filter(k => levels[k] === 'caution');
+  const nonOk = negative.length + caution.length;
+
+  const verdictBox = document.getElementById('bdc-signal-verdict');
+  const verdictLabel = document.getElementById('signal-verdict-label');
+  const verdictText = document.getElementById('signal-verdict-text');
+  if (verdictBox && verdictLabel && verdictText) {
+    let icon, cls, verdictLine;
+    if (nonOk >= 2) {
+      icon = '⚡'; cls = 'orange';
+      const parts = [];
+      if (negative.length) parts.push(`${negative.length} negative filter${negative.length > 1 ? 's' : ''} (${negative.map(k => names[k]).join(', ')})`);
+      if (caution.length) parts.push(`${caution.length} in caution zone (${caution.map(k => names[k]).join(', ')})`);
+      verdictLine = `With ${parts.join(' and ')}, the 3-filter Golden Rule indicates <strong>tactical reduction</strong> regardless of the score-based allocation above. Maintain only Tier 1 BDCs with proven track record (ARCC, MAIN, HTGC). Monitor Non-Accruals quarterly. Avoid BDCs with Consumer Discretionary and Retail exposure.`;
+    } else {
+      icon = '✓'; cls = 'green';
+      verdictLine = `All 3 entry filters are aligned or only one shows caution — no Golden Rule override is in effect. Allocation follows the score-based guidance above (<strong>${allocLabel}</strong>).`;
+    }
+    verdictBox.className = 'callout ' + cls;
+    verdictLabel.textContent = `${icon} MRM Verdict — ${new Date(data.meta && data.meta.lastUpdated ? data.meta.lastUpdated : Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+    verdictText.innerHTML = verdictLine;
+  }
+}
+
 function renderMain(data) {
   const score = data.globalResilienceScore;
   const color = scoreCSSVar(score);
@@ -1922,6 +2038,31 @@ function renderSidebar(data) {
     </div>`;
   }).join('');
 
+  const dynamicAlerts = [];
+  (data.sentinels || []).forEach(s => {
+    if (s.alert) {
+      dynamicAlerts.push({ cls: 'danger', icon: '⚑', title: `${s.name} — Alert Active`, text: s.description });
+    } else if (s.status === 'caution') {
+      dynamicAlerts.push({ cls: 'warning', icon: '⚡', title: `${s.name} — Approaching Threshold`, text: s.description });
+    }
+  });
+  (data.pillars || []).forEach(p => {
+    if (p.status === 'warning' || p.status === 'critical') {
+      dynamicAlerts.push({ cls: p.status === 'critical' ? 'danger' : 'warning', icon: p.status === 'critical' ? '⚑' : '◉', title: `${p.name} Pillar`, text: p.description });
+    }
+  });
+  const alertsHTML = dynamicAlerts.length
+    ? dynamicAlerts.map(a => `
+      <div class="alert-box ${a.cls}">
+        <div class="alert-box-title">${a.icon} ${a.title}</div>
+        <div class="alert-box-text">${a.text}</div>
+      </div>`).join('')
+    : `
+      <div class="alert-box info">
+        <div class="alert-box-title">✓ No Active Alerts</div>
+        <div class="alert-box-text">All sentinels and pillars are within normal range this week.</div>
+      </div>`;
+
   document.getElementById('terminal-sidebar').innerHTML = `
     <div class="sidebar-title">⚑ Sentinels</div>
     ${sentinelsHTML}
@@ -1930,18 +2071,11 @@ function renderSidebar(data) {
         <span class="section-divider-label" style="font-size:9px">System Alerts</span>
         <div class="section-divider-line"></div>
       </div>
-      <div class="alert-box warning">
-        <div class="alert-box-title">⚡ ERP Compression</div>
-        <div class="alert-box-text">ERP at 1.02% — 22bps above Red Alert threshold. Elevated sensitivity to rate or earnings shocks.</div>
-      </div>
-      <div class="alert-box info">
-        <div class="alert-box-title">◉ Yield Curve</div>
-        <div class="alert-box-text">10Y–2Y normalizing from inversion. Historically precedes recession onset by 6–18 months.</div>
-      </div>
+      ${alertsHTML}
       <div style="margin-top:16px;padding:12px;background:var(--bg-primary);border-radius:8px;border:1px solid var(--border-subtle)">
         <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Framework Automation</div>
         <div style="font-size:11px;color:var(--text-muted);line-height:1.6">
-          Production deployments connect directly to the <strong style="color:var(--text-secondary)">FRED API</strong> for live data ingestion. Series: T10Y2Y, M2SL, WILL5000PRFC, DGS10, DRALACBN, TDSP, ICSA.
+          Production deployments connect directly to the <strong style="color:var(--text-secondary)">FRED API</strong> for live data ingestion. Series: T10Y2Y, M2SL, WILL5000PRFC, DGS10, DRALACBN, TDSP, ICSA, UNRATE.
         </div>
       </div>
     </div>
@@ -3112,8 +3246,8 @@ function renderRebalanceLog(data) {
                 <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: above +0.50%</div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;">
-                <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--orange);">+0.34%</div>
-                <div style="padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;background:var(--orange-dim);border:1px solid rgba(249,140,79,0.3);color:var(--orange);">CAUTION</div>
+                <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--orange);" id="filter-yield-value">+0.34%</div>
+                <div style="padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;background:var(--orange-dim);border:1px solid rgba(249,140,79,0.3);color:var(--orange);" id="filter-yield-badge">CAUTION</div>
               </div>
             </div>
 
@@ -3123,8 +3257,8 @@ function renderRebalanceLog(data) {
                 <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: below 275,000</div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;">
-                <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green);">231K</div>
-                <div style="padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;background:var(--green-dim);border:1px solid rgba(52,208,88,0.3);color:var(--green);">OK</div>
+                <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green);" id="filter-jobless-value">231K</div>
+                <div style="padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;background:var(--green-dim);border:1px solid rgba(52,208,88,0.3);color:var(--green);" id="filter-jobless-badge">OK</div>
               </div>
             </div>
 
@@ -3134,16 +3268,16 @@ function renderRebalanceLog(data) {
                 <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;">Threshold: positive YoY growth</div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;">
-                <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--orange);">+1.2%</div>
-                <div style="padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;background:var(--orange-dim);border:1px solid rgba(249,140,79,0.3);color:var(--orange);">WEAK</div>
+                <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--orange);" id="filter-m2-value">+1.2%</div>
+                <div style="padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:0.1em;background:var(--orange-dim);border:1px solid rgba(249,140,79,0.3);color:var(--orange);" id="filter-m2-badge">WEAK</div>
               </div>
             </div>
 
           </div>
 
-          <div class="callout orange">
-            <div class="callout-label">⚡ MRM Verdict — March 2026</div>
-            <p>With 1 negative filter (Yield Curve below +0.50%) and 2 in caution zone, the 3-filter rule indicates <strong>tactical reduction</strong>. Maintain only Tier 1 BDCs with proven track record (ARCC, MAIN, HTGC). Monitor Non-Accruals quarterly. Avoid BDCs with Consumer Discretionary and Retail exposure.</p>
+          <div class="callout orange" id="bdc-signal-verdict">
+            <div class="callout-label" id="signal-verdict-label">⚡ MRM Verdict</div>
+            <p id="signal-verdict-text">Loading live signal…</p>
           </div>
 
         </div>
