@@ -132,9 +132,13 @@ def global_score(scores):
     return round(sum(scores[k] * weights[k] for k in weights), 2)
 
 def status_label(score):
+    # Must stay in sync with classify_regime() in update_portfolio.py — that script
+    # decides actual ETF selection (and, for Critical, the FTQ/Stress sub-regime)
+    # using >=8.0 / <=4.0. A mismatch here would show a "Critical" badge on the
+    # site while the portfolio itself is still operating in Turbulence, or vice versa.
     if score <= 4.0: return "Resilient"
-    if score <= 7.0: return "Turbulence"
-    return "Critical"
+    if score >= 8.0: return "Critical"
+    return "Turbulence"
 
 def pillar_status(score):
     if score <= 4.0: return "stable"
@@ -178,6 +182,11 @@ def build_data():
     icsa_val, icsa_date = latest_value("ICSA")
     icsa_obs = fetch_fred("ICSA", limit=3)
     icsa_prev = float(icsa_obs[1]["value"]) if len(icsa_obs) > 1 else icsa_val
+
+    print("  📡 UNRATE  (Unemployment Rate)...")
+    unrate_val, unrate_date = latest_value("UNRATE", limit=3)
+    unrate_obs = fetch_fred("UNRATE", limit=3)
+    unrate_prev = float(unrate_obs[1]["value"]) if len(unrate_obs) > 1 else unrate_val
 
     print("  📡 Historical scores for sparkline...")
     t10y2y_hist = history_values("T10Y2Y", n=7, limit=14)
@@ -240,6 +249,13 @@ def build_data():
     erp_alert = erp_val < 0.80 if erp_val is not None else False
     erp_status = "alert" if erp_alert else ("caution" if erp_val < 1.20 else "normal")
 
+    # ── UNRATE Sentinel ──
+    # BDC "Stagflation Scenario" crisis trigger (see Watchlist/Crisis section):
+    # threshold set at 5.2%, per the BDC macro-cycle framework.
+    unrate_delta_val = (unrate_val - unrate_prev) if (unrate_val is not None and unrate_prev is not None) else 0
+    unrate_alert = unrate_val >= 5.2 if unrate_val is not None else False
+    unrate_status = "alert" if unrate_alert else ("caution" if unrate_val is not None and unrate_val >= 4.7 else "normal")
+
     # ── Build JSON ──
     data = {
         "meta": {
@@ -253,7 +269,8 @@ def build_data():
                 "DGS10": dgs10_date,
                 "DRALACBN": npl_date,
                 "TDSP": dsr_date,
-                "ICSA": icsa_date
+                "ICSA": icsa_date,
+                "UNRATE": unrate_date
             }
         },
         "globalResilienceScore": g_score,
@@ -355,6 +372,21 @@ def build_data():
                 "delta": f"{erp_val - 1.20:+.2f}%",
                 "alert": erp_alert,
                 "description": f"ERP at {erp_val:.2f}%. Red alert triggers below 0.80%."
+            },
+            {
+                "id": "unemployment",
+                "name": "Unemployment Rate",
+                "fredSeries": "UNRATE",
+                "value": unrate_val,
+                "unit": "%",
+                "displayValue": f"{unrate_val:.1f}%" if unrate_val is not None else "N/A",
+                "threshold": 5.2,
+                "thresholdDisplay": "5.2%",
+                "status": unrate_status,
+                "trend": "rising" if unrate_delta_val > 0 else ("falling" if unrate_delta_val < 0 else "stable"),
+                "delta": f"{'+' if unrate_delta_val >= 0 else ''}{unrate_delta_val:.1f}%",
+                "alert": unrate_alert,
+                "description": f"US unemployment rate at {f'{unrate_val:.1f}' if unrate_val is not None else 'N/A'}%. BDC stagflation stress trigger activates at 5.2%."
             }
         ],
         "historicalScores": hist_scores
