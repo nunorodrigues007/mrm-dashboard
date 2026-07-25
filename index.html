@@ -1626,6 +1626,8 @@ function renderTerminal(data) {
   renderMain(data);
   renderSidebar(data);
   renderChapters(data);
+  renderBDCRiskStatus(data);
+  renderBDCUnrateStatus(data);
 }
 
 // ──────────────────────────────────────────
@@ -1733,6 +1735,54 @@ function renderSubregimeStatus(data) {
     <div class="callout ${colorClass}">
       <div class="callout-label">${icon} Live Status — ${label}</div>
       <p>The regime is currently <strong>Critical</strong>, and the sub-regime filter has resolved to <strong>${isFTQ ? 'Flight to Quality' : 'Stress without Relief'}</strong>. ${note}</p>
+    </div>`;
+}
+
+// ──────────────────────────────────────────
+// BDC SECTION — LIVE REGIME BAND + UNRATE STATUS
+// Keeps the BDC allocation guide's active zone and crisis trigger in sync with
+// data.json instead of a hand-written "(Current State)" label. Boundaries match
+// classify_regime() in update_portfolio.py exactly: <=4.0 Resilient, >=8.0
+// Critical, otherwise Turbulence.
+// ──────────────────────────────────────────
+function renderBDCRiskStatus(data) {
+  const score = data.globalResilienceScore;
+  const statusEl = document.getElementById('bdc-risk-status');
+  const boxes = {
+    low:  { box: document.getElementById('callout-bdc-low'),  label: document.getElementById('label-bdc-low'),  base: '✓ Score ≤ 4.0 — Resilient — Safe Expansion' },
+    mid:  { box: document.getElementById('callout-bdc-mid'),  label: document.getElementById('label-bdc-mid'),  base: '⚡ Score 4.0 – 8.0 — Turbulence — Top Alert' },
+    high: { box: document.getElementById('callout-bdc-high'), label: document.getElementById('label-bdc-high'), base: '✕ Score ≥ 8.0 — Critical — Danger Zone' },
+  };
+  if (!boxes.low.box || score === undefined || score === null) return;
+
+  let active;
+  if (score <= 4.0) active = 'low';
+  else if (score >= 8.0) active = 'high';
+  else active = 'mid';
+
+  Object.keys(boxes).forEach(key => {
+    const { box, label, base } = boxes[key];
+    if (!box) return;
+    box.style.boxShadow = key === active ? '0 0 0 1px currentColor' : 'none';
+    label.textContent = key === active ? base + ' — Current' : base;
+  });
+
+  if (statusEl) {
+    statusEl.innerHTML = `<div style="font-family:var(--mono); font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em;">◎ Live MRM Score: <span style="color:var(--text-primary); font-weight:600;">${score.toFixed(1)}/10</span> — the zone marked "Current" below reflects today's reading.</div>`;
+  }
+}
+
+function renderBDCUnrateStatus(data) {
+  const el = document.getElementById('bdc-unrate-status');
+  if (!el) return;
+  const sentinel = (data.sentinels || []).find(s => s.id === 'unemployment');
+  if (!sentinel) { el.innerHTML = ''; return; }
+  const colorClass = sentinel.alert ? 'red' : (sentinel.status === 'caution' ? 'orange' : 'green');
+  const icon = sentinel.alert ? '✕' : (sentinel.status === 'caution' ? '⚡' : '✓');
+  el.innerHTML = `
+    <div class="callout ${colorClass}">
+      <div class="callout-label">${icon} Live Reading — Unemployment Rate</div>
+      <p>UNRATE currently stands at <span class="inline-metric">${sentinel.displayValue}</span> (${sentinel.trend}, ${sentinel.delta} vs. prior reading). ${sentinel.alert ? 'The Stagflation Scenario trigger is ACTIVE — the threshold of 5.2% has been breached.' : `Below the 5.2% Stagflation Scenario trigger.`}</p>
     </div>`;
 }
 
@@ -2107,7 +2157,7 @@ function updateVerdict() {
     label.textContent = '✓ VERDICT — HIGH QUALITY';
     title.style.color = 'var(--green)';
     title.textContent = total + '/6 — Tier 1 Asset';
-    text.textContent = 'BDC with solid balance sheet. Eligible for maximum exposure in Risk Score 1–4 environment. Monitor quarterly.';
+    text.textContent = 'BDC with solid balance sheet. Eligible for maximum exposure in a Resilient (MRM score ≤ 4.0) environment. Monitor quarterly.';
   } else if (total >= 3) {
     verdict.style.background = 'var(--orange-dim)';
     verdict.style.borderColor = 'rgba(249,140,79,0.3)';
@@ -2115,7 +2165,7 @@ function updateVerdict() {
     label.textContent = '⚡ VERDICT — YELLOW ALERT';
     title.style.color = 'var(--orange)';
     title.textContent = total + '/6 — Moderate Risk';
-    text.textContent = 'Risk of dividend cut in a macro stress event. Hold only if MRM Risk Score < 5. Reduce position in turbulent environment.';
+    text.textContent = 'Risk of dividend cut in a macro stress event. Hold only while MRM score stays below 8.0 (not yet Critical). Reduce position as the score approaches the Critical zone.';
   } else {
     verdict.style.background = 'var(--red-dim)';
     verdict.style.borderColor = 'rgba(215,58,73,0.3)';
@@ -2847,23 +2897,26 @@ function renderRebalanceLog(data) {
           <h2>Dynamic Allocation by MRM Risk Score</h2>
           <p>BDC exposure is automatically adjusted by the MRM Global Risk Score. This is the direct integration between the macro terminal and the income strategy:</p>
 
-          <div class="callout green">
-            <div class="callout-label">✓ Risk Score 1–4 — Safe Expansion</div>
+          <div id="bdc-risk-status" style="margin-bottom:12px;"></div>
+
+          <div class="callout green" id="callout-bdc-low">
+            <div class="callout-label" id="label-bdc-low">✓ Score ≤ 4.0 — Resilient — Safe Expansion</div>
             <p><strong>Maximum exposure allowed.</strong> Focus is on capturing the full dividend yield while NPLs are controlled and the credit curve is favorable. Consider second-tier BDCs with higher yields.</p>
           </div>
 
-          <div class="callout orange">
-            <div class="callout-label">⚡ Risk Score 5–7 — Top Alert (Current State)</div>
+          <div class="callout orange" id="callout-bdc-mid">
+            <div class="callout-label" id="label-bdc-mid">⚡ Score 4.0 – 8.0 — Turbulence — Top Alert</div>
             <p><strong>Tactical reduction.</strong> Focus only on BDCs with "Tier 1" balance sheets — low leverage (&lt;1.0x D/E), First Lien focus (&gt;70%), management with track record through 2008 and 2020. Avoid BDCs with cyclical sector exposure.</p>
           </div>
 
-          <div class="callout red">
-            <div class="callout-label">✕ Risk Score 8–10 — Danger Zone</div>
+          <div class="callout red" id="callout-bdc-high">
+            <div class="callout-label" id="label-bdc-high">✕ Score ≥ 8.0 — Critical — Danger Zone</div>
             <p><strong>Minimum or zero allocation.</strong> The risk of permanent capital loss (NAV drawdown + dividend cut) outweighs any income benefit. Liquidate positions gradually before Non-Accruals begin to rise.</p>
           </div>
 
           <h2>Crisis Management Guide</h2>
-          <p>If the Stress Test scenario is confirmed (Unemployment above 5.2%):</p>
+          <div id="bdc-unrate-status" style="margin-bottom:16px;"></div>
+          <p>If the Stress Test scenario is confirmed (Unemployment Rate above 5.2% — see live reading above):</p>
 
           <div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">
             <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
