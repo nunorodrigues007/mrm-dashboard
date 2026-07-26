@@ -57,6 +57,72 @@ def history_values(series_id, n=7, limit=12):
     return [(float(o["value"]), o["date"]) for o in valid]
 
 # ──────────────────────────────────────────
+# WILSHIRE 5000 PROXY (Liquidity pillar)
+# ──────────────────────────────────────────
+# FRED discontinued ALL Wilshire Index series (incl. WILL5000PRFC) on 3 Jun 2024:
+# https://news.research.stlouisfed.org/2024/04/fred-will-remove-wilshire-index-data-on-june-3-2024/
+# The FRED call below is kept as a first attempt (harmless, cheap, self-healing if the
+# series ever reappears under a new source) but is expected to return nothing.
+# Primary source is now Yahoo Finance's ^W5000 (Wilshire 5000 Total Market Full Cap
+# Index), fetched via yfinance — same library/pattern already used in
+# update_portfolio.py, updates daily (well within the weekly Friday cadence), free,
+# no key required. If both sources fail, we fall back to the last known-good ratio
+# already published in the live data.json (not a hardcoded constant), so a single bad
+# week degrades gracefully instead of freezing forever on one static value again.
+LAST_RESORT_MC_M2_RATIO = 1.82  # only used if FRED, yfinance, AND the live data.json are all unavailable
+LIVE_DATA_JSON_URL = "https://usmrm.net/data.json"
+WILSHIRE_STALE_DAYS = 5  # a ^W5000 close older than this (relative to today) is treated as a fetch failure
+
+
+def fetch_wilshire_level():
+    """Return (level, date_str, source) for the Wilshire 5000 index level.
+    Tries FRED WILL5000PRFC first (dead since Jun 2024, kept for self-healing),
+    then Yahoo Finance ^W5000 via yfinance. Returns (None, None, None) if both fail."""
+    # 1) FRED (expected to fail — series discontinued)
+    will_val, will_date = latest_value("WILL5000PRFC", limit=3)
+    if will_val:
+        return will_val, will_date, "FRED:WILL5000PRFC"
+
+    # 2) Yahoo Finance ^W5000
+    try:
+        import yfinance as yf
+        hist = yf.Ticker("^W5000").history(period="10d")
+        if not hist.empty:
+            hist.index = hist.index.date
+            latest_date = max(hist.index)
+            staleness = (datetime.now().date() - latest_date).days
+            if staleness <= WILSHIRE_STALE_DAYS:
+                level = float(hist.loc[latest_date]["Close"])
+                if level and level == level:  # NaN check
+                    return level, str(latest_date), "yfinance:^W5000"
+            print(f"  [WARN] ^W5000 latest close ({latest_date}) is {staleness}d stale — rejecting.")
+        else:
+            print("  [WARN] ^W5000 returned no data.")
+    except Exception as e:
+        print(f"  [WARN] yfinance ^W5000 fetch failed: {e}")
+
+    return None, None, None
+
+
+def fetch_last_known_ratio():
+    """Fall back to the mc_m2_ratio already live on the site, so a single bad week
+    degrades gracefully instead of freezing on a hardcoded constant indefinitely."""
+    try:
+        r = requests.get(LIVE_DATA_JSON_URL, timeout=10)
+        r.raise_for_status()
+        live = r.json()
+        for pillar in live.get("pillars", []):
+            if pillar.get("id") == "liquidity":
+                val = pillar.get("value", "")
+                ratio = float(val.replace("x", "").strip())
+                print(f"  [WARN] Using last known-good Liquidity ratio from live site: {ratio}x")
+                return ratio
+    except Exception as e:
+        print(f"  [WARN] Could not fetch last known-good ratio from live site: {e}")
+    print(f"  [WARN] Falling back to hardcoded constant: {LAST_RESORT_MC_M2_RATIO}x")
+    return LAST_RESORT_MC_M2_RATIO
+
+# ──────────────────────────────────────────
 # SCORING LOGIC
 # ──────────────────────────────────────────
 def score_cycle(spread):
@@ -175,8 +241,12 @@ def build_data():
         if _year_ago_m2:
             m2_yoy_growth_pct = round((_latest_m2 - _year_ago_m2) / _year_ago_m2 * 100, 2)
 
-    print("  📡 WILL5000PRFC (Wilshire 5000 Market Cap)...")
-    will_val, will_date = latest_value("WILL5000PRFC", limit=3)
+    print("  📡 Wilshire 5000 (Liquidity pillar — FRED discontinued, using yfinance ^W5000 fallback)...")
+    will_val, will_date, will_source = fetch_wilshire_level()
+    if will_val:
+        print(f"  ✅ Wilshire 5000 level: {will_val} ({will_date}) via {will_source}")
+    else:
+        print("  [WARN] Wilshire 5000 unavailable from FRED and yfinance this run.")
 
     print("  📡 DGS10   (10Y Treasury Yield)...")
     dgs10_val, dgs10_date = latest_value("DGS10")
@@ -209,8 +279,15 @@ def build_data():
     erp_val = round(SP500_EARNINGS_YIELD - (dgs10_val or 4.30), 2) if dgs10_val else 1.02
 
     # ── Market Cap / M2 Ratio ──
-    # WILL5000PRFC is in billions USD; M2SL is in billions USD
-    mc_m2_ratio = round(will_val / m2_val, 3) if (will_val and m2_val) else 1.82
+    # will_val is the Wilshire 5000 index level (FRED WILL5000PRFC or, now, yfinance
+    # ^W5000 — both track the same underlying index, so the existing calibration
+    # against M2 in billions USD still holds). If neither source is available this
+    # run, fall back to the last known-good ratio already live on the site rather
+    # than a permanently frozen constant.
+    if will_val and m2_val:
+        mc_m2_ratio = round(will_val / m2_val, 3)
+    else:
+        mc_m2_ratio = fetch_last_known_ratio()
 
     # ── Compute Scores ──
     print("\n  📊 Computing Pillar Scores...")
@@ -270,7 +347,7 @@ def build_data():
         "meta": {
             "lastUpdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "source": "FRED API (Live)",
-            "version": "2.0.0",
+            "version": "2.0.1",
             "fredSeriesDates": {
                 "T10Y2Y": t10y2y_date,
                 "M2SL": m2_date,
@@ -280,7 +357,8 @@ def build_data():
                 "TDSP": dsr_date,
                 "ICSA": icsa_date,
                 "UNRATE": unrate_date
-            }
+            },
+            "wilshireSource": will_source or "fallback:last_known_ratio"
         },
         "globalResilienceScore": g_score,
         "status": status_label(g_score),
@@ -305,7 +383,7 @@ def build_data():
                 "score": s_liquidity,
                 "metric": "Market Cap / M2 Ratio",
                 "value": f"{mc_m2_ratio:.2f}x",
-                "fredSeries": "M2SL + WILL5000PRFC",
+                "fredSeries": "M2SL + Wilshire 5000 (yfinance ^W5000)",
                 "trend": "elevated" if mc_m2_ratio > 1.4 else "normal",
                 "delta": "+0.03",
                 "m2YoyGrowthPct": m2_yoy_growth_pct,
