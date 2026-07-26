@@ -42,6 +42,32 @@ def fetch_fred(series_id, limit=12, retries=3, backoff=5):
     print(f"  [WARN] {series_id} unavailable after {retries} attempts — using fallback.")
     return []
 
+def fetch_fred_full_history(series_id, retries=3, backoff=5):
+    """Fetch the FULL available history for a FRED series (ascending, no date window).
+    Used for series where we need the whole time series to self-calibrate (percentile
+    ranking) rather than just the latest reading."""
+    import time
+    params = {
+        "series_id": series_id,
+        "api_key": FRED_API_KEY,
+        "file_type": "json",
+        "sort_order": "asc",
+        "limit": 100000,
+    }
+    for attempt in range(1, retries + 1):
+        try:
+            r = requests.get(FRED_BASE, params=params, timeout=20)
+            r.raise_for_status()
+            observations = r.json().get("observations", [])
+            valid = [o for o in observations if o["value"] not in (".", "")]
+            return valid
+        except Exception as e:
+            print(f"  [R] Failed to fetch full history for {series_id}: {e} (attempt {attempt}/{retries})")
+            if attempt < retries:
+                time.sleep(backoff * attempt)
+    print(f"  [WARN] {series_id} full history unavailable after {retries} attempts.")
+    return []
+
 def latest_value(series_id, limit=12):
     """Return the most recent valid float value for a series."""
     obs = fetch_fred(series_id, limit)
@@ -57,70 +83,81 @@ def history_values(series_id, n=7, limit=12):
     return [(float(o["value"]), o["date"]) for o in valid]
 
 # ──────────────────────────────────────────
-# WILSHIRE 5000 PROXY (Liquidity pillar)
+# LIQUIDITY PILLAR — REAL BUFFETT INDICATOR
 # ──────────────────────────────────────────
-# FRED discontinued ALL Wilshire Index series (incl. WILL5000PRFC) on 3 Jun 2024:
-# https://news.research.stlouisfed.org/2024/04/fred-will-remove-wilshire-index-data-on-june-3-2024/
-# The FRED call below is kept as a first attempt (harmless, cheap, self-healing if the
-# series ever reappears under a new source) but is expected to return nothing.
-# Primary source is now Yahoo Finance's ^W5000 (Wilshire 5000 Total Market Full Cap
-# Index), fetched via yfinance — same library/pattern already used in
-# update_portfolio.py, updates daily (well within the weekly Friday cadence), free,
-# no key required. If both sources fail, we fall back to the last known-good ratio
-# already published in the live data.json (not a hardcoded constant), so a single bad
-# week degrades gracefully instead of freezing forever on one static value again.
-LAST_RESORT_MC_M2_RATIO = 1.82  # only used if FRED, yfinance, AND the live data.json are all unavailable
-LIVE_DATA_JSON_URL = "https://usmrm.net/data.json"
-WILSHIRE_STALE_DAYS = 5  # a ^W5000 close older than this (relative to today) is treated as a fetch failure
+# Background: the original Liquidity pillar divided the FRED series WILL5000PRFC
+# (Wilshire 5000 index level) by M2SL. FRED discontinued ALL Wilshire Index data on
+# 3 Jun 2024 (https://news.research.stlouisfed.org/2024/04/fred-will-remove-wilshire-index-data-on-june-3-2024/)
+# — a year and a half BEFORE this project's inception (Mar 2026) — so that call never
+# once returned real data; the pillar has been silently running on a hardcoded
+# placeholder (1.82x) since Issue #1. A Yahoo Finance fallback (^W5000) was evaluated
+# and also rejected: as of Jul 2026 its feed is itself stale (9+ days), consistent with
+# the Wilshire 5000 index's 2026 provider transition (Wilshire Advisors LLC acquiring
+# Wilshire Indexes' assets) disrupting downstream distribution.
+#
+# Redefinition (going forward only — no historical data or past issues are touched):
+# the Liquidity pillar now tracks the textbook Buffett Indicator — Total US Corporate
+# Equities / GDP — built entirely from Fed/BEA national-accounts data that cannot be
+# "discontinued" the way a single index vendor's feed can:
+#   NCBEILQ027S  Nonfinancial corporate business; corporate equities, liability level
+#   FBCELLQ027S  Domestic financial sectors; corporate equities, liability level
+#   GDP          Gross Domestic Product (nominal, SAAR)
+# All three are quarterly Z.1 / NIPA series published by the Fed/BEA — the same
+# institutional-grade source already used for TDSP, DRALACBN, M2SL. Because the ratio's
+# "normal" range drifts over 80 years of nominal growth, the score is NOT based on
+# hardcoded dollar thresholds (which is what produced the original 1.82x guess) — it's
+# the ratio's own percentile rank against its full available history, so it self-
+# calibrates and needs no re-tuning as the economy grows.
+LIQUIDITY_SERIES = {
+    "nonfinancial_equities": "NCBEILQ027S",
+    "financial_equities": "FBCELLQ027S",
+    "gdp": "GDP",
+}
 
 
-def fetch_wilshire_level():
-    """Return (level, date_str, source) for the Wilshire 5000 index level.
-    Tries FRED WILL5000PRFC first (dead since Jun 2024, kept for self-healing),
-    then Yahoo Finance ^W5000 via yfinance. Returns (None, None, None) if both fail."""
-    # 1) FRED (expected to fail — series discontinued)
-    will_val, will_date = latest_value("WILL5000PRFC", limit=3)
-    if will_val:
-        return will_val, will_date, "FRED:WILL5000PRFC"
+def fetch_liquidity_percentile():
+    """Returns (ratio, percentile, as_of_date, detail_dict).
+    ratio = (NCBEILQ027S + FBCELLQ027S) / GDP for the latest quarter common to all
+    three series. percentile = that ratio's rank (0-100) within its own full history.
+    Returns (None, None, None, {}) if any series is unavailable."""
+    ncb = fetch_fred_full_history(LIQUIDITY_SERIES["nonfinancial_equities"])
+    fbc = fetch_fred_full_history(LIQUIDITY_SERIES["financial_equities"])
+    gdp = fetch_fred_full_history(LIQUIDITY_SERIES["gdp"])
+    if not (ncb and fbc and gdp):
+        print("  [WARN] Could not fetch one or more Z.1/GDP series for Liquidity pillar.")
+        return None, None, None, {}
 
-    # 2) Yahoo Finance ^W5000
-    try:
-        import yfinance as yf
-        hist = yf.Ticker("^W5000").history(period="10d")
-        if not hist.empty:
-            hist.index = hist.index.date
-            latest_date = max(hist.index)
-            staleness = (datetime.now().date() - latest_date).days
-            if staleness <= WILSHIRE_STALE_DAYS:
-                level = float(hist.loc[latest_date]["Close"])
-                if level and level == level:  # NaN check
-                    return level, str(latest_date), "yfinance:^W5000"
-            print(f"  [WARN] ^W5000 latest close ({latest_date}) is {staleness}d stale — rejecting.")
-        else:
-            print("  [WARN] ^W5000 returned no data.")
-    except Exception as e:
-        print(f"  [WARN] yfinance ^W5000 fetch failed: {e}")
+    ncb_by_date = {o["date"]: float(o["value"]) for o in ncb}
+    fbc_by_date = {o["date"]: float(o["value"]) for o in fbc}
+    gdp_by_date = {o["date"]: float(o["value"]) for o in gdp}
 
-    return None, None, None
+    common_dates = sorted(set(ncb_by_date) & set(fbc_by_date) & set(gdp_by_date))
+    if not common_dates:
+        print("  [WARN] No overlapping quarters across NCBEILQ027S/FBCELLQ027S/GDP.")
+        return None, None, None, {}
 
+    ratios = []
+    for d in common_dates:
+        total_equities_b = (ncb_by_date[d] + fbc_by_date[d]) / 1000.0  # millions -> billions
+        gdp_b = gdp_by_date[d]
+        if gdp_b:
+            ratios.append((d, total_equities_b / gdp_b))
 
-def fetch_last_known_ratio():
-    """Fall back to the mc_m2_ratio already live on the site, so a single bad week
-    degrades gracefully instead of freezing on a hardcoded constant indefinitely."""
-    try:
-        r = requests.get(LIVE_DATA_JSON_URL, timeout=10)
-        r.raise_for_status()
-        live = r.json()
-        for pillar in live.get("pillars", []):
-            if pillar.get("id") == "liquidity":
-                val = pillar.get("value", "")
-                ratio = float(val.replace("x", "").strip())
-                print(f"  [WARN] Using last known-good Liquidity ratio from live site: {ratio}x")
-                return ratio
-    except Exception as e:
-        print(f"  [WARN] Could not fetch last known-good ratio from live site: {e}")
-    print(f"  [WARN] Falling back to hardcoded constant: {LAST_RESORT_MC_M2_RATIO}x")
-    return LAST_RESORT_MC_M2_RATIO
+    if not ratios:
+        return None, None, None, {}
+
+    latest_date, latest_ratio = ratios[-1]
+    all_values = [r for _, r in ratios]
+    rank = sum(1 for v in all_values if v <= latest_ratio)
+    percentile = round(rank / len(all_values) * 100, 1)
+
+    detail = {
+        "totalEquitiesB": round((ncb_by_date[latest_date] + fbc_by_date[latest_date]) / 1000.0, 1),
+        "gdpB": round(gdp_by_date[latest_date], 1),
+        "historyPoints": len(all_values),
+        "historyStart": ratios[0][0],
+    }
+    return round(latest_ratio, 4), percentile, latest_date, detail
 
 # ──────────────────────────────────────────
 # SCORING LOGIC
@@ -138,16 +175,19 @@ def score_cycle(spread):
     if spread < 2.00:   return 2.5
     return 1.5
 
-def score_liquidity(ratio):
-    """Market Cap / M2 ratio → score 1-10"""
-    if ratio is None: return 6.0
-    if ratio > 2.00:  return 9.5
-    if ratio > 1.80:  return 8.5
-    if ratio > 1.60:  return 7.5
-    if ratio > 1.40:  return 6.5
-    if ratio > 1.20:  return 5.5
-    if ratio > 1.00:  return 4.0
-    if ratio > 0.80:  return 3.0
+def score_liquidity(percentile):
+    """Buffett Indicator (Total US Corporate Equities / GDP) percentile rank (0-100)
+    against its own full history (1945-present) → score 1-10. Percentile-based rather
+    than fixed dollar thresholds because the ratio's nominal scale drifts over decades —
+    self-calibrating, no re-tuning needed as the economy grows."""
+    if percentile is None: return 6.0
+    if percentile > 95: return 9.5
+    if percentile > 90: return 8.5
+    if percentile > 80: return 7.5
+    if percentile > 65: return 6.5
+    if percentile > 50: return 5.5
+    if percentile > 35: return 4.0
+    if percentile > 20: return 3.0
     return 1.5
 
 def score_premium(erp):
@@ -241,12 +281,13 @@ def build_data():
         if _year_ago_m2:
             m2_yoy_growth_pct = round((_latest_m2 - _year_ago_m2) / _year_ago_m2 * 100, 2)
 
-    print("  📡 Wilshire 5000 (Liquidity pillar — FRED discontinued, using yfinance ^W5000 fallback)...")
-    will_val, will_date, will_source = fetch_wilshire_level()
-    if will_val:
-        print(f"  ✅ Wilshire 5000 level: {will_val} ({will_date}) via {will_source}")
+    print("  📡 Liquidity — Buffett Indicator (Total Corp. Equities / GDP, Fed Z.1 + BEA)...")
+    buffett_ratio, buffett_pct, buffett_date, buffett_detail = fetch_liquidity_percentile()
+    if buffett_ratio is not None:
+        print(f"  ✅ Buffett Indicator: {buffett_ratio*100:.1f}% of GDP ({buffett_date}) — "
+              f"{buffett_pct}th percentile of {buffett_detail.get('historyPoints')} quarters since {buffett_detail.get('historyStart')}")
     else:
-        print("  [WARN] Wilshire 5000 unavailable from FRED and yfinance this run.")
+        print("  [WARN] Liquidity pillar data unavailable this run.")
 
     print("  📡 DGS10   (10Y Treasury Yield)...")
     dgs10_val, dgs10_date = latest_value("DGS10")
@@ -278,21 +319,10 @@ def build_data():
     SP500_EARNINGS_YIELD = 4.55  # approximate E/P for S&P 500
     erp_val = round(SP500_EARNINGS_YIELD - (dgs10_val or 4.30), 2) if dgs10_val else 1.02
 
-    # ── Market Cap / M2 Ratio ──
-    # will_val is the Wilshire 5000 index level (FRED WILL5000PRFC or, now, yfinance
-    # ^W5000 — both track the same underlying index, so the existing calibration
-    # against M2 in billions USD still holds). If neither source is available this
-    # run, fall back to the last known-good ratio already live on the site rather
-    # than a permanently frozen constant.
-    if will_val and m2_val:
-        mc_m2_ratio = round(will_val / m2_val, 3)
-    else:
-        mc_m2_ratio = fetch_last_known_ratio()
-
     # ── Compute Scores ──
     print("\n  📊 Computing Pillar Scores...")
     s_cycle    = score_cycle(t10y2y_val)
-    s_liquidity= score_liquidity(mc_m2_ratio)
+    s_liquidity= score_liquidity(buffett_pct)
     s_premium  = score_premium(erp_val)
     s_solvency = score_solvency(npl_val)
     s_debt     = score_debt(dsr_val)
@@ -307,7 +337,7 @@ def build_data():
     g_score = global_score(scores)
 
     print(f"\n  ✅ Cycle:     {s_cycle} (T10Y2Y={t10y2y_val}%)")
-    print(f"  ✅ Liquidity: {s_liquidity} (MC/M2={mc_m2_ratio}x)")
+    print(f"  ✅ Liquidity: {s_liquidity} (Buffett={f'{buffett_ratio*100:.1f}' if buffett_ratio is not None else 'N/A'}%, pctile={buffett_pct})")
     print(f"  ✅ Premium:   {s_premium} (ERP={erp_val}%)")
     print(f"  ✅ Solvency:  {s_solvency} (NPL={npl_val}%)")
     print(f"  ✅ Debt:      {s_debt} (DSR={dsr_val}%)")
@@ -342,23 +372,41 @@ def build_data():
     unrate_alert = unrate_val >= 5.2 if unrate_val is not None else False
     unrate_status = "alert" if unrate_alert else ("caution" if unrate_val is not None and unrate_val >= 4.7 else "normal")
 
+    # ── Liquidity pillar display fields ──
+    if buffett_ratio is not None:
+        buffett_display = f"{buffett_ratio*100:.1f}%"
+        liquidity_trend = "elevated" if buffett_pct > 65 else ("compressed" if buffett_pct < 35 else "normal")
+        liquidity_desc = (
+            f"Buffett Indicator (Total US Corporate Equities / GDP) at {buffett_ratio*100:.1f}% — "
+            f"{buffett_pct}th percentile vs. its own history since {buffett_detail.get('historyStart')} "
+            f"({buffett_detail.get('historyPoints')} quarters). Total corporate equities "
+            f"${buffett_detail.get('totalEquitiesB', 0)/1000:.1f}T vs. GDP ${buffett_detail.get('gdpB', 0)/1000:.1f}T "
+            f"(quarter ending {buffett_date}). M2 YoY growth: {f'{m2_yoy_growth_pct:+.1f}' if m2_yoy_growth_pct is not None else 'N/A'}%. "
+            f"Updates quarterly with each Fed Z.1 / BEA GDP release, not weekly — a change from the prior "
+            f"(non-functional) daily Wilshire proxy."
+        )
+    else:
+        buffett_display = "N/A"
+        liquidity_trend = "normal"
+        liquidity_desc = "Buffett Indicator data unavailable this run (Fed Z.1 / BEA GDP fetch failed)."
+
     # ── Build JSON ──
     data = {
         "meta": {
             "lastUpdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "source": "FRED API (Live)",
-            "version": "2.0.1",
+            "version": "3.0.0",
             "fredSeriesDates": {
                 "T10Y2Y": t10y2y_date,
                 "M2SL": m2_date,
-                "WILL5000PRFC": will_date,
+                "NCBEILQ027S_FBCELLQ027S_GDP": buffett_date,
                 "DGS10": dgs10_date,
                 "DRALACBN": npl_date,
                 "TDSP": dsr_date,
                 "ICSA": icsa_date,
                 "UNRATE": unrate_date
             },
-            "wilshireSource": will_source or "fallback:last_known_ratio"
+            "liquidityNote": "Liquidity pillar redefined from discontinued Wilshire 5000 proxy to Buffett Indicator (Total Corp. Equities / GDP), percentile-scored against full history. See fetch_data.py comments."
         },
         "globalResilienceScore": g_score,
         "status": status_label(g_score),
@@ -381,13 +429,14 @@ def build_data():
                 "roman": "II",
                 "name": "Liquidity",
                 "score": s_liquidity,
-                "metric": "Market Cap / M2 Ratio",
-                "value": f"{mc_m2_ratio:.2f}x",
-                "fredSeries": "M2SL + Wilshire 5000 (yfinance ^W5000)",
-                "trend": "elevated" if mc_m2_ratio > 1.4 else "normal",
-                "delta": "+0.03",
+                "metric": "Buffett Indicator (Total Equities / GDP)",
+                "value": buffett_display,
+                "fredSeries": "NCBEILQ027S + FBCELLQ027S + GDP",
+                "trend": liquidity_trend,
+                "delta": "—",
                 "m2YoyGrowthPct": m2_yoy_growth_pct,
-                "description": f"Buffett Indicator at {mc_m2_ratio:.2f}x. M2 at ${f'{m2_val/1000:.1f}' if m2_val is not None else 'N/A'}T. Equity valuations elevated relative to monetary base.",
+                "percentileRank": buffett_pct,
+                "description": liquidity_desc,
                 "status": pillar_status(s_liquidity)
             },
             {
