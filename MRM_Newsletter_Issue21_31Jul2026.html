@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MRM Weekly Audit — Issue #21 — 31 July 2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#F2F4F7;font-family:Arial,sans-serif;font-size:14px;color:#1A1D20;}
+a{color:#388BFD;text-decoration:none;}
+.wrapper{max-width:640px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);}
+.header{background:#0D1117;}
+.header-top{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid #21262D;}
+.logo{font-size:15px;font-weight:800;color:#E8ECF0;letter-spacing:0.08em;text-transform:uppercase;}
+.logo span{color:#388BFD;}
+.header-meta{font-family:'Courier New',monospace;font-size:9px;color:#586068;letter-spacing:0.12em;text-transform:uppercase;text-align:right;line-height:1.6;}
+.header-subject{padding:18px 28px 20px;}
+.header-subject .tag{font-family:'Courier New',monospace;font-size:9px;color:#388BFD;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:6px;}
+.header-subject h1{font-size:22px;font-weight:800;color:#E8ECF0;line-height:1.2;}
+.score-band{background:#161B22;padding:20px 28px;display:flex;align-items:center;gap:24px;border-bottom:3px solid #F98C4F;}
+.score-circle{width:72px;height:72px;border-radius:50%;border:3px solid #F98C4F;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.score-num{font-family:'Courier New',monospace;font-size:26px;font-weight:700;color:#F98C4F;line-height:1;}
+.score-info .regime{font-family:'Courier New',monospace;font-size:9px;color:#F98C4F;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:4px;}
+.score-info .score-label{font-size:16px;font-weight:700;color:#E8ECF0;margin-bottom:4px;}
+.score-info .score-sub{font-family:'Courier New',monospace;font-size:10px;color:#586068;}
+.content{padding:28px;}
+.section-label{font-family:'Courier New',monospace;font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8B949E;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #E5E8EC;}
+.summary p{font-size:13px;color:#2D3139;line-height:1.75;margin-bottom:10px;}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px;}
+thead tr{background:#1A1D20;}
+thead th{padding:8px 10px;text-align:left;font-family:'Courier New',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#8B949E;border-bottom:2px solid #388BFD;}
+tbody tr:nth-child(odd){background:#F8F9FB;}
+td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
+.pill{display:inline-block;padding:2px 7px;border-radius:4px;font-family:'Courier New',monospace;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;}
+.red{background:#FFEBEE;color:#D73A49;} .orange{background:#FFF3E0;color:#F98C4F;} .yellow{background:#FFF8E1;color:#E6A817;} .green{background:#E8F5E9;color:#2E7D32;}
+.deep-dive{background:#FFF8E1;border-left:3px solid #F98C4F;padding:14px 16px;border-radius:0 6px 6px 0;margin-bottom:4px;}
+.deep-dive p{font-size:12.5px;color:#2D3139;line-height:1.7;margin-bottom:8px;}
+.page-divider{margin:28px 0;border:none;border-top:2px dashed #E5E8EC;}
+.page-label{text-align:center;font-family:'Courier New',monospace;font-size:9px;color:#8B949E;letter-spacing:0.14em;text-transform:uppercase;margin:12px 0 20px;}
+.sector-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sector-col-ow{background:#F1FAF3;border:1px solid #C8E6C9;border-radius:8px;overflow:hidden;}
+.sector-col-uw{background:#FFF5F5;border:1px solid #FFCDD2;border-radius:8px;overflow:hidden;}
+.sector-col-header{padding:8px 12px;font-family:'Courier New',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;}
+.sector-col-ow .sector-col-header{background:#E8F5E9;color:#2E7D32;}
+.sector-col-uw .sector-col-header{background:#FFEBEE;color:#C62828;}
+.sector-item{padding:7px 12px;border-bottom:1px solid rgba(0,0,0,0.05);}
+.sector-item:last-child{border-bottom:none;}
+.sector-name{font-size:11.5px;font-weight:600;margin-bottom:1px;}
+.sector-col-ow .sector-name{color:#1B5E20;} .sector-col-uw .sector-name{color:#B71C1C;}
+.sector-rationale{font-size:10px;color:#586068;line-height:1.4;}
+.alloc-pct{font-family:'Courier New',monospace;font-size:14px;font-weight:700;color:#388BFD;}
+.verdict-box{background:#FFF8E1;border:2px solid #F98C4F;border-radius:8px;padding:16px 18px;}
+.verdict-box p{font-size:13px;color:#2D3139;line-height:1.75;}
+.footer{background:#0D1117;padding:20px 28px;text-align:center;}
+.footer-logo{font-size:13px;font-weight:800;color:#8B949E;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;}
+.footer-logo span{color:#388BFD;}
+.footer-links{margin-bottom:10px;}
+.footer-links a{font-family:'Courier New',monospace;font-size:10px;color:#586068;margin:0 8px;}
+.footer-disclaimer{font-family:'Courier New',monospace;font-size:9px;color:#3D4450;line-height:1.6;max-width:480px;margin:0 auto;}
+.spacer{height:20px;}
+.rebalance-box{background:#122008;border-left:4px solid #34D058;border-radius:0 8px 8px 0;padding:16px 18px;margin-top:24px;}
+.rebalance-box .rb-header{font-family:'Courier New',monospace;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#34D058;margin-bottom:10px;}
+.rebalance-box .rb-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(52,208,88,0.15);}
+.rebalance-box .rb-row:last-child{border-bottom:none;}
+.rebalance-box .rb-label{font-family:'Courier New',monospace;font-size:9px;color:#8B949E;letter-spacing:0.1em;text-transform:uppercase;}
+.rebalance-box .rb-value{font-family:'Courier New',monospace;font-size:11px;color:#E8ECF0;font-weight:600;text-align:right;}
+.rebalance-box .rb-value.green-text{color:#34D058;}
+.rebalance-box .rb-value.orange-text{color:#F98C4F;}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<div class="header">
+<div class="header-top">
+<div class="logo">US<span>MRM</span></div>
+<div class="header-meta">MRM WEEKLY AUDIT<br>31 July 2026 · ISSUE #21</div>
+</div>
+<div class="header-subject">
+<div class="tag">Subject: Regime Diagnosis &amp; Tactical Execution</div>
+<h1>US Macro-Resilience Matrix<br>Weekly Institutional Memo</h1>
+</div>
+</div>
+
+<div class="score-band">
+<div class="score-circle">
+<div class="score-num">7.0</div>
+</div>
+<div class="score-info">
+<div class="regime">● TURBULENCE REGIME</div>
+<div class="score-label">Global Resilience Score</div>
+<div class="score-sub">Updated: 31 July 2026 · FRED API Live · 5/5 Pillars Active · ▲ +0.2 WoW</div>
+</div>
+</div>
+
+<div class="content">
+
+<!-- EXECUTIVE SUMMARY -->
+<div class="section-label">I · Executive Summary</div>
+<div class="summary">
+<p>The composite resilience score rose to <strong>7.0/10</strong> this week, a +0.2 increase driven entirely by the Liquidity pillar, which surged to 9.5/10 — its highest reading of the current cycle. Despite this marginal improvement, the regime classification remains firmly in <strong>Turbulence</strong>. Two pillars — Liquidity and Equity Risk Premium — now sit at or near ceiling-level criticality, signaling that market pricing has decoupled materially from underlying fundamentals.</p>
+<p>The ERP Sentinel remains in active alert at <strong>-0.12%</strong>, marking a negative equity risk premium for the second consecutive week. This condition — where expected equity returns fall below the risk-free rate — is historically rare and has preceded every major drawdown of the past two decades. Combined with excess liquidity readings above 288%, the matrix presents a textbook late-cycle dislocation: abundant capital chasing diminishing marginal returns in risk assets.</p>
+<p>Solvency and Debt pillars remain unchanged and stable, providing no incremental stress signal. The business cycle indicator holds at a near-stall velocity of +0.45%, reinforcing a deceleration narrative that has yet to inflect into contraction. No ICSA alert has been triggered. The portfolio holds current allocations with no structural rebalance warranted.</p>
+</div>
+
+<div class="spacer"></div>
+
+<!-- PILLARS TABLE -->
+<div class="section-label">II · Pillar Decomposition</div>
+<table>
+<thead>
+<tr>
+<th>Pillar</th>
+<th>Raw Value</th>
+<th>Score</th>
+<th>WoW</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="font-weight:600;">Cycle</td>
+<td>+0.45%</td>
+<td>5.5 / 10</td>
+<td>— 0.0</td>
+<td><span class="pill yellow">CAUTION</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Liquidity</td>
+<td>288.3%</td>
+<td>9.5 / 10</td>
+<td style="color:#D73A49;font-weight:700;">▲ +1.0</td>
+<td><span class="pill red">CRITICAL</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Premium (ERP)</td>
+<td>-0.12%</td>
+<td>10.0 / 10</td>
+<td>— 0.0</td>
+<td><span class="pill red">CRITICAL</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Solvency</td>
+<td>1.5%</td>
+<td>2.5 / 10</td>
+<td>— 0.0</td>
+<td><span class="pill green">STABLE</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Debt</td>
+<td>11.2%</td>
+<td>5.5 / 10</td>
+<td>— 0.0</td>
+<td><span class="pill yellow">CAUTION</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="spacer"></div>
+
+<!-- DEEP DIVE -->
+<div class="section-label">III · Deep Dive — Liquidity (Biggest WoW Mover: ▲ +1.0)</div>
+<div class="deep-dive">
+<p><strong>Liquidity surged +1.0 points WoW to 9.5/10</strong>, making it the sole mover across all five pillars this week and the primary driver of the composite score increase. The underlying metric — aggregate liquidity supply as a percentage of nominal GDP — now reads 288.3%, a level that has only been observed during periods of acute monetary accommodation or post-crisis balance sheet expansion.</p>
+<p>The mechanical interpretation is straightforward: the volume of liquid assets in the financial system vastly exceeds the economy's absorptive capacity. This creates a reflexive loop where excess capital compresses spreads, inflates multiples, and erodes forward return expectations across all asset classes. The ERP's negative reading is a direct downstream consequence of this liquidity glut — when money is too cheap and too abundant, investors accept compensation below the risk-free rate simply for market exposure.</p>
+<p>For portfolio construction, this reading reinforces the case for maintaining defensive duration exposure and real asset diversification. Historically, liquidity scores above 9.0 have preceded periods of elevated volatility within 60–90 days as the gap between asset prices and fundamentals becomes unsustainable. The current configuration — 9.5 Liquidity coupled with 10.0 ERP — represents the most extreme valuation-liquidity dislocation recorded since the matrix's inception.</p>
+<p><strong>Key risk:</strong> Any exogenous shock to liquidity conditions — whether via central bank rhetoric, collateral stress, or geopolitical disruption — would find a market with zero margin of safety. The transmission speed from liquidity withdrawal to price adjustment in this regime is historically non-linear.</p>
+</div>
+
+</div>
+
+<hr class="page-divider">
+<div class="page-label">— Tactical Execution —</div>
+
+<div class="content" style="padding-top:0;">
+
+<!-- EWS TABLE -->
+<div class="section-label">IV · Early Warning Sentinels</div>
+<table>
+<thead>
+<tr>
+<th>Sentinel</th>
+<th>Value</th>
+<th>Alert</th>
+<th>WoW</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="font-weight:600;">ICSA (Initial Claims)</td>
+<td>N/A</td>
+<td><span class="pill green">FALSE</span></td>
+<td>— 0.0</td>
+<td>No labor-market deterioration signal. Data pending.</td>
+</tr>
+<tr>
+<td style="font-weight:600;">ERP Sentinel</td>
+<td>-0.12%</td>
+<td><span class="pill red">TRUE</span></td>
+<td>— 0.0</td>
+<td>Negative equity risk premium. Equities priced below risk-free compensation.</td>
+</tr>
+</tbody>
+</table>
+
+<div class="spacer"></div>
+
+<!-- SECTOR MATRIX -->
+<div class="section-label">V · Sector &amp; Factor Tilt Matrix</div>
+<div class="sector-grid">
+<div class="sector-col-ow">
+<div class="sector-col-header">▲ Overweight Tilts</div>
+<div class="sector-item">
+<div class="sector-name">Short-Duration Sovereigns</div>
+<div class="sector-rationale">Positive real yield; capital preservation in turbulence regime; ERP sentinel active.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">Investment-Grade Credit</div>
+<div class="sector-rationale">Spread compression supports carry; solvency pillar stable at 2.5/10.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">Commodities / Real Assets</div>
+<div class="sector-rationale">Inflation hedge against excess liquidity; portfolio diversification benefit in late cycle.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">Intermediate Duration Treasuries</div>
+<div class="sector-rationale">Convexity buffer; defensive ballast if cycle decelerates further toward contraction.</div>
+</div>
+</div>
+<div class="sector-col-uw">
+<div class="sector-col-header">▼ Underweight Tilts</div>
+<div class="sector-item">
+<div class="sector-name">Broad Equities</div>
+<div class="sector-rationale">Negative ERP; no compensation above risk-free rate; turbulence regime active.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">High-Beta / Growth Factors</div>
+<div class="sector-rationale">Maximum vulnerability to liquidity withdrawal; cycle deceleration unfavorable.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">High-Yield Credit</div>
+<div class="sector-rationale">Spread compression at extreme levels; asymmetric downside risk in regime transition.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">Real Estate (Levered)</div>
+<div class="sector-rationale">Rate sensitivity elevated; debt pillar at caution; reduced relative to neutral.</div>
+</div>
+</div>
+</div>
+
+<div class="spacer"></div>
+
+<!-- ALLOCATION TABLE -->
+<div class="section-label">VI · Tactical Allocation Grid — Turbulence Regime</div>
+<table>
+<thead>
+<tr>
+<th>Asset Class</th>
+<th>Tactical Weight</th>
+<th>Regime Signal</th>
+<th>WoW Δ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="font-weight:600;">US Large-Cap Equities</td>
+<td><span class="alloc-pct">18%</span></td>
+<td><span class="pill red">UNDERWEIGHT</span></td>
+<td>— 0.0</td>
+</tr>
+<tr>
+<td style="font-weight:600;">Intermediate Treasuries</td>
+<td><span class="alloc-pct">22%</span></td>
+<td><span class="pill green">OVERWEIGHT</span></td>
+<td>— 0.0</td>
+</tr>
+<tr>
+<td style="font-weight:600;">Investment-Grade Credit</td>
+<td><span class="alloc-pct">15%</span></td>
+<td><span class="pill green">NEUTRAL+</span></td>
+<td>— 0.0</td>
+</tr>
+<tr>
+<td style="font-weight:600;">Commodities Broad Basket</td>
+<td><span class="alloc-pct">12%</span></td>
+<td><span class="pill green">OVERWEIGHT</span></td>
+<td>— 0.0</td>
+</tr>
+<tr>
+<td style="font-weight:600;">Short-Duration / Cash Equiv.</td>
+<td><span class="alloc-pct">23%</span></td>
+<td><span class="pill green">OVERWEIGHT</span></td>
+<td>— 0.0</td>
+</tr>
+<tr>
+<td style="font-weight:600;">Real Estate</td>
+<td><span class="alloc-pct">10%</span></td>
+<td><span class="pill yellow">UNDERWEIGHT</span></td>
+<td>— 0.0</td>
+</tr>
+</tbody>
+</table>
+
+<div class="spacer"></div>
+
+<!-- CIO VERDICT -->
+<div class="section-label">VII · CIO Verdict</div>
+<div class="verdict-box">
+<p><strong>Verdict: Maintain defensive posture. No allocation changes.</strong></p>
+<p>The composite score's marginal improvement to 7.0 is entirely attributable to a liquidity pillar that is, paradoxically, the market's greatest source of fragility. A system awash in liquidity with a negative equity risk premium is not a system becoming healthier — it is a system becoming more brittle. The +0.2 WoW increase should not be interpreted as a constructive signal.</p>
+<p>Two of five pillars are in <strong>critical</strong> territory. The ERP Sentinel has been in continuous alert, signaling that equity markets offer no compensation for the risk assumed. The cycle pillar, at +0.45%, sits uncomfortably close to the zero-bound that would trigger a regime downgrade to Contraction. This is not an environment for adding risk.</p>
+<p>The portfolio remains positioned for capital preservation with selective carry: overweight short-duration, intermediate sovereigns, and commodities; underweight broad equities and levered real assets. The next semestral rebalance is not until January 2027. Any intra-cycle rebalance would require a confirmed regime shift — either a decisive break below 6.0 (Contraction) or a sustained recovery above 4.0 (Expansion). Neither threshold is proximate.</p>
+<p><strong>Standing instruction:</strong> Do nothing. Let the defense work. The cost of patience is low; the cost of premature re-risking in a negative-ERP, excess-liquidity regime is asymmetrically high.</p>
+</div>
+
+<div class="spacer"></div>
+
+<!-- PORTFOLIO REBALANCE STATUS -->
+<div class="rebalance-box">
+<div class="rb-header">● Portfolio Rebalance Status</div>
+<div class="rb-row">
+<span class="rb-label">Alert Level</span>
+<span class="rb-value green-text">INACTIVE</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Status</span>
+<span class="rb-value" style="font-size:10px;max-width:320px;text-align:right;line-height:1.5;">No structural regime change detected. Holding current positions.</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Current Regime</span>
+<span class="rb-value orange-text">TURBULENCE</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Composite Score</span>
+<span class="rb-value">This Week: 6.97 → Last Week: 6.78</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Active Asset Classes</span>
+<span class="rb-value" style="font-size:10px;">Lg-Cap Equity · Int. Treasuries · IG Credit · Commodities · Short-Duration · REITs</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Portfolio Value</span>
+<span class="rb-value">$10,552.85</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Total P&amp;L</span>
+<span class="rb-value green-text">+5.53%</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Alpha vs Broad Equity</span>
+<span class="rb-value" style="color:#D73A49;">-6.09%</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Next Semestral Rebalance</span>
+<span class="rb-value">29 January 2027</span>
+</div>
+</div>
+
+</div>
+
+<div class="footer">
+<div class="footer-logo">US<span>MRM</span> Intelligence Hub</div>
+<div class="footer-links">
+<a href="https://usmrm.net">Live Terminal</a>
+<a href="https://usmrm.net">Newsletter</a>
+<a href="https://usmrm.net">BDCs</a>
+<a href="mailto:usmrm@proton.me">Contact</a>
+</div>
+<div class="footer-disclaimer">This newsletter is produced for educational and personal analysis purposes only. It does not constitute financial advice.<br>All data sourced from FRED API · © 2026 US MRM Intelligence Hub · usmrm.net</div>
+</div>
+
+</div>
+</body>
+</html>
