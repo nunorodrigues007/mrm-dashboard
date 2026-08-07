@@ -1,6 +1,6 @@
 {
   "meta": {
-    "lastUpdated": "2026-08-06T23:45:57Z",
+    "lastUpdated": "2026-08-07T18:36:12Z",
     "source": "FRED API (Live)",
     "version": "3.0.0",
     "fredSeriesDates": {
@@ -11,7 +11,7 @@
       "DRALACBN": "2026-01-01",
       "TDSP": "2026-01-01",
       "ICSA": "2026-08-01",
-      "UNRATE": "2026-06-01"
+      "UNRATE": "2026-07-01"
     },
     "liquidityNote": "Liquidity pillar redefined from discontinued Wilshire 5000 proxy to Buffett Indicator (Total Corp. Equities / GDP), percentile-scored against full history. See fetch_data.py comments."
   },
@@ -121,16 +121,16 @@
       "id": "unemployment",
       "name": "Unemployment Rate",
       "fredSeries": "UNRATE",
-      "value": 4.2,
+      "value": 4.1,
       "unit": "%",
-      "displayValue": "4.2%",
+      "displayValue": "4.1%",
       "threshold": 5.2,
       "thresholdDisplay": "5.2%",
       "status": "normal",
       "trend": "falling",
       "delta": "-0.1%",
       "alert": false,
-      "description": "US unemployment rate at 4.2%. BDC stagflation stress trigger activates at 5.2%."
+      "description": "US unemployment rate at 4.1%. BDC stagflation stress trigger activates at 5.2%."
     }
   ],
   "historicalScores": [
