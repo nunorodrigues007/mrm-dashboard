@@ -1,13 +1,13 @@
 {
   "meta": {
-    "lastUpdated": "2026-08-14T18:37:38Z",
+    "lastUpdated": "2026-08-15T18:10:19Z",
     "source": "FRED API (Live)",
     "version": "3.0.0",
     "fredSeriesDates": {
-      "T10Y2Y": "2026-08-13",
+      "T10Y2Y": "2026-08-14",
       "M2SL": "2026-06-01",
       "NCBEILQ027S_FBCELLQ027S_GDP": "2026-01-01",
-      "DGS10": "2026-08-12",
+      "DGS10": "2026-08-13",
       "DRALACBN": "2026-01-01",
       "TDSP": "2026-01-01",
       "ICSA": "2026-08-08",
@@ -15,19 +15,19 @@
     },
     "liquidityNote": "Liquidity pillar redefined from discontinued Wilshire 5000 proxy to Buffett Indicator (Total Corp. Equities / GDP), percentile-scored against full history. See fetch_data.py comments."
   },
-  "globalResilienceScore": 6.97,
+  "globalResilienceScore": 6.78,
   "status": "Turbulence",
   "pillars": [
     {
       "id": "cycle",
       "roman": "I",
       "name": "Cycle",
-      "score": 5.5,
+      "score": 4.5,
       "metric": "10Y-2Y Yield Curve",
-      "value": "+0.48%",
+      "value": "+0.51%",
       "fredSeries": "T10Y2Y",
       "trend": "steepening",
-      "delta": "+0.26%",
+      "delta": "+0.29%",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
     },
@@ -52,11 +52,11 @@
       "name": "Premium",
       "score": 10.0,
       "metric": "Equity Risk Premium",
-      "value": "-0.13%",
+      "value": "-0.08%",
       "fredSeries": "DGS10",
       "trend": "compressed",
-      "delta": "-1.33",
-      "description": "ERP = E/P (4.55%) minus 10Y yield (4.68%). Approaching critical threshold.",
+      "delta": "-1.28",
+      "description": "ERP = E/P (4.55%) minus 10Y yield (4.63%). Approaching critical threshold.",
       "status": "critical"
     },
     {
@@ -106,16 +106,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -0.13,
+      "value": -0.08,
       "unit": "%",
-      "displayValue": "-0.13%",
+      "displayValue": "-0.08%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-1.33%",
+      "delta": "-1.28%",
       "alert": true,
-      "description": "ERP at -0.13%. Red alert triggers below 0.80%."
+      "description": "ERP at -0.08%. Red alert triggers below 0.80%."
     },
     {
       "id": "unemployment",
@@ -136,31 +136,31 @@
   "historicalScores": [
     {
       "date": "Aug '26",
-      "score": 6.5
+      "score": 6.4
     },
     {
       "date": "Aug '26",
-      "score": 6.5
+      "score": 6.4
     },
     {
       "date": "Aug '26",
-      "score": 6.5
+      "score": 6.4
     },
     {
       "date": "Aug '26",
-      "score": 6.5
+      "score": 6.4
     },
     {
       "date": "Aug '26",
-      "score": 6.5
+      "score": 6.4
     },
     {
       "date": "Aug '26",
-      "score": 6.5
+      "score": 6.4
     },
     {
       "date": "Aug '26",
-      "score": 6.5
+      "score": 6.1
     }
   ]
 }
