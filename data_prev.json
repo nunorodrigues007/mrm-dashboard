@@ -1,33 +1,33 @@
 {
   "meta": {
-    "lastUpdated": "2026-08-21T18:19:05Z",
+    "lastUpdated": "2026-08-29T01:14:03Z",
     "source": "FRED API (Live)",
     "version": "3.0.0",
     "fredSeriesDates": {
-      "T10Y2Y": "2026-08-20",
-      "M2SL": "2026-06-01",
+      "T10Y2Y": "2026-08-28",
+      "M2SL": "2026-07-01",
       "NCBEILQ027S_FBCELLQ027S_GDP": "2026-01-01",
-      "DGS10": "2026-08-19",
-      "DRALACBN": "2026-01-01",
+      "DGS10": "2026-08-27",
+      "DRALACBN": "2026-04-01",
       "TDSP": "2026-01-01",
-      "ICSA": "2026-08-15",
+      "ICSA": "2026-08-22",
       "UNRATE": "2026-07-01"
     },
     "liquidityNote": "Liquidity pillar redefined from discontinued Wilshire 5000 proxy to Buffett Indicator (Total Corp. Equities / GDP), percentile-scored against full history. See fetch_data.py comments."
   },
-  "globalResilienceScore": 6.78,
+  "globalResilienceScore": 6.97,
   "status": "Turbulence",
   "pillars": [
     {
       "id": "cycle",
       "roman": "I",
       "name": "Cycle",
-      "score": 4.5,
+      "score": 5.5,
       "metric": "10Y-2Y Yield Curve",
-      "value": "+0.50%",
+      "value": "+0.39%",
       "fredSeries": "T10Y2Y",
       "trend": "steepening",
-      "delta": "+0.28%",
+      "delta": "+0.17%",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
     },
@@ -41,9 +41,9 @@
       "fredSeries": "NCBEILQ027S + FBCELLQ027S + GDP",
       "trend": "elevated",
       "delta": "\u2014",
-      "m2YoyGrowthPct": 5.53,
+      "m2YoyGrowthPct": 5.41,
       "percentileRank": 99.3,
-      "description": "Buffett Indicator (Total US Corporate Equities / GDP) at 288.3% \u2014 99.3th percentile vs. its own history since 1947-10-01 (302 quarters). Total corporate equities $91.9T vs. GDP $31.9T (quarter ending 2026-01-01). M2 YoY growth: +5.5%. Updates quarterly with each Fed Z.1 / BEA GDP release, not weekly \u2014 a change from the prior (non-functional) daily Wilshire proxy.",
+      "description": "Buffett Indicator (Total US Corporate Equities / GDP) at 288.3% \u2014 99.3th percentile vs. its own history since 1947-10-01 (302 quarters). Total corporate equities $91.9T vs. GDP $31.9T (quarter ending 2026-01-01). M2 YoY growth: +5.4%. Updates quarterly with each Fed Z.1 / BEA GDP release, not weekly \u2014 a change from the prior (non-functional) daily Wilshire proxy.",
       "status": "critical"
     },
     {
@@ -52,11 +52,11 @@
       "name": "Premium",
       "score": 10.0,
       "metric": "Equity Risk Premium",
-      "value": "-0.10%",
+      "value": "-0.12%",
       "fredSeries": "DGS10",
       "trend": "compressed",
-      "delta": "-1.30",
-      "description": "ERP = E/P (4.55%) minus 10Y yield (4.65%). Approaching critical threshold.",
+      "delta": "-1.32",
+      "description": "ERP = E/P (4.55%) minus 10Y yield (4.67%). Approaching critical threshold.",
       "status": "critical"
     },
     {
@@ -65,11 +65,11 @@
       "name": "Solvency",
       "score": 2.5,
       "metric": "Bank Delinquency Rate",
-      "value": "1.5%",
+      "value": "1.4%",
       "fredSeries": "DRALACBN",
       "trend": "stable",
       "delta": "+0.02",
-      "description": "FRED DRALACBN delinquency rate at 1.49%. Systemic banking plumbing functioning normally.",
+      "description": "FRED DRALACBN delinquency rate at 1.38%. Systemic banking plumbing functioning normally.",
       "status": "stable"
     },
     {
@@ -91,31 +91,31 @@
       "id": "jobless",
       "name": "Initial Jobless Claims",
       "fredSeries": "ICSA",
-      "value": 206000,
+      "value": 203000,
       "unit": "claims",
-      "displayValue": "206K",
+      "displayValue": "203K",
       "threshold": 275000,
       "thresholdDisplay": "275K",
       "status": "normal",
       "trend": "falling",
-      "delta": "-6K",
+      "delta": "-4K",
       "alert": false,
-      "description": "Weekly initial jobless claims at 206K. Red alert triggers above 275,000."
+      "description": "Weekly initial jobless claims at 203K. Red alert triggers above 275,000."
     },
     {
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -0.1,
+      "value": -0.12,
       "unit": "%",
-      "displayValue": "-0.10%",
+      "displayValue": "-0.12%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-1.30%",
+      "delta": "-1.32%",
       "alert": true,
-      "description": "ERP at -0.10%. Red alert triggers below 0.80%."
+      "description": "ERP at -0.12%. Red alert triggers below 0.80%."
     },
     {
       "id": "unemployment",
@@ -136,31 +136,31 @@
   "historicalScores": [
     {
       "date": "Aug '26",
-      "score": 6.4
+      "score": 6.2
     },
     {
       "date": "Aug '26",
-      "score": 6.4
+      "score": 6.2
     },
     {
       "date": "Aug '26",
-      "score": 6.1
+      "score": 6.5
     },
     {
       "date": "Aug '26",
-      "score": 6.1
+      "score": 6.5
     },
     {
       "date": "Aug '26",
-      "score": 6.1
+      "score": 6.5
     },
     {
       "date": "Aug '26",
-      "score": 6.4
+      "score": 6.5
     },
     {
       "date": "Aug '26",
-      "score": 6.1
+      "score": 6.5
     }
   ]
 }
