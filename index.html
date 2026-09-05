@@ -639,6 +639,7 @@
 
   /* ─── CANVAS & CHARTS ─── */
   canvas { display: block; }
+  #historyCanvas { width: 100%; }
 
   /* ─── RESPONSIVE ─── */
   @media (max-width: 1100px) {
@@ -2227,11 +2228,15 @@ function drawHistory(canvasId, history) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = canvas.offsetWidth * dpr;
-  const w = canvas.width, h = canvas.height = 90 * dpr;
+  // Medir a largura ANTES de mexer em canvas.width: escrever canvas.width
+  // altera a largura de layout do elemento, e reler offsetWidth a seguir
+  // devolvia o dobro — o desenho saia fora do bitmap e o ultimo ano do
+  // historico ficava cortado.
+  const W = canvas.offsetWidth, H = 90;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
-  const W = canvas.offsetWidth, H = 90;
 
   const scores = history.map(d => d.score);
   const dates = history.map(d => d.date);
@@ -2295,11 +2300,13 @@ function drawHistory(canvasId, history) {
     ctx.fill();
     // A serie passou de 7 para 24 pontos (historico reconstruido). Desenhar
     // todos os rotulos tornava o eixo ilegivel — mostrar no maximo ~8.
-    const every = Math.max(1, Math.ceil(scores.length / 5));
+    const maxLabels = Math.max(2, Math.min(6, Math.floor(W / 80)));
+    const every = Math.max(1, Math.ceil(scores.length / maxLabels));
     if (i % every === 0 || i === scores.length - 1) {
       ctx.fillStyle = '#586068';
       ctx.font = `${9}px 'JetBrains Mono', monospace`;
-      ctx.textAlign = 'center';
+      // Primeiro e ultimo rotulo encostam a borda: centrados sairiam cortados.
+      ctx.textAlign = i === 0 ? 'left' : i === scores.length - 1 ? 'right' : 'center';
       ctx.fillText(dates[i], p.x, H - 4);
     }
   });
