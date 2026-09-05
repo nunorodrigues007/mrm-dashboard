@@ -640,6 +640,10 @@
   /* ─── CANVAS & CHARTS ─── */
   canvas { display: block; }
   #historyCanvas { width: 100%; }
+  .history-scale-note {
+    margin-top: 8px; font-size: 10px; letter-spacing: 0.04em;
+    color: var(--text-muted); font-family: 'JetBrains Mono', monospace;
+  }
 
   /* ─── RESPONSIVE ─── */
   @media (max-width: 1100px) {
@@ -2011,7 +2015,11 @@ function renderMain(data) {
     // p.score.toFixed(1) lancava excepcao e deixava o terminal em branco.
     const nd = (p.score === null || p.score === undefined);
     const cls = nd ? 'nd' : scoreColor(p.score);
-    const deltaDir = p.delta && p.delta.startsWith('+') ? 'up' : 'down';
+    // O motor escreve "—" quando nao ha leitura anterior comparavel.
+    // parseFloat("—") e NaN: antes disto o cartao mostrava "▼ NaN".
+    const dv = parseFloat(p.delta);
+    const hasDelta = Number.isFinite(dv);
+    const deltaDir = hasDelta && dv > 0 ? 'up' : 'down';
     return `
     <div class="pillar-card status-${p.status}" title="${p.description}">
       <div class="pillar-roman">Pillar ${p.roman}</div>
@@ -2022,7 +2030,7 @@ function renderMain(data) {
       </div>
       <div class="pillar-metric">${p.metric}</div>
       <div class="pillar-value">${p.value}</div>
-      <div class="pillar-delta ${deltaDir}">${p.delta ? (p.delta.startsWith('+') ? '▲ ' : '▼ ') + Math.abs(parseFloat(p.delta)) : ''}</div>
+      <div class="pillar-delta ${deltaDir}">${hasDelta ? (dv > 0 ? '▲ ' : '▼ ') + Math.abs(dv) : ''}</div>
       <div class="pillar-desc">${p.description}</div>
     </div>`;
   }).join('');
@@ -2079,7 +2087,8 @@ function renderMain(data) {
         <div class="history-title">Global Resilience Score — 24-Month History</div>
         <div class="fred-tag">Composite</div>
       </div>
-      <canvas id="historyCanvas" height="90"></canvas>
+      <canvas id="historyCanvas" height="130"></canvas>
+      <div class="history-scale-note">Vertical axis framed to the series. Regime thresholds: Critical ≥ 8.0 · Resilient ≤ 4.0.</div>
     </div>
   `;
 
@@ -2232,7 +2241,7 @@ function drawHistory(canvasId, history) {
   // altera a largura de layout do elemento, e reler offsetWidth a seguir
   // devolvia o dobro — o desenho saia fora do bitmap e o ultimo ano do
   // historico ficava cortado.
-  const W = canvas.offsetWidth, H = 90;
+  const W = canvas.offsetWidth, H = 130;
   canvas.width  = W * dpr;
   canvas.height = H * dpr;
   const ctx = canvas.getContext('2d');
@@ -2240,8 +2249,22 @@ function drawHistory(canvasId, history) {
 
   const scores = history.map(d => d.score);
   const dates = history.map(d => d.date);
-  const min = 0, max = 10;
-  const padL = 36, padR = 12, padT = 8, padB = 22;
+
+  // Escala vertical automatica. Com o score a viver entre 6,5 e 7,0, um eixo
+  // fixo 0-10 achatava a serie contra a grelha e escondia todo o movimento.
+  // Enquadra-se o intervalo dos dados, com amplitude minima para nao ampliar
+  // ruido, e as linhas de limiar so se desenham quando caem no enquadramento.
+  const MIN_SPAN = 1.5;
+  const dMin = Math.min(...scores), dMax = Math.max(...scores);
+  let lo = dMin - 0.25, hi = dMax + 0.25;
+  if (hi - lo < MIN_SPAN) {
+    const c = (lo + hi) / 2;
+    lo = c - MIN_SPAN / 2; hi = c + MIN_SPAN / 2;
+  }
+  const min = Math.max(0, Math.floor(lo * 4) / 4);
+  const max = Math.min(10, Math.ceil(hi * 4) / 4);
+
+  const padL = 36, padR = 12, padT = 10, padB = 22;
   const cw = W - padL - padR;
   const ch = H - padT - padB;
 
@@ -2254,22 +2277,39 @@ function drawHistory(canvasId, history) {
 
   ctx.clearRect(0, 0, W, H);
 
-  // Grid lines
-  [0, 4, 7, 10].forEach(v => {
-    const y = padT + (1 - v / 10) * ch;
+  // Grelha: ~4 divisoes em passos redondos dentro do enquadramento.
+  const rawStep = (max - min) / 4;
+  const step = [0.1, 0.25, 0.5, 1, 2, 2.5].find(x => x >= rawStep) || 2.5;
+  const gridY = v => padT + (1 - (v - min) / (max - min)) * ch;
+  const ticks = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + 1e-9; v += step) ticks.push(+v.toFixed(2));
+
+  ctx.font = `${9}px 'JetBrains Mono', monospace`;
+  ticks.forEach(v => {
+    const y = gridY(v);
     ctx.beginPath();
     ctx.moveTo(padL, y); ctx.lineTo(padL + cw, y);
-    ctx.strokeStyle = v === 0 ? '#2E3338' : v === 4 ? 'rgba(52,208,88,0.2)' : v === 7 ? 'rgba(249,140,79,0.2)' : '#2E3338';
+    ctx.strokeStyle = '#242A30';
     ctx.lineWidth = 1;
-    ctx.setLineDash(v === 4 || v === 7 ? [4, 4] : []);
+    ctx.stroke();
+    ctx.fillStyle = '#586068';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(step < 0.5 ? 2 : 1), padL - 4, y + 3);
+  });
+
+  // Limiares de regime: so aparecem se o enquadramento os contiver.
+  [[4, 'rgba(52,208,88,'], [8, 'rgba(249,140,79,']].forEach(([v, rgba]) => {
+    if (v < min || v > max) return;
+    const y = gridY(v);
+    ctx.beginPath();
+    ctx.moveTo(padL, y); ctx.lineTo(padL + cw, y);
+    ctx.strokeStyle = rgba + '0.35)';
+    ctx.setLineDash([4, 4]);
     ctx.stroke();
     ctx.setLineDash([]);
-    if (v === 4 || v === 7) {
-      ctx.fillStyle = v === 4 ? 'rgba(52,208,88,0.5)' : 'rgba(249,140,79,0.5)';
-      ctx.font = `${9}px 'JetBrains Mono', monospace`;
-      ctx.textAlign = 'right';
-      ctx.fillText(v, padL - 4, y + 3);
-    }
+    ctx.fillStyle = rgba + '0.6)';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(1), padL - 4, y + 3);
   });
 
   const pts = scores.map((s, i) => toXY(i, s));
