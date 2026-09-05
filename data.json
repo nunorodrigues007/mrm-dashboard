@@ -1,6 +1,6 @@
 {
   "meta": {
-    "lastUpdated": "2026-09-05T19:38:24Z",
+    "lastUpdated": "2026-09-05T20:29:24Z",
     "source": "FRED API (Live)",
     "version": "3.0.0",
     "fredSeriesDates": {
@@ -13,10 +13,37 @@
       "ICSA": "2026-08-29",
       "UNRATE": "2026-08-01"
     },
+    "gaugeNote": "Gauge A (globalResilienceScore) is a LEADING fragility measure on a 6-18 month horizon: in a downturn three of its five pillars mechanically improve, so the composite cannot signal concurrent stress. Concurrent stress detection lives in stressGauge, which is not averaged into Gauge A.",
     "liquidityNote": "Liquidity pillar redefined from discontinued Wilshire 5000 proxy to Buffett Indicator (Total Corp. Equities / GDP), percentile-scored against full history. See fetch_data.py comments."
   },
   "globalResilienceScore": 6.97,
   "status": "Turbulence",
+  "ndPillars": [],
+  "stressGauge": {
+    "active": false,
+    "subregime": null,
+    "basis": "no trigger active",
+    "label": "Stress OFF",
+    "triggers": {
+      "sahmRealtime": {
+        "series": "SAHMREALTIME",
+        "value": -0.07,
+        "asOf": "2026-08-01",
+        "threshold": 0.5,
+        "fired": false,
+        "note": "Sahm rule, real-time vintage. Known false positive in 2024."
+      },
+      "delinquencyAccel": {
+        "series": "DRALACBN",
+        "value": -0.06,
+        "asOf": "2026-04-01",
+        "threshold": 0.81,
+        "fired": false,
+        "note": "4-quarter change. Threshold = 90th percentile of its own history since 1987."
+      }
+    },
+    "computedAt": "2026-09-05T20:29:24Z"
+  },
   "pillars": [
     {
       "id": "cycle",
@@ -52,11 +79,14 @@
       "name": "Premium",
       "score": 10.0,
       "metric": "Equity Risk Premium",
-      "value": "-0.22%",
+      "value": "-0.93%",
       "fredSeries": "DGS10",
+      "epEstimated": true,
+      "epValue": 3.84,
+      "epAsOf": "2026-08-31",
       "trend": "compressed",
-      "delta": "-1.42",
-      "description": "ERP = E/P (4.55%) minus 10Y yield (4.77%). Approaching critical threshold.",
+      "delta": "-2.13",
+      "description": "ERP = estimated E/P (3.84%, as of 2026-08-31) minus the 10Y yield (4.77%). The E/P is a manually maintained constant, not a live measurement \u2014 this pillar moves only with the 10Y.",
       "status": "critical"
     },
     {
@@ -106,16 +136,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -0.22,
+      "value": -0.93,
       "unit": "%",
-      "displayValue": "-0.22%",
+      "displayValue": "-0.93%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-1.42%",
+      "delta": "-2.13%",
       "alert": true,
-      "description": "ERP at -0.22%. Red alert triggers below 0.80%."
+      "description": "ERP at -0.93%. Red alert triggers below 0.80%."
     },
     {
       "id": "unemployment",
@@ -135,32 +165,100 @@
   ],
   "historicalScores": [
     {
-      "date": "Aug '26",
-      "score": 6.5
+      "date": "Oct '24",
+      "score": 6.72
+    },
+    {
+      "date": "Nov '24",
+      "score": 6.72
+    },
+    {
+      "date": "Dec '24",
+      "score": 6.72
+    },
+    {
+      "date": "Jan '25",
+      "score": 6.97
+    },
+    {
+      "date": "Feb '25",
+      "score": 6.72
+    },
+    {
+      "date": "Mar '25",
+      "score": 6.88
+    },
+    {
+      "date": "Apr '25",
+      "score": 6.68
+    },
+    {
+      "date": "May '25",
+      "score": 6.68
+    },
+    {
+      "date": "Jun '25",
+      "score": 6.88
+    },
+    {
+      "date": "Jul '25",
+      "score": 6.68
+    },
+    {
+      "date": "Aug '25",
+      "score": 6.68
+    },
+    {
+      "date": "Sep '25",
+      "score": 6.53
+    },
+    {
+      "date": "Oct '25",
+      "score": 6.53
+    },
+    {
+      "date": "Nov '25",
+      "score": 6.53
+    },
+    {
+      "date": "Dec '25",
+      "score": 6.53
+    },
+    {
+      "date": "Jan '26",
+      "score": 6.53
+    },
+    {
+      "date": "Feb '26",
+      "score": 6.53
+    },
+    {
+      "date": "Mar '26",
+      "score": 6.53
+    },
+    {
+      "date": "Apr '26",
+      "score": 6.53
+    },
+    {
+      "date": "May '26",
+      "score": 6.72
+    },
+    {
+      "date": "Jun '26",
+      "score": 6.72
+    },
+    {
+      "date": "Jul '26",
+      "score": 6.97
     },
     {
       "date": "Aug '26",
-      "score": 6.5
-    },
-    {
-      "date": "Aug '26",
-      "score": 6.5
+      "score": 6.97
     },
     {
       "date": "Sep '26",
-      "score": 6.5
-    },
-    {
-      "date": "Sep '26",
-      "score": 6.5
-    },
-    {
-      "date": "Sep '26",
-      "score": 6.5
-    },
-    {
-      "date": "Sep '26",
-      "score": 6.5
+      "score": 6.97
     }
   ]
 }
