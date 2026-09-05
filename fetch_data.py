@@ -5,13 +5,20 @@ Fetches live macroeconomic data from FRED API and generates data.json
 
 import json
 import requests
+
+import mrm_gauge_b
 from datetime import datetime, timedelta
 import os
 
 # ──────────────────────────────────────────
 # CONFIG
 # ──────────────────────────────────────────
-FRED_API_KEY = os.environ.get("FRED_API_KEY", "846494f605a628223d8411828d97e7c6")
+FRED_API_KEY = os.environ.get("FRED_API_KEY")
+if not FRED_API_KEY:
+    raise RuntimeError(
+        "FRED_API_KEY nao definida. Este ficheiro e servido publicamente em "
+        "usmrm.net/fetch_data.py, pelo que nao pode ter chave embutida."
+    )
 FRED_BASE = "https://api.stlouisfed.org/fred/series/observations"
 
 # ──────────────────────────────────────────
@@ -164,7 +171,7 @@ def fetch_liquidity_percentile():
 # ──────────────────────────────────────────
 def score_cycle(spread):
     """10Y-2Y Yield Curve spread → score 1-10"""
-    if spread is None: return 6.0
+    if spread is None: return None   # n/d — nunca um valor inventado
     if spread < -0.75:  return 9.5
     if spread < -0.50:  return 8.5
     if spread < -0.25:  return 7.5
@@ -180,7 +187,7 @@ def score_liquidity(percentile):
     against its own full history (1945-present) → score 1-10. Percentile-based rather
     than fixed dollar thresholds because the ratio's nominal scale drifts over decades —
     self-calibrating, no re-tuning needed as the economy grows."""
-    if percentile is None: return 6.0
+    if percentile is None: return None   # n/d — nunca um valor inventado
     if percentile > 95: return 9.5
     if percentile > 90: return 8.5
     if percentile > 80: return 7.5
@@ -192,7 +199,7 @@ def score_liquidity(percentile):
 
 def score_premium(erp):
     """Equity Risk Premium % → score 1-10"""
-    if erp is None: return 6.0
+    if erp is None: return None   # n/d — nunca um valor inventado
     if erp < 0.00:  return 10.0
     if erp < 0.50:  return 9.0
     if erp < 0.80:  return 8.0
@@ -204,7 +211,7 @@ def score_premium(erp):
 
 def score_solvency(npl):
     """Bank NPL / Delinquency Rate % → score 1-10"""
-    if npl is None: return 4.0
+    if npl is None: return None   # n/d — nunca um valor inventado
     if npl > 5.00:  return 9.5
     if npl > 4.00:  return 8.0
     if npl > 3.00:  return 6.5
@@ -216,7 +223,7 @@ def score_solvency(npl):
 
 def score_debt(dsr):
     """Household Debt Service Ratio % → score 1-10"""
-    if dsr is None: return 5.0
+    if dsr is None: return None   # n/d — nunca um valor inventado
     if dsr > 13.00: return 9.5
     if dsr > 12.50: return 8.5
     if dsr > 12.00: return 7.5
@@ -227,7 +234,15 @@ def score_debt(dsr):
     return 2.0
 
 def global_score(scores):
-    """Weighted composite score. Premium and Liquidity weighted higher."""
+    """
+    Composto ponderado. Premium e Liquidity pesam mais.
+
+    Pilares em n/d sao EXCLUIDOS e os pesos renormalizados sobre os restantes.
+    Antes, um pilar em falta entrava no composto com um score inventado a meio
+    da escala, sem qualquer sinalizacao.
+
+    Devolve (score, lista_de_pilares_em_nd).
+    """
     weights = {
         "cycle":    0.20,
         "liquidity":0.20,
@@ -235,7 +250,12 @@ def global_score(scores):
         "solvency": 0.15,
         "debt":     0.20,
     }
-    return round(sum(scores[k] * weights[k] for k in weights), 2)
+    nd = sorted(k for k in weights if scores.get(k) is None)
+    ok = {k: w for k, w in weights.items() if scores.get(k) is not None}
+    if not ok:
+        return None, nd
+    total = sum(ok.values())
+    return round(sum(scores[k] * w / total for k, w in ok.items()), 2), nd
 
 def status_label(score):
     # Must stay in sync with classify_regime() in update_portfolio.py — that script
@@ -247,6 +267,7 @@ def status_label(score):
     return "Turbulence"
 
 def pillar_status(score):
+    if score is None: return "nd"
     if score <= 4.0: return "stable"
     if score <= 6.0: return "caution"
     if score <= 7.5: return "warning"
@@ -311,13 +332,27 @@ def build_data():
     print("  📡 Historical scores for sparkline...")
     t10y2y_hist = history_values("T10Y2Y", n=7, limit=14)
 
+    # ── Medidor B: stress concorrente ──
+    # Nao entra na media do Medidor A; e publicado a parte e sobrepoe-se a ele.
+    print("  📡 Gauge B (stress: Sahm real-time + aceleracao da delinquencia)...")
+    _d10_hist = history_values("DGS10", n=70, limit=95)   # ~3 meses de dias uteis
+    _d10_now = _d10_hist[0][0] if _d10_hist else None
+    _d10_3m  = _d10_hist[-1][0] if len(_d10_hist) >= 55 else None
+    stress_gauge = mrm_gauge_b.compute(FRED_API_KEY, _d10_now, _d10_3m)
+    print(f"  ✅ {stress_gauge['label']}  ({stress_gauge['basis']})")
+
     # ── ERP Calculation ──
     # ERP = Earnings Yield - 10Y Yield
     # Approximate earnings yield using S&P 500 P/E ~ 22 → E/P ≈ 4.55%
     # For production, fetch from a financial data provider
     # Here we compute from DGS10 and a fixed E/P estimate
-    SP500_EARNINGS_YIELD = 4.55  # approximate E/P for S&P 500
-    erp_val = round(SP500_EARNINGS_YIELD - (dgs10_val or 4.30), 2) if dgs10_val else 1.02
+    # O FRED nao publica earnings agregados do S&P 500. O E/P continua a ser uma
+    # constante, mas deixa de ser apresentado como medicao: passa a ter data, a ser
+    # declarado como estimativa no data.json, e a exigir actualizacao manual.
+    # Na pratica o ERP publicado e "constante menos 10Y" — move-se so com o 10Y.
+    SP500_EARNINGS_YIELD = 3.84            # E/P trailing do S&P 500
+    SP500_EARNINGS_YIELD_ASOF = "2026-08-31"
+    erp_val = round(SP500_EARNINGS_YIELD - dgs10_val, 2) if dgs10_val is not None else None
 
     # ── Compute Scores ──
     print("\n  📊 Computing Pillar Scores...")
@@ -334,25 +369,33 @@ def build_data():
         "solvency": s_solvency,
         "debt": s_debt
     }
-    g_score = global_score(scores)
+    g_score, nd_pillars = global_score(scores)
+    if nd_pillars:
+        print(f"  [WARN] pilares em n/d, excluidos do composto: {', '.join(nd_pillars)}")
 
     print(f"\n  ✅ Cycle:     {s_cycle} (T10Y2Y={t10y2y_val}%)")
     print(f"  ✅ Liquidity: {s_liquidity} (Buffett={f'{buffett_ratio*100:.1f}' if buffett_ratio is not None else 'N/A'}%, pctile={buffett_pct})")
-    print(f"  ✅ Premium:   {s_premium} (ERP={erp_val}%)")
+    print(f"  ✅ Premium:   {s_premium} (ERP={erp_val}%, E/P estimado {SP500_EARNINGS_YIELD}% a {SP500_EARNINGS_YIELD_ASOF})")
     print(f"  ✅ Solvency:  {s_solvency} (NPL={npl_val}%)")
     print(f"  ✅ Debt:      {s_debt} (DSR={dsr_val}%)")
-    print(f"\n  🌐 GLOBAL RESILIENCE SCORE: {g_score} — {status_label(g_score)}\n")
+    print(f"\n  🌐 GLOBAL RESILIENCE SCORE: {g_score} — {status_label(g_score)}")
+    print(f"  🌡️  GAUGE B: {stress_gauge['label']}\n")
 
-    # ── Historical Global Scores (proxy from yield curve history) ──
+    # ── Historico do score ──
+    # A versao anterior NAO era historico: misturava o score ACTUAL em cada ponto
+    # passado (approx_s*0.3 + g_score*0.7), pelo que a sparkline era quase plana
+    # por construcao. Passa a ler o historico reconstruido (260 meses, 2005-2026)
+    # de score_history.json e a acrescentar-lhe o ponto corrente.
     hist_scores = []
-    for val, date in t10y2y_hist:
-        approx_s = score_cycle(val)
-        approx_global = round(approx_s * 0.3 + g_score * 0.7, 1)  # blended
-        dt = datetime.strptime(date, "%Y-%m-%d")
-        hist_scores.append({
-            "date": dt.strftime("%b '%y"),
-            "score": approx_global
-        })
+    _hist_path = os.path.join(os.path.dirname(__file__), "score_history.json")
+    if os.path.exists(_hist_path):
+        try:
+            with open(_hist_path) as _hf:
+                hist_scores = [{"date": p["date"], "score": p["score"]} for p in json.load(_hf)][-23:]
+        except Exception as _e:
+            print(f"  [WARN] score_history.json ilegivel ({_e}) — sparkline so com o ponto corrente")
+    if g_score is not None:
+        hist_scores.append({"date": datetime.utcnow().strftime("%b '%y"), "score": g_score})
 
     # ── ICSA Sentinel ──
     icsa_display = f"{int(icsa_val/1000)}K" if icsa_val else "—"
@@ -363,7 +406,7 @@ def build_data():
 
     # ── ERP Sentinel ──
     erp_alert = erp_val < 0.80 if erp_val is not None else False
-    erp_status = "alert" if erp_alert else ("caution" if erp_val < 1.20 else "normal")
+    erp_status = ("alert" if erp_alert else ("caution" if erp_val < 1.20 else "normal")) if erp_val is not None else "nd"
 
     # ── UNRATE Sentinel ──
     # BDC "Stagflation Scenario" crisis trigger (see Watchlist/Crisis section):
@@ -406,10 +449,16 @@ def build_data():
                 "ICSA": icsa_date,
                 "UNRATE": unrate_date
             },
+            "gaugeNote": ("Gauge A (globalResilienceScore) is a LEADING fragility measure on a 6-18 month "
+                              "horizon: in a downturn three of its five pillars mechanically improve, so the "
+                              "composite cannot signal concurrent stress. Concurrent stress detection lives in "
+                              "stressGauge, which is not averaged into Gauge A."),
             "liquidityNote": "Liquidity pillar redefined from discontinued Wilshire 5000 proxy to Buffett Indicator (Total Corp. Equities / GDP), percentile-scored against full history. See fetch_data.py comments."
         },
         "globalResilienceScore": g_score,
         "status": status_label(g_score),
+        "ndPillars": nd_pillars,
+        "stressGauge": stress_gauge,
         "pillars": [
             {
                 "id": "cycle",
@@ -445,11 +494,18 @@ def build_data():
                 "name": "Premium",
                 "score": s_premium,
                 "metric": "Equity Risk Premium",
-                "value": f"{erp_val:.2f}%",
+                "value": f"{erp_val:.2f}%" if erp_val is not None else "n/d",
                 "fredSeries": "DGS10",
-                "trend": "compressed" if erp_val < 2.0 else "adequate",
-                "delta": f"{erp_val - 1.20:+.2f}",
-                "description": f"ERP = E/P ({SP500_EARNINGS_YIELD}%) minus 10Y yield ({f'{dgs10_val:.2f}' if dgs10_val is not None else 'N/A'}%). {'Approaching critical threshold.' if erp_val < 1.2 else 'Within normal range.'}",
+                "epEstimated": True,
+                "epValue": SP500_EARNINGS_YIELD,
+                "epAsOf": SP500_EARNINGS_YIELD_ASOF,
+                "trend": ("compressed" if erp_val < 2.0 else "adequate") if erp_val is not None else "nd",
+                "delta": f"{erp_val - 1.20:+.2f}" if erp_val is not None else "—",
+                "description": (
+                    f"ERP = estimated E/P ({SP500_EARNINGS_YIELD}%, as of {SP500_EARNINGS_YIELD_ASOF}) minus the 10Y "
+                    f"yield ({f'{dgs10_val:.2f}' if dgs10_val is not None else 'n/d'}%). The E/P is a manually "
+                    f"maintained constant, not a live measurement — this pillar moves only with the 10Y."
+                ) if erp_val is not None else "ERP n/d — DGS10 unavailable this run.",
                 "status": pillar_status(s_premium)
             },
             {
@@ -501,14 +557,15 @@ def build_data():
                 "fredSeries": "DGS10",
                 "value": erp_val,
                 "unit": "%",
-                "displayValue": f"{erp_val:.2f}%",
+                "displayValue": f"{erp_val:.2f}%" if erp_val is not None else "n/d",
                 "threshold": 0.8,
                 "thresholdDisplay": "0.80%",
                 "status": erp_status,
-                "trend": "falling" if erp_val < 1.5 else "stable",
-                "delta": f"{erp_val - 1.20:+.2f}%",
+                "trend": ("falling" if erp_val < 1.5 else "stable") if erp_val is not None else "nd",
+                "delta": f"{erp_val - 1.20:+.2f}%" if erp_val is not None else "—",
                 "alert": erp_alert,
-                "description": f"ERP at {erp_val:.2f}%. Red alert triggers below 0.80%."
+                "description": (f"ERP at {erp_val:.2f}%. Red alert triggers below 0.80%." if erp_val is not None
+                                else "ERP n/d this run.")
             },
             {
                 "id": "unemployment",
