@@ -689,6 +689,33 @@
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Gauge B — Concurrent Stress ─────────────────────────────────────────── */
+.mrm-sg{border:1px solid var(--border);border-left:3px solid var(--text-secondary);
+  background:var(--bg-card);padding:18px 22px;margin:24px 0 8px;border-radius:6px;
+  display:flex;flex-direction:column;gap:12px}
+.mrm-sg[data-on="true"]{border-left-color:var(--orange)}
+.mrm-sg[data-on="false"]{border-left-color:var(--green,#4ea87a)}
+.mrm-sg__head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.mrm-sg__eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--text-secondary)}
+.mrm-sg__state{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.mrm-sg[data-on="true"] .mrm-sg__state{color:var(--orange)}
+.mrm-sg[data-on="false"] .mrm-sg__state{color:var(--green,#4ea87a)}
+.mrm-sg[data-on="null"] .mrm-sg__state{color:var(--text-secondary)}
+.mrm-sg__lede{margin:0;font-size:13px;line-height:1.6;color:var(--text-primary)}
+.mrm-sg__triggers{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.mrm-sg__trig{display:flex;flex-direction:column;gap:3px;padding:10px 12px;
+  border:1px solid var(--border);border-radius:4px}
+.mrm-sg__trig[data-fired="true"]{border-color:var(--orange)}
+.mrm-sg__tlabel{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--text-secondary)}
+.mrm-sg__tval{font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums}
+.mrm-sg__trig[data-fired="true"] .mrm-sg__tval{color:var(--orange)}
+.mrm-sg__trig[data-fired="null"] .mrm-sg__tval{opacity:.5}
+.mrm-sg__tthr{font-family:var(--mono);font-size:10px;color:var(--text-secondary);opacity:.8}
+.mrm-sg__note{margin:0;font-size:11px;line-height:1.65;color:var(--text-secondary);max-width:80ch}
+.pillar-score.nd{color:var(--text-secondary);opacity:.6}
 </style>
 </head>
 <body>
@@ -738,6 +765,7 @@
 ═══════════════════════════════════════════════ -->
 <div class="view active" id="view-terminal">
   <div class="terminal-layout">
+
     <div class="terminal-main" id="terminal-main">
       <div class="loading">
         <div class="loading-spinner"></div>
@@ -1622,8 +1650,69 @@ function getSampleData() {
 // ──────────────────────────────────────────
 // RENDER TERMINAL
 // ──────────────────────────────────────────
+
+// ──────────────────────────────────────────
+// GAUGE B — CONCURRENT STRESS
+// Le data.stressGauge (escrito por fetch_data.py via mrm_gauge_b.py).
+// Nao altera o Gauge A; e publicado ao lado dele.
+// ──────────────────────────────────────────
+function renderStressGauge(data) {
+  const main = document.getElementById('terminal-main');
+  if (!main) return;
+  const sg = data && data.stressGauge;
+  if (!sg) return;                       // data.json anterior a esta versao
+
+  const active = sg.active;
+  const state  = active === null ? 'n/d' : (active ? (sg.label || 'Stress ON') : 'Stress OFF');
+  const lede   = active === null
+      ? 'Both triggers unavailable this run. Previous state retained — no assumption made.'
+      : active
+        ? (sg.subregime === 'FTQ'
+            ? 'Stress confirmed with the 10Y falling: duration is paying as a hedge. Portfolio on the Critical_FTQ map.'
+            : 'Stress confirmed with the 10Y flat or rising: duration carries risk with no rate-cut tailwind. Portfolio on the Critical_Stress map.')
+        : 'No concurrent stress. Portfolio on the Turbulence map.';
+
+  const t = sg.triggers || {};
+  const trig = (label, o, fmt, thr) => {
+    const has = o && o.value !== null && o.value !== undefined;
+    const tip = o && o.asOf ? ` title="as of ${o.asOf}${o.note ? ' — ' + o.note : ''}"` : '';
+    return `<div class="mrm-sg__trig" data-fired="${o ? o.fired : null}"${tip}>
+        <span class="mrm-sg__tlabel">${label}</span>
+        <span class="mrm-sg__tval">${has ? fmt(o.value) : 'n/d'}</span>
+        <span class="mrm-sg__tthr">fires at ${thr}</span>
+      </div>`;
+  };
+
+  const el = document.createElement('section');
+  el.className = 'mrm-sg';
+  el.id = 'stress-gauge';
+  el.dataset.on = String(active);
+  el.innerHTML = `
+    <div class="mrm-sg__head">
+      <span class="mrm-sg__eyebrow">Gauge B — Concurrent Stress</span>
+      <span class="mrm-sg__state">${state}</span>
+    </div>
+    <p class="mrm-sg__lede">${lede}</p>
+    <div class="mrm-sg__triggers">
+      ${trig('Sahm Rule <em>real-time</em>', t.sahmRealtime, v => Number(v).toFixed(2), '&ge; 0.50')}
+      ${trig('Delinquency, 4-qtr change', t.delinquencyAccel,
+             v => (Number(v) >= 0 ? '+' : '') + Number(v).toFixed(2) + ' pp', '&ge; +0.81 pp')}
+    </div>
+    <p class="mrm-sg__note">
+      The Resilience Score above is a <strong>leading fragility</strong> measure with a 6&ndash;18 month
+      horizon: it peaked at 7.93 in Feb 2006 and <em>fell</em> through 2008, because in a downturn three
+      of its five pillars mechanically improve &mdash; the curve steepens, valuations compress, the risk
+      premium widens. Gauge B is the concurrent stress detector. It is not averaged into the score;
+      it stands beside it. Backtested 1996&ndash;2026 on real-time vintages it fires in 2001, 2008, 2020
+      and 2024, and stays silent through the 2011, 2018 and 2022 bear markets. The 2024 firing is a
+      known false positive of the Sahm rule.
+    </p>`;
+  main.appendChild(el);
+}
+
 function renderTerminal(data) {
   renderMain(data);
+  renderStressGauge(data);
   renderSidebar(data);
   renderChapters(data);
   renderBDCRiskStatus(data);
@@ -1908,18 +1997,26 @@ function renderMain(data) {
   const pct = (score / 10) * 100;
   const circumference = 2 * Math.PI * 32;
   const offset = circumference - (pct / 100) * circumference;
-  const statusKey = score <= 4 ? 'stable' : score <= 7 ? 'turbulence' : 'critical';
-  const statusLabels = { stable: 'Resilient', turbulence: 'Turbulence', critical: 'Critical' };
+  // O limiar aqui era 7, mas o motor (fetch_data.status_label e
+  // update_portfolio.classify_regime) usa 8.0. Com um score entre 7 e 8 o
+  // dashboard mostrava "Critical" enquanto o data.json e a carteira continuavam
+  // em Turbulence. Alinhado com o motor.
+  const statusKey = score === null || score === undefined ? 'nd'
+                  : score <= 4 ? 'stable' : score < 8 ? 'turbulence' : 'critical';
+  const statusLabels = { stable: 'Resilient', turbulence: 'Turbulence', critical: 'Critical', nd: 'n/d' };
 
   const pillarsHTML = data.pillars.map(p => {
-    const cls = scoreColor(p.score);
+    // Um pilar pode vir com score null (serie FRED indisponivel). Antes disto,
+    // p.score.toFixed(1) lancava excepcao e deixava o terminal em branco.
+    const nd = (p.score === null || p.score === undefined);
+    const cls = nd ? 'nd' : scoreColor(p.score);
     const deltaDir = p.delta && p.delta.startsWith('+') ? 'up' : 'down';
     return `
     <div class="pillar-card status-${p.status}" title="${p.description}">
       <div class="pillar-roman">Pillar ${p.roman}</div>
       <div class="pillar-name">${p.name}</div>
       <div class="pillar-score-row">
-        <div class="pillar-score ${cls}">${p.score.toFixed(1)}</div>
+        <div class="pillar-score ${cls}">${nd ? 'n/d' : p.score.toFixed(1)}</div>
         <div class="pillar-score-max">/10</div>
       </div>
       <div class="pillar-metric">${p.metric}</div>
@@ -1978,7 +2075,7 @@ function renderMain(data) {
     </div>
     <div class="history-section">
       <div class="history-header">
-        <div class="history-title">Global Resilience Score — 7-Month History</div>
+        <div class="history-title">Global Resilience Score — 24-Month History</div>
         <div class="fred-tag">Composite</div>
       </div>
       <canvas id="historyCanvas" height="90"></canvas>
@@ -2196,10 +2293,15 @@ function drawHistory(canvasId, history) {
     ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
     ctx.fillStyle = s <= 4 ? '#34D058' : s <= 7 ? '#F98C4F' : '#D73A49';
     ctx.fill();
-    ctx.fillStyle = '#586068';
-    ctx.font = `${9}px 'JetBrains Mono', monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText(dates[i], p.x, H - 4);
+    // A serie passou de 7 para 24 pontos (historico reconstruido). Desenhar
+    // todos os rotulos tornava o eixo ilegivel — mostrar no maximo ~8.
+    const every = Math.max(1, Math.ceil(scores.length / 5));
+    if (i % every === 0 || i === scores.length - 1) {
+      ctx.fillStyle = '#586068';
+      ctx.font = `${9}px 'JetBrains Mono', monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(dates[i], p.x, H - 4);
+    }
   });
 }
 
