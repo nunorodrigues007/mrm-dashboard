@@ -4,14 +4,21 @@ MRM Portfolio Saturday Price Updater
 Runs every Saturday at 10:00 UTC via GitHub Actions (portfolio.yml)
 
 Rebalance rules:
+- STRESS ON/OFF: Gauge B (data.json -> stressGauge) enters or leaves Critical. Immediate,
+  no confirmation window — the triggers are already lagging published series (Sahm is
+  monthly with a month of publication lag, delinquency is quarterly with five).
 - SEMESTRAL: last Friday of January and June
-- EMERGENCY: 2 consecutive weeks with score >= 8.0 (defensive) or <= 4.0 (offensive)
+- EMERGENCY: 2 consecutive weeks with score <= 4.0 (offensive). The old score >= 8.0
+  defensive branch is gone: the five-pillar score is a LEADING fragility measure and
+  never reached 8.0 in 2005-2026, not even in 2008. Critical is Gauge B's call now.
 - NO tactical weekly rebalance
 
 ETF universe varies by regime:
 - Turbulence (default): SPY, IEF, LQD, PDBC, BIL, VNQ
-- Critical  (>= 8.0) : USMV, TLT, SGOV, GLD, BIL, (VNQ reduced)
+- Critical  (Gauge B): USMV, TLT/SHY, SGOV, GLD, BIL, VNQ
 - Resilient (<= 4.0) : QQQ, SHY, HYG, PDBC, BIL, IWO
+
+In Critical the bucket percentages come from CRITICAL_WEIGHTS, not from the newsletter.
 """
 
 import json, os, sys, time, re, math, logging
@@ -74,23 +81,129 @@ ASSET_CLASS_BUCKET_MAP = {
     "Alternatives": "ALTERNATIVES", "Real Estate": "ALTERNATIVES", "REITs": "ALTERNATIVES",
 }
 
+# Palavras-chave, tentadas por ordem, so quando o mapa explicito acima falha.
+# Quem escreve a newsletter e um LLM e inventa nomes novos todas as semanas — em 26
+# edicoes apareceram "Broad Equities", "Intermediate Govt Bonds", "Short-Term Bills",
+# "Fixed Income (Duration)", "Credit (IG/HY)". Cada nome nao reconhecido tirava a sua
+# linha do total, o total falhava a validacao dos 100% e o rebalanceamento dessa semana
+# nao acontecia, em silencio. A ordem importa: dinheiro antes de duracao (senao
+# "Short-Duration / T-Bills" ia parar a treasuries) e credito antes de accoes.
+BUCKET_KEYWORDS = [
+    ("CASH",          ("t-bill", "tbill", "bills", "cash", "money market",
+                       "short-term", "short term", "short-duration", "short duration", "ultra-short")),
+    ("US_TREASURIES", ("treasur", "govt bond", "govt. bond", "government bond", "sovereign", "duration")),
+    ("IG_CREDIT",     ("investment grade", "investment-grade", "ig credit", "credit")),
+    ("US_EQUITIES",   ("equit", "stocks", "large-cap", "large cap", "small-cap", "small cap")),
+    ("COMMODITIES",   ("commodit", "real asset", "gold", "energy")),
+    ("ALTERNATIVES",  ("reit", "real estate", "alternative", "hedge", "infrastructure")),
+]
+
+
+def map_asset_class(asset_class):
+    """(bucket, como) para um nome de classe de activo. `como` e 'exacto', a palavra-chave
+    que apanhou, ou None se nao houver correspondencia — nesse caso a linha e ignorada e
+    o total nao fecha em 100%, que e o sinal de que a alocacao nao e de confianca."""
+    name = asset_class.lower()
+    for key, bucket in ASSET_CLASS_BUCKET_MAP.items():
+        if key.lower() in name:
+            return bucket, "exacto"
+    for bucket, words in BUCKET_KEYWORDS:
+        for w in words:
+            if w in name:
+                return bucket, w
+    return None, None
+
 SEMESTRAL_MONTHS = {1, 6}
-EMERGENCY_SCORE_HIGH = 8.0
 EMERGENCY_SCORE_LOW  = 4.0
 CONSECUTIVE_WEEKS    = 2
 
 PORTFOLIO_PATH = Path("portfolio.json")
+DATA_PATH      = Path("data.json")
 NEWSLETTER_DIR = Path(".")
+
+# ── Vector de pesos para Critical ─────────────────────────────────────────────
+# Enquanto o medidor B estiver ligado, estes pesos sobrepoem-se as % da newsletter.
+# Decisao de Set 2026, depois do backtest 2007-2026: trocar apenas os instrumentos
+# captura menos de metade da proteccao (2008: -10.1% so com a troca de ETF, contra
+# +0.7% com instrumentos + pesos; MaxDD -20.9% contra -16.4%). O custo declarado e
+# ~0.30 pp de CAGR ao longo de 19 anos — e o premio do seguro, nao um almoco gratis.
+CRITICAL_WEIGHTS = {
+    "Critical_FTQ": {
+        "US_EQUITIES": 15.0, "US_TREASURIES": 35.0, "IG_CREDIT": 15.0,
+        "COMMODITIES": 15.0, "CASH": 15.0, "ALTERNATIVES": 5.0,
+    },
+    "Critical_Stress": {
+        "US_EQUITIES": 15.0, "US_TREASURIES": 20.0, "IG_CREDIT": 20.0,
+        "COMMODITIES": 15.0, "CASH": 25.0, "ALTERNATIVES": 5.0,
+    },
+}
 
 # ── Force-rebalance override (set FORCE_REBALANCE=true in env to bypass date check) ──
 FORCE_REBALANCE = os.environ.get("FORCE_REBALANCE", "").lower() in ("1", "true", "yes")
 
 
-def classify_regime(score):
-    if score is None: return "Turbulence"
-    if score >= EMERGENCY_SCORE_HIGH: return "Critical"
-    if score <= EMERGENCY_SCORE_LOW:  return "Resilient"
+def read_stress_gauge(path=DATA_PATH):
+    """(active, subregime, basis) do bloco stressGauge do data.json.
+
+    active e True / False / None. None significa que ambos os gatilhos ficaram sem
+    dados nessa corrida: o consumidor mantem o estado anterior em vez de assumir OFF.
+    Um data.json em falta ou sem o campo e tratado da mesma maneira — nunca como calma."""
+    try:
+        with open(path) as f:
+            sg = json.load(f).get("stressGauge")
+    except Exception as e:
+        log.warning(f"stressGauge indisponivel ({e}) — a manter o regime anterior.")
+        return None, None, "data.json unavailable"
+    if not sg:
+        log.warning("data.json sem campo stressGauge — a manter o regime anterior.")
+        return None, None, "stressGauge field absent"
+    return sg.get("active"), sg.get("subregime"), sg.get("basis")
+
+
+def classify_regime(score, stress_active=None, previous_regime="Turbulence"):
+    """Critical e decidido pelo medidor B, nao pelo score.
+
+    O score de cinco pilares mede fragilidade ANTECIPADA (6-18 meses) e numa crise
+    tres dos seus pilares melhoram mecanicamente; em 2005-2026 nunca chegou a 8,0,
+    nem em 2008, pelo que o ramo Critical do classificador era codigo morto."""
+    if stress_active is None:
+        return previous_regime or "Turbulence"
+    if stress_active:
+        return "Critical"
+    if score is not None and score <= EMERGENCY_SCORE_LOW:
+        return "Resilient"
     return "Turbulence"
+
+
+def decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
+                     semestral, emergency_reason=None):
+    """Motivo do rebalanceamento, ou None para manter as posicoes.
+
+    Precedencia: entrada/saida de Critical primeiro — e o evento que a carteira existe
+    para responder — depois o calendario semestral, depois a emergencia por score baixo,
+    e por fim a troca de sub-regime dentro de Critical (mesmas %, outro instrumento)."""
+    # Entrada e saida de Critical sao imediatas, sem janela de confirmacao: os gatilhos
+    # do medidor B ja sao series publicadas com atraso (Sahm mensal com um mes de lag,
+    # delinquencia trimestral com cinco), e no backtest 2007-2026 a histerese de 1 a 6
+    # meses custou ~0,3 pp de CAGR sem melhorar a quebra maxima nem reduzir as trocas.
+    if (regime == "Critical") != (was_regime == "Critical"):
+        return "stress_on" if regime == "Critical" else "stress_off"
+    if semestral:
+        return "semestral_rebalance"
+    if emergency_reason:
+        return emergency_reason
+    if regime == "Critical" and critical_subregime != was_subregime:
+        return f"critical_subregime_switch:{was_subregime or 'none'}->{critical_subregime}"
+    return None
+
+
+def effective_bucket_alloc(regime, critical_subregime, newsletter_alloc):
+    """(alocacao por bucket, origem). Em Critical o vector fixo passa a frente das
+    % da newsletter; fora de Critical mandam as % da newsletter."""
+    key = resolve_etf_map_key(regime, critical_subregime)
+    if key in CRITICAL_WEIGHTS:
+        return dict(CRITICAL_WEIGHTS[key]), f"critical override ({key})"
+    return dict(newsletter_alloc or {}), "newsletter"
 
 
 def resolve_etf_map_key(regime, critical_subregime=None):
@@ -121,60 +234,32 @@ def get_last_friday():
 # historical FTQ episodes (2008, 2020) both saw fast, unambiguous declines well past
 # this threshold within weeks, so the conservative gate costs little upside while
 # fully avoiding a repeat of 2022 (TLT -31%, no rate relief the entire year).
-TNX_TICKER = "^TNX"  # CBOE 10-Year Treasury Yield Index via yfinance; value = yield * 10
-CRITICAL_TREND_LOOKBACK_DAYS = 28  # ~4 calendar weeks, per the confirmed rule
-CRITICAL_FTQ_THRESHOLD_BP = -10    # 10Y must have fallen at least this many bps to confirm FTQ
+# O 10Y passa a vir do medidor B (FRED DGS10, janela de 3 meses), calculado uma so vez
+# no fetch_data.py e publicado no data.json. Antes era lido aqui do yfinance (^TNX) numa
+# janela de 28 dias: duas fontes e duas janelas para a mesma medida, que podiam discordar
+# em publico. A janela de 3 meses tambem se mostrou mais fiavel no backtest 2007-2026
+# (2008: +0,7% contra -4,1% com 1 mes; 8 trocas de sub-regime em vez de 16).
 
 
-def get_10y_trend_bp(target_date, lookback_days=CRITICAL_TREND_LOOKBACK_DAYS, retries=3):
-    """Change in the 10Y yield, in basis points, from ~lookback_days before target_date
-    to target_date, using yfinance's ^TNX index. Returns None if unavailable after
-    retries — callers must treat None as "not confirmed" (defensive default), never
-    as a confirmed decline."""
-    start = target_date - timedelta(days=lookback_days + 10)  # buffer for weekends/holidays
-    end   = target_date + timedelta(days=1)
-    for attempt in range(retries):
-        try:
-            hist = yf.Ticker(TNX_TICKER).history(start=str(start), end=str(end))
-            if hist.empty:
-                raise ValueError("No ^TNX data returned")
-            hist.index = hist.index.date
-            dates = sorted(hist.index)
-            past_or_eq = [d for d in dates if d <= target_date]
-            if not past_or_eq:
-                raise ValueError("No ^TNX data on or before target_date")
-            end_date = past_or_eq[-1]
-            lookback_target = end_date - timedelta(days=lookback_days)
-            start_date = min(dates, key=lambda d: abs((d - lookback_target).days))
-            yield_end   = float(hist.loc[end_date]["Close"]) / 10.0
-            yield_start = float(hist.loc[start_date]["Close"]) / 10.0
-            if any(math.isnan(v) or math.isinf(v) for v in (yield_end, yield_start)):
-                raise ValueError("Invalid ^TNX value")
-            change_bp = round((yield_end - yield_start) * 100, 1)
-            log.info(f"10Y trend: {yield_start:.3f}% ({start_date}) -> {yield_end:.3f}% ({end_date}) = {change_bp:+.1f}bp")
-            return change_bp
-        except Exception as e:
-            log.warning(f"10Y trend fetch attempt {attempt+1} failed: {e}")
-            time.sleep(2 ** attempt)
-    log.error("10Y trend unavailable after retries.")
-    return None
+def determine_critical_subregime(gauge_subregime, was_critical_last_week):
+    """Returns (subregime, note). subregime is 'Critical_FTQ' or 'Critical_Stress'.
 
-
-def determine_critical_subregime(target_date, was_critical_last_week):
-    """Returns (subregime, note). subregime is 'Critical_FTQ' or 'Critical_Stress'."""
+    Porta assimetrica e conservadora, confirmada em Jul 2026: o TLT so se reconquista
+    com uma queda do 10Y confirmada. Entrada fresca em Critical, sinal ausente ou
+    qualquer duvida caem no lado defensivo (Stress-without-relief). Foi o que evitou
+    repetir 2022, em que o TLT perdeu ~31% sem alivio de taxas."""
     if not was_critical_last_week:
         note = "Fresh entry into Critical — defaulting to Stress-without-relief until a 10Y decline is confirmed."
         log.info(note)
         return "Critical_Stress", note
 
-    trend_bp = get_10y_trend_bp(target_date)
-    if trend_bp is not None and trend_bp <= CRITICAL_FTQ_THRESHOLD_BP:
-        note = f"10Y trend {trend_bp:+.1f}bp over {CRITICAL_TREND_LOOKBACK_DAYS}d confirms Flight-to-Quality — TLT retained."
+    if gauge_subregime == "FTQ":
+        note = "Gauge B confirms a 10Y decline of at least 10bp over 3 months — Flight-to-Quality, TLT retained."
         log.info(note)
         return "Critical_FTQ", note
 
-    trend_desc = "unavailable" if trend_bp is None else f"{trend_bp:+.1f}bp"
-    note = f"10Y trend {trend_desc} over {CRITICAL_TREND_LOOKBACK_DAYS}d does not confirm a clear decline — Stress-without-relief (defensive)."
+    trend_desc = "unavailable" if gauge_subregime is None else "no confirmed decline"
+    note = f"Gauge B reports {trend_desc} on the 10Y — Stress-without-relief (defensive)."
     log.info(note)
     return "Critical_Stress", note
 
@@ -330,19 +415,43 @@ def parse_newsletter(newsletter_path):
     log.info(f"MRM Score parsed: {mrm_score}")
 
     # ── Extract Allocation Table (TR-based) ───────────────────────────────────
-    # Step 1: isolate the allocation table section to avoid matching other tables
-    alloc_section_match = re.search(
-        r'Regime-Based Asset Allocation.*?</table>',
-        content, re.IGNORECASE | re.DOTALL
-    )
-    if not alloc_section_match:
-        log.error("Allocation table section not found in newsletter HTML")
+    # Step 1: isolate the allocation table.
+    # A ancora era o titulo "Regime-Based Asset Allocation", mas quem escreve a
+    # newsletter e um LLM e o titulo varia: das 26 edicoes ate Set 2026 so 6 o usam
+    # (a de 4 Set diz "Regime-Based Allocation Framework"). Nas outras a alocacao
+    # nao era lida e o rebalanceamento ficava silenciosamente por fazer — o semestral
+    # de Junho so passou porque calhou uma semana com o titulo certo.
+    # A ancora passa a ser a propria tabela: aquela cujo cabecalho tem "Asset Class",
+    # presente nas 26 edicoes. O titulo fica como recurso, se algum dia a tabela mudar.
+    alloc_section = None
+    for table_html in re.findall(r'<table[^>]*>.*?</table>', content, re.IGNORECASE | re.DOTALL):
+        if re.search(r'<th[^>]*>\s*Asset Class\s*</th>', table_html, re.IGNORECASE):
+            alloc_section = table_html
+            break
+
+    if alloc_section is None:
+        fallback = re.search(r'Regime-Based\s+(?:\w+\s+)?Allocation.*?</table>',
+                             content, re.IGNORECASE | re.DOTALL)
+        alloc_section = fallback.group(0) if fallback else None
+
+    if alloc_section is None:
+        log.error("Allocation table not found in newsletter HTML")
         return {}, mrm_score
 
-    alloc_section = alloc_section_match.group(0)
-    log.info(f"Allocation section found ({len(alloc_section)} chars)")
+    log.info(f"Allocation table found ({len(alloc_section)} chars)")
 
-    # Step 2: extract each <tr> within that section
+    # Step 2: descobrir em que coluna esta a percentagem. A ordem das colunas muda
+    # entre edicoes — "Asset Class | Regime Target | Rationale | WoW" numa, mas
+    # "Asset Class | Role | Allocation | WoW" noutra. Ler sempre a segunda celula
+    # dava a coluna errada e a alocacao inteira saia a zero (foi o caso da edicao 20).
+    headers = [re.sub(r'<[^>]+>', '', h).strip().lower()
+               for h in re.findall(r'<th[^>]*>(.*?)</th>', alloc_section, re.IGNORECASE | re.DOTALL)]
+    pct_col = next((i for i, h in enumerate(headers)
+                    if re.search(r'alloc|target|weight|%', h)), None)
+    if pct_col:
+        log.info(f"Percentage column: {pct_col} ('{headers[pct_col]}')")
+
+    # Step 3: extract each <tr> within that section
     row_matches = re.findall(
         r'<tr[^>]*>(.*?)</tr>',
         alloc_section, re.IGNORECASE | re.DOTALL
@@ -364,20 +473,26 @@ def parse_newsletter(newsletter_path):
 
         # Strip all HTML tags to get plain text
         asset_class = re.sub(r'<[^>]+>', '', cells[0]).strip()
-        pct_match   = re.search(r'(\d+(?:\.\d+)?)\s*%', cells[1])
+        # Coluna do cabecalho quando existe; caso contrario, a primeira celula a
+        # direita do nome que traga um % — a coluna WoW so tem numeros sem sinal de %.
+        pct_match = None
+        if pct_col is not None and pct_col < len(cells):
+            pct_match = re.search(r'(\d+(?:\.\d+)?)\s*%', cells[pct_col])
+        if not pct_match:
+            for cell in cells[1:]:
+                pct_match = re.search(r'(\d+(?:\.\d+)?)\s*%', cell)
+                if pct_match:
+                    break
         if not pct_match or not asset_class:
             continue
 
         pct = float(pct_match.group(1))
 
-        matched = False
-        for key, bucket in ASSET_CLASS_BUCKET_MAP.items():
-            if key.lower() in asset_class.lower():
-                bucket_alloc[bucket] = bucket_alloc.get(bucket, 0.0) + pct
-                log.info(f"  Mapped '{asset_class}' → {bucket} ({pct}%)")
-                matched = True
-                break
-        if not matched:
+        bucket, how = map_asset_class(asset_class)
+        if bucket:
+            bucket_alloc[bucket] = bucket_alloc.get(bucket, 0.0) + pct
+            log.info(f"  Mapped '{asset_class}' → {bucket} ({pct}%) [{how}]")
+        else:
             log.warning(f"  Unmatched asset class: '{asset_class}' ({pct}%) — skipped")
 
     total = sum(bucket_alloc.values())
@@ -399,8 +514,8 @@ def check_emergency(portfolio, mrm_score):
     recent_scores.append(mrm_score)
     if any(s is None for s in recent_scores):
         return False, None
-    if all(s >= EMERGENCY_SCORE_HIGH for s in recent_scores):
-        return True, f"emergency_critical_{mrm_score}"
+    # O ramo defensivo (score >= 8,0) saiu daqui: nunca disparou em 20 anos e o seu
+    # trabalho passou para o medidor B, que decide Critical sem janela de confirmacao.
     if all(s <= EMERGENCY_SCORE_LOW for s in recent_scores):
         return True, f"emergency_resilient_{mrm_score}"
     return False, None
@@ -444,17 +559,26 @@ def main():
     if newsletter_path:
         bucket_alloc, mrm_score = parse_newsletter(newsletter_path)
 
-    regime = classify_regime(mrm_score)
-    log.info(f"Regime: {regime} (score={mrm_score})")
-
     was_regime     = current.get("regime", "Turbulence")
     was_subregime  = current.get("critical_subregime")
+
+    stress_active, gauge_subregime, gauge_basis = read_stress_gauge()
+    regime = classify_regime(mrm_score, stress_active, was_regime)
+    log.info(f"Regime: {regime} (score={mrm_score}, gauge B active={stress_active} — {gauge_basis})")
 
     critical_subregime = None
     critical_subregime_note = None
     if regime == "Critical":
-        was_critical_last_week = (was_regime == "Critical")
-        critical_subregime, critical_subregime_note = determine_critical_subregime(target_date, was_critical_last_week)
+        if stress_active is None:
+            # Corrida sem dados: mantem-se o sub-regime anterior. Deixar a porta decidir
+            # aqui degradaria FTQ para Stress e obrigaria a vender o TLT por causa de uma
+            # falha de rede — uma avaria de dados nao deve gerar uma transaccao.
+            critical_subregime = was_subregime or "Critical_Stress"
+            critical_subregime_note = "Gauge B unavailable this run — previous sub-regime retained."
+            log.warning(critical_subregime_note)
+        else:
+            critical_subregime, critical_subregime_note = determine_critical_subregime(
+                gauge_subregime, was_critical_last_week=(was_regime == "Critical"))
 
     current_shares = current.get("shares", {})
     tickers_needed = list(set(get_active_tickers(regime, critical_subregime)) | set(current_shares.keys()) | {"SPY"})
@@ -504,50 +628,39 @@ def main():
     inception_date = date(2026, 3, 13)
     issue_number   = ((raw_target - inception_date).days // 7) + 1
 
+    # As % da newsletter sao a alocacao macro de base. Guarda-se a ultima valida num
+    # campo proprio porque bucket_allocation_pct passa a guardar a alocacao EFECTIVA,
+    # que em Critical e o vector fixo — sem isto, a saida de Critical nao saberia a
+    # que percentagens voltar e ficaria congelada no vector defensivo.
+    newsletter_alloc = (bucket_alloc
+                        or current.get("newsletter_bucket_allocation_pct")
+                        or current.get("bucket_allocation_pct", {}))
+
+    semestral        = is_semestral_rebalance_week(target_date)
+    emerg, emerg_why = check_emergency(portfolio, mrm_score)
+    trigger = decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
+                               semestral, emerg_why if emerg else None)
+
     rebalance_triggered = False
     rebalance_reason    = "hold"
     final_bucket_alloc  = current.get("bucket_allocation_pct", {})
-    final_regime        = current.get("regime", "Turbulence")
+    final_regime        = was_regime
     final_critical_subregime = was_subregime
 
-    subregime_switch = (regime == "Critical" and critical_subregime != was_subregime)
-
-    if bucket_alloc:
-        semestral        = is_semestral_rebalance_week(target_date)
-        emerg, emerg_why = check_emergency(portfolio, mrm_score)
-
-        if semestral:
+    if trigger:
+        candidate_alloc, alloc_source = effective_bucket_alloc(regime, critical_subregime, newsletter_alloc)
+        if candidate_alloc:
             rebalance_triggered = True
-            rebalance_reason    = "semestral_rebalance"
-            final_bucket_alloc  = bucket_alloc
+            rebalance_reason    = trigger
+            final_bucket_alloc  = candidate_alloc
             final_regime        = regime
             final_critical_subregime = critical_subregime
-            log.info("REBALANCE: semestral")
-        elif emerg:
-            rebalance_triggered = True
-            rebalance_reason    = emerg_why
-            final_bucket_alloc  = bucket_alloc
-            final_regime        = regime
-            final_critical_subregime = critical_subregime
-            log.info(f"REBALANCE: emergency — {emerg_why}")
-        elif subregime_switch:
-            # Not a macro % rebalance — same bucket allocation, only the instrument
-            # representing US_TREASURIES (and the rest of the Critical map) changes.
-            rebalance_triggered = True
-            rebalance_reason    = f"critical_subregime_switch:{was_subregime or 'none'}->{critical_subregime}"
-            final_regime        = regime
-            final_critical_subregime = critical_subregime
-            log.info(f"REBALANCE: critical sub-regime switch {was_subregime} -> {critical_subregime}")
+            log.info(f"REBALANCE: {trigger} — allocation from {alloc_source}")
         else:
-            log.info(f"No rebalance — next semestral: Jan or Jun. Score={mrm_score}")
+            rebalance_reason = "no_allocation_available"
+            log.warning(f"{trigger} but no valid allocation — holding current positions.")
     else:
-        log.warning("No valid newsletter allocation — holding current positions.")
-        if subregime_switch:
-            rebalance_triggered = True
-            rebalance_reason    = f"critical_subregime_switch:{was_subregime or 'none'}->{critical_subregime}"
-            final_regime        = regime
-            final_critical_subregime = critical_subregime
-            log.info(f"REBALANCE: critical sub-regime switch {was_subregime} -> {critical_subregime} (no newsletter allocation — keeping existing bucket %)")
+        log.info(f"No rebalance — regime={regime}, score={mrm_score}. Next semestral: Jan or Jun.")
 
     if rebalance_triggered and final_bucket_alloc:
         candidate = rebalance_shares(portfolio_value, final_bucket_alloc, resolve_etf_map_key(final_regime, final_critical_subregime), prices)
@@ -581,6 +694,9 @@ def main():
         "data_stale":                    any(stale.get(t, False) for t in tickers_needed),
         "portfolio_value_pre_rebalance": round(portfolio_value, 2),
         "bucket_allocation_pct":         final_bucket_alloc,
+        "newsletter_bucket_allocation_pct": dict(newsletter_alloc or {}),
+        "stress_gauge_active":           stress_active,
+        "stress_gauge_basis":            gauge_basis,
         "allocation_pct":                {t: v for t, v in alloc_pct.items() if v > 0},
         "active_etf_map":                etf_map,
         "shares":                        new_shares,
@@ -600,6 +716,7 @@ def main():
         "critical_subregime":     final_critical_subregime,
         "shares":                 new_shares,
         "bucket_allocation_pct":  final_bucket_alloc,
+        "newsletter_bucket_allocation_pct": dict(newsletter_alloc or {}),
         "allocation_pct":         {t: v for t, v in alloc_pct.items() if v > 0},
         "active_etf_map":         etf_map,
         "last_prices":            {t: prices[t] for t in tickers_needed if prices.get(t) is not None},

@@ -17,3 +17,5 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Teste de integração do fetch_data.py (sem rede)
         run: python tests/test_build_data.py
+      - name: Testes do update_portfolio.py (sem rede)
+        run: python tests/test_update_portfolio.py
