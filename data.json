@@ -1,6 +1,6 @@
 {
   "meta": {
-    "lastUpdated": "2026-09-06T19:40:54Z",
+    "lastUpdated": "2026-09-07T20:51:59Z",
     "source": "FRED API (Live)",
     "version": "3.0.0",
     "fredSeriesDates": {
@@ -42,7 +42,7 @@
         "note": "4-quarter change. Threshold = 90th percentile of its own history since 1987."
       }
     },
-    "computedAt": "2026-09-06T19:40:54Z"
+    "computedAt": "2026-09-07T20:51:59Z"
   },
   "pillars": [
     {
