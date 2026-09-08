@@ -43,8 +43,8 @@ em `stressGauge.subregime`. O `update_portfolio.py` lê-o de lá.
 Até Set 2026 o `update_portfolio.py` lia o 10Y do yfinance (`^TNX`) numa janela de 28
 dias, enquanto o medidor B usava a FRED com janela de 3 meses: duas fontes e duas
 janelas para a mesma medida, que podiam discordar em público. Ficou a da FRED, e a
-janela ficou em 3 meses porque no backtest 2007-2026 a janela de 1 mês era pior —
-2008 fechava a −4,1% em vez de +0,7%, e o sub-regime trocava 16 vezes em vez de 8.
+janela ficou em 3 meses porque no backtest 2007-2026 a janela de 1 mês era pior:
+2008 fechava a −3,3% em vez de +1,5%, e o CAGR do período era 6,27% em vez de 6,60%.
 
 ## O que decide entrar em Critical
 

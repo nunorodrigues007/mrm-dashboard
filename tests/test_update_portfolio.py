@@ -5,7 +5,7 @@ vector de pesos de Critical, porta do sub-regime e gatilhos de rebalanceamento.
 Sem rede: o yfinance e substituido por um stub antes do import, porque nenhuma das
 funcoes aqui testadas o usa (so o fetch_prices, que nao entra nestes testes).
 """
-import json, sys, types, tempfile, os
+import json, sys, types, tempfile
 from pathlib import Path
 
 sys.modules.setdefault("yfinance", types.ModuleType("yfinance"))

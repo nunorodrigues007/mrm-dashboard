@@ -7,8 +7,22 @@ import json
 import requests
 
 import mrm_gauge_b
+import mrm_rules as rules
+
 from datetime import datetime, timedelta
 import os
+import sys
+
+# A consola do Windows arranca em cp1252 e os emojis dos prints abaixo levantam
+# UnicodeEncodeError: o script rebentava a meio quando corrido localmente, e com
+# ele dois dos testes. Reconfigurar a saida mantem o log legivel nos dois sitios,
+# em vez de empobrecer o output por causa de uma consola.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
 
 # ──────────────────────────────────────────
 # CONFIG
@@ -273,6 +287,35 @@ def pillar_status(score):
     if score <= 7.5: return "warning"
     return "critical"
 
+def load_previous_metrics(path="data_prev.json"):
+    """{pilar: metricValue} da ultima publicacao. Os deltas dos pilares eram
+    ficcao: o do Cycle comparava com a constante 0.22, o do Premium com 1.20, e
+    os da Solvency e do Debt eram as strings "+0.02" e "+0.3" escritas a mao —
+    o site mostrava a mesma seta todas as semanas, e o "▼ NaN" da Liquidez vinha
+    de um "—" que nao era numero. Passam a ser variacoes reais contra a ultima
+    publicacao guardada em data_prev.json."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            prev = json.load(f)
+    except Exception:
+        return {}, {}, None
+    metrics = {p.get("id"): p.get("metricValue")
+               for p in prev.get("pillars", []) if p.get("metricValue") is not None}
+    scores = {p.get("id"): p.get("score")
+              for p in prev.get("pillars", []) if p.get("score") is not None}
+    return metrics, scores, (prev.get("meta") or {}).get("lastUpdated")
+
+
+def metric_delta(pid, current, prev_metrics, unit="", digits=2):
+    """(delta em texto, valor numerico ou None). Sem base de comparacao devolve
+    um travessao — nunca um numero inventado."""
+    prev = prev_metrics.get(pid)
+    if current is None or prev is None:
+        return "—", None
+    d = round(float(current) - float(prev), digits)
+    return f"{d:+.{digits}f}{unit}", d
+
+
 def delta_str(current, previous, unit=""):
     if previous is None: return "—"
     diff = current - previous
@@ -329,8 +372,8 @@ def build_data():
     unrate_obs = fetch_fred("UNRATE", limit=3)
     unrate_prev = float(unrate_obs[1]["value"]) if len(unrate_obs) > 1 else unrate_val
 
-    print("  📡 Historical scores for sparkline...")
-    t10y2y_hist = history_values("T10Y2Y", n=7, limit=14)
+    # A sparkline passou a ler o score_history.json; esta chamada a FRED ficou
+    # a ser feita e deitada fora todas as noites.
 
     # ── Medidor B: stress concorrente ──
     # Nao entra na media do Medidor A; e publicado a parte e sobrepoe-se a ele.
@@ -433,6 +476,29 @@ def build_data():
         liquidity_trend = "normal"
         liquidity_desc = "Buffett Indicator data unavailable this run (Fed Z.1 / BEA GDP fetch failed)."
 
+    # ── Deltas reais contra a ultima publicacao ──
+    buffett_val_pct = round(buffett_ratio * 100, 1) if buffett_ratio is not None else None
+    prev_metrics, prev_scores, prev_stamp = load_previous_metrics()
+
+    def delta_direction(pid, score, delta_text):
+        """A cor da seta segue o SCORE do pilar, nao o sinal do numero: um ERP a
+        descer e um numero negativo mas um agravamento. Sem numero para mostrar
+        (delta "—") ou sem base de comparacao, devolve None e o site pinta neutro
+        em vez de adivinhar."""
+        prev = prev_scores.get(pid)
+        if prev is None or score is None or delta_text == "—":
+            return None
+        if score > prev: return "worse"
+        if score < prev: return "better"
+        return "flat"
+
+    d_cycle,    _ = metric_delta("cycle", t10y2y_val, prev_metrics, "%")
+    d_liquidity, _ = metric_delta("liquidity", buffett_val_pct, prev_metrics, " pp", 1)
+    d_premium,  _ = metric_delta("premium", erp_val, prev_metrics, "%")
+    d_solvency, _ = metric_delta("solvency", npl_val, prev_metrics, " pp")
+    d_debt,     _ = metric_delta("debt", dsr_val, prev_metrics, " pp", 1)
+    delta_basis = f"vs. {prev_stamp[:10]}" if prev_stamp else "no prior publication"
+
     # ── Build JSON ──
     data = {
         "meta": {
@@ -453,8 +519,10 @@ def build_data():
                               "horizon: in a downturn three of its five pillars mechanically improve, so the "
                               "composite cannot signal concurrent stress. Concurrent stress detection lives in "
                               "stressGauge, which is not averaged into Gauge A."),
+            "deltaBasis": delta_basis,
             "liquidityNote": "Liquidity pillar redefined from discontinued Wilshire 5000 proxy to Buffett Indicator (Total Corp. Equities / GDP), percentile-scored against full history. See fetch_data.py comments."
         },
+        "rules": rules.as_dict(),
         "globalResilienceScore": g_score,
         "status": status_label(g_score),
         "ndPillars": nd_pillars,
@@ -469,7 +537,9 @@ def build_data():
                 "value": f"{t10y2y_val:+.2f}%" if t10y2y_val else "N/A",
                 "fredSeries": "T10Y2Y",
                 "trend": "steepening" if (t10y2y_val or 0) > 0 else "inverted",
-                "delta": delta_str(t10y2y_val or 0, 0.22, "%"),
+                "metricValue": t10y2y_val,
+                "delta": d_cycle,
+                "deltaDirection": delta_direction("cycle", s_cycle, d_cycle),
                 "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6–18 months.",
                 "status": pillar_status(s_cycle)
             },
@@ -482,7 +552,9 @@ def build_data():
                 "value": buffett_display,
                 "fredSeries": "NCBEILQ027S + FBCELLQ027S + GDP",
                 "trend": liquidity_trend,
-                "delta": "—",
+                "metricValue": buffett_val_pct,
+                "delta": d_liquidity,
+                "deltaDirection": delta_direction("liquidity", s_liquidity, d_liquidity),
                 "m2YoyGrowthPct": m2_yoy_growth_pct,
                 "percentileRank": buffett_pct,
                 "description": liquidity_desc,
@@ -500,7 +572,9 @@ def build_data():
                 "epValue": SP500_EARNINGS_YIELD,
                 "epAsOf": SP500_EARNINGS_YIELD_ASOF,
                 "trend": ("compressed" if erp_val < 2.0 else "adequate") if erp_val is not None else "nd",
-                "delta": f"{erp_val - 1.20:+.2f}" if erp_val is not None else "—",
+                "metricValue": erp_val,
+                "delta": d_premium,
+                "deltaDirection": delta_direction("premium", s_premium, d_premium),
                 "description": (
                     f"ERP = estimated E/P ({SP500_EARNINGS_YIELD}%, as of {SP500_EARNINGS_YIELD_ASOF}) minus the 10Y "
                     f"yield ({f'{dgs10_val:.2f}' if dgs10_val is not None else 'n/d'}%). The E/P is a manually "
@@ -517,7 +591,9 @@ def build_data():
                 "value": f"{npl_val:.1f}%" if npl_val else "N/A",
                 "fredSeries": "DRALACBN",
                 "trend": "stable" if s_solvency < 5 else "rising",
-                "delta": "+0.02",
+                "metricValue": npl_val,
+                "delta": d_solvency,
+                "deltaDirection": delta_direction("solvency", s_solvency, d_solvency),
                 "description": f"FRED DRALACBN delinquency rate at {f'{npl_val:.2f}' if npl_val is not None else 'N/A'}%. Systemic banking plumbing {'functioning normally.' if s_solvency < 5 else 'showing stress.'}",
                 "status": pillar_status(s_solvency)
             },
@@ -530,7 +606,9 @@ def build_data():
                 "value": f"{dsr_val:.1f}%" if dsr_val else "N/A",
                 "fredSeries": "TDSP",
                 "trend": "rising" if s_debt > 5 else "stable",
-                "delta": "+0.3",
+                "metricValue": dsr_val,
+                "delta": d_debt,
+                "deltaDirection": delta_direction("debt", s_debt, d_debt),
                 "description": f"Household debt service ratio at {f'{dsr_val:.1f}' if dsr_val is not None else 'N/A'}%. {'Consumer balance sheet strain increasing.' if s_debt > 5 else 'Consumer balance sheets healthy.'}",
                 "status": pillar_status(s_debt)
             }
@@ -562,7 +640,7 @@ def build_data():
                 "thresholdDisplay": "0.80%",
                 "status": erp_status,
                 "trend": ("falling" if erp_val < 1.5 else "stable") if erp_val is not None else "nd",
-                "delta": f"{erp_val - 1.20:+.2f}%" if erp_val is not None else "—",
+                "delta": d_premium,
                 "alert": erp_alert,
                 "description": (f"ERP at {erp_val:.2f}%. Red alert triggers below 0.80%." if erp_val is not None
                                 else "ERP n/d this run.")

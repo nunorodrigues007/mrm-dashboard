@@ -27,42 +27,19 @@ from pathlib import Path
 
 import yfinance as yf
 
+import mrm_rules as rules
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("mrm_portfolio")
 
 # ── Canonical 6 buckets ───────────────────────────────────────────────────────
-BUCKETS = ["US_EQUITIES", "US_TREASURIES", "IG_CREDIT", "COMMODITIES", "CASH", "ALTERNATIVES"]
-
-REGIME_ETF_MAP = {
-    "Turbulence": {
-        "US_EQUITIES": "SPY", "US_TREASURIES": "IEF", "IG_CREDIT": "LQD",
-        "COMMODITIES": "PDBC", "CASH": "BIL", "ALTERNATIVES": "VNQ",
-    },
-    # Critical (score 8-10) splits into two sub-regimes — see docs/critical_subregime.md
-    # (Nuno Rodrigues, Jul 2026): the same composite score can mean either a genuine
-    # flight-to-quality (10Y falling, TLT hedges the equity drawdown — 2008, 2020) or
-    # persistent stress with no rate relief (10Y flat/rising, TLT loses its hedge value
-    # and can fall alongside equities — 2022, where TLT lost ~31%). Which one is live is
-    # decided each week by determine_critical_subregime(), never assumed from the score.
-    "Critical_FTQ": {
-        # Confirmed 10Y decline — duration pays as a hedge. Matches the original Critical map.
-        "US_EQUITIES": "USMV", "US_TREASURIES": "TLT", "IG_CREDIT": "SGOV",
-        "COMMODITIES": "GLD", "CASH": "BIL", "ALTERNATIVES": "VNQ",
-    },
-    "Critical_Stress": {
-        # 10Y flat/rising, or freshly entering Critical with no confirmation yet (the
-        # conservative default). TLT is swapped for SHY — no rate-cut tailwind to
-        # compensate for duration risk while stress persists.
-        "US_EQUITIES": "USMV", "US_TREASURIES": "SHY", "IG_CREDIT": "SGOV",
-        "COMMODITIES": "GLD", "CASH": "BIL", "ALTERNATIVES": "VNQ",
-    },
-    "Resilient": {
-        "US_EQUITIES": "QQQ", "US_TREASURIES": "SHY", "IG_CREDIT": "HYG",
-        "COMMODITIES": "PDBC", "CASH": "BIL", "ALTERNATIVES": "IWO",
-    },
-}
-
-ALL_TICKERS = list(set(t for regime in REGIME_ETF_MAP.values() for t in regime.values()))
+# As regras vivem todas em mrm_rules.py. Este ficheiro nao redefine nenhuma —
+# importa-as. Antes desta refactorizacao o mapa de ETF existia em tres copias
+# (aqui, no send_newsletter.py e no index.html) e as copias tinham divergido.
+BUCKETS          = rules.BUCKETS
+REGIME_ETF_MAP   = rules.REGIME_ETF_MAP
+ALL_TICKERS      = rules.ALL_TICKERS
+CRITICAL_WEIGHTS = rules.CRITICAL_WEIGHTS
 
 ASSET_CLASS_BUCKET_MAP = {
     "US Equities": "US_EQUITIES", "US Equities (Broad)": "US_EQUITIES",
@@ -113,30 +90,13 @@ def map_asset_class(asset_class):
                 return bucket, w
     return None, None
 
-SEMESTRAL_MONTHS = {1, 6}
-EMERGENCY_SCORE_LOW  = 4.0
-CONSECUTIVE_WEEKS    = 2
+SEMESTRAL_MONTHS    = rules.SEMESTRAL_MONTHS
+EMERGENCY_SCORE_LOW = rules.RESILIENT_MAX
+CONSECUTIVE_WEEKS   = rules.CONSECUTIVE_WEEKS
 
 PORTFOLIO_PATH = Path("portfolio.json")
 DATA_PATH      = Path("data.json")
 NEWSLETTER_DIR = Path(".")
-
-# ── Vector de pesos para Critical ─────────────────────────────────────────────
-# Enquanto o medidor B estiver ligado, estes pesos sobrepoem-se as % da newsletter.
-# Decisao de Set 2026, depois do backtest 2007-2026: trocar apenas os instrumentos
-# captura menos de metade da proteccao (2008: -10.1% so com a troca de ETF, contra
-# +0.7% com instrumentos + pesos; MaxDD -20.9% contra -16.4%). O custo declarado e
-# ~0.30 pp de CAGR ao longo de 19 anos — e o premio do seguro, nao um almoco gratis.
-CRITICAL_WEIGHTS = {
-    "Critical_FTQ": {
-        "US_EQUITIES": 15.0, "US_TREASURIES": 35.0, "IG_CREDIT": 15.0,
-        "COMMODITIES": 15.0, "CASH": 15.0, "ALTERNATIVES": 5.0,
-    },
-    "Critical_Stress": {
-        "US_EQUITIES": 15.0, "US_TREASURIES": 20.0, "IG_CREDIT": 20.0,
-        "COMMODITIES": 15.0, "CASH": 25.0, "ALTERNATIVES": 5.0,
-    },
-}
 
 # ── Force-rebalance override (set FORCE_REBALANCE=true in env to bypass date check) ──
 FORCE_REBALANCE = os.environ.get("FORCE_REBALANCE", "").lower() in ("1", "true", "yes")
@@ -160,64 +120,12 @@ def read_stress_gauge(path=DATA_PATH):
     return sg.get("active"), sg.get("subregime"), sg.get("basis")
 
 
-def classify_regime(score, stress_active=None, previous_regime="Turbulence"):
-    """Critical e decidido pelo medidor B, nao pelo score.
-
-    O score de cinco pilares mede fragilidade ANTECIPADA (6-18 meses) e numa crise
-    tres dos seus pilares melhoram mecanicamente; em 2005-2026 nunca chegou a 8,0,
-    nem em 2008, pelo que o ramo Critical do classificador era codigo morto."""
-    if stress_active is None:
-        return previous_regime or "Turbulence"
-    if stress_active:
-        return "Critical"
-    if score is not None and score <= EMERGENCY_SCORE_LOW:
-        return "Resilient"
-    return "Turbulence"
-
-
-def decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
-                     semestral, emergency_reason=None):
-    """Motivo do rebalanceamento, ou None para manter as posicoes.
-
-    Precedencia: entrada/saida de Critical primeiro — e o evento que a carteira existe
-    para responder — depois o calendario semestral, depois a emergencia por score baixo,
-    e por fim a troca de sub-regime dentro de Critical (mesmas %, outro instrumento)."""
-    # Entrada e saida de Critical sao imediatas, sem janela de confirmacao: os gatilhos
-    # do medidor B ja sao series publicadas com atraso (Sahm mensal com um mes de lag,
-    # delinquencia trimestral com cinco), e no backtest 2007-2026 a histerese de 1 a 6
-    # meses custou ~0,3 pp de CAGR sem melhorar a quebra maxima nem reduzir as trocas.
-    if (regime == "Critical") != (was_regime == "Critical"):
-        return "stress_on" if regime == "Critical" else "stress_off"
-    if semestral:
-        return "semestral_rebalance"
-    if emergency_reason:
-        return emergency_reason
-    if regime == "Critical" and critical_subregime != was_subregime:
-        return f"critical_subregime_switch:{was_subregime or 'none'}->{critical_subregime}"
-    return None
-
-
-def effective_bucket_alloc(regime, critical_subregime, newsletter_alloc):
-    """(alocacao por bucket, origem). Em Critical o vector fixo passa a frente das
-    % da newsletter; fora de Critical mandam as % da newsletter."""
-    key = resolve_etf_map_key(regime, critical_subregime)
-    if key in CRITICAL_WEIGHTS:
-        return dict(CRITICAL_WEIGHTS[key]), f"critical override ({key})"
-    return dict(newsletter_alloc or {}), "newsletter"
-
-
-def resolve_etf_map_key(regime, critical_subregime=None):
-    """REGIME_ETF_MAP keys for Critical are split into two sub-regimes; every other
-    regime maps 1:1. Falls back to the conservative Critical_Stress map if regime is
-    Critical but no sub-regime was resolved (should not happen in normal operation)."""
-    if regime == "Critical":
-        return critical_subregime or "Critical_Stress"
-    return regime
-
-
-def get_active_tickers(regime, critical_subregime=None):
-    key = resolve_etf_map_key(regime, critical_subregime)
-    return list(REGIME_ETF_MAP.get(key, REGIME_ETF_MAP["Turbulence"]).values())
+# Decisao de regime, de rebalanceamento e de alocacao: definidas em mrm_rules.py.
+classify_regime       = rules.classify_regime
+decide_rebalance      = rules.decide_rebalance
+effective_bucket_alloc = rules.effective_bucket_alloc
+resolve_etf_map_key   = rules.resolve_etf_map_key
+get_active_tickers    = rules.get_active_tickers
 
 
 def get_last_friday():
@@ -237,38 +145,19 @@ def get_last_friday():
 # O 10Y passa a vir do medidor B (FRED DGS10, janela de 3 meses), calculado uma so vez
 # no fetch_data.py e publicado no data.json. Antes era lido aqui do yfinance (^TNX) numa
 # janela de 28 dias: duas fontes e duas janelas para a mesma medida, que podiam discordar
-# em publico. A janela de 3 meses tambem se mostrou mais fiavel no backtest 2007-2026
-# (2008: +0,7% contra -4,1% com 1 mes; 8 trocas de sub-regime em vez de 16).
+# em publico. A janela de 3 meses tambem se mostrou mais fiavel no backtest 2007-2026:
+# 2008 fecha a +1,5% contra -3,3% com uma janela de 1 mes, e o CAGR do periodo e
+# 6,60% contra 6,27%.
 
 
 def determine_critical_subregime(gauge_subregime, was_critical_last_week):
-    """Returns (subregime, note). subregime is 'Critical_FTQ' or 'Critical_Stress'.
-
-    Porta assimetrica e conservadora, confirmada em Jul 2026: o TLT so se reconquista
-    com uma queda do 10Y confirmada. Entrada fresca em Critical, sinal ausente ou
-    qualquer duvida caem no lado defensivo (Stress-without-relief). Foi o que evitou
-    repetir 2022, em que o TLT perdeu ~31% sem alivio de taxas."""
-    if not was_critical_last_week:
-        note = "Fresh entry into Critical — defaulting to Stress-without-relief until a 10Y decline is confirmed."
-        log.info(note)
-        return "Critical_Stress", note
-
-    if gauge_subregime == "FTQ":
-        note = "Gauge B confirms a 10Y decline of at least 10bp over 3 months — Flight-to-Quality, TLT retained."
-        log.info(note)
-        return "Critical_FTQ", note
-
-    trend_desc = "unavailable" if gauge_subregime is None else "no confirmed decline"
-    note = f"Gauge B reports {trend_desc} on the 10Y — Stress-without-relief (defensive)."
+    """Porta assimetrica do sub-regime (mrm_rules.subregime_from_gauge), com log."""
+    subregime, note = rules.subregime_from_gauge(gauge_subregime, was_critical_last_week)
     log.info(note)
-    return "Critical_Stress", note
+    return subregime, note
 
 
-def is_semestral_rebalance_week(target_date):
-    if target_date.month not in SEMESTRAL_MONTHS:
-        return False
-    next_friday = target_date + timedelta(days=7)
-    return next_friday.month != target_date.month
+is_semestral_rebalance_week = rules.is_semestral_rebalance_week
 
 
 # ── US market holiday calendar ────────────────────────────────────────────────
@@ -495,13 +384,17 @@ def parse_newsletter(newsletter_path):
         else:
             log.warning(f"  Unmatched asset class: '{asset_class}' ({pct}%) — skipped")
 
-    total = sum(bucket_alloc.values())
-    if total > 0 and abs(total - 100.0) <= 5.0:
-        log.info(f"Allocation parsed OK: {bucket_alloc} (total={total:.1f}%)")
+    # Validacao: total a 100 +/- 5 e cada bucket dentro da sua banda. Quem escreve
+    # a tabela e um LLM, sem limites, e o rebalanceamento semestral executa o que
+    # aqui for lido. Uma alocacao reprovada nao e corrigida — e rejeitada, e o
+    # chamador mantem as posicoes.
+    ok, problems = rules.validate_allocation(bucket_alloc)
+    if ok:
+        log.info(f"Allocation parsed OK: {bucket_alloc} (total={sum(bucket_alloc.values()):.1f}%)")
         return bucket_alloc, mrm_score
-    else:
-        log.error(f"Allocation total={total:.1f}% invalid — aborting rebalance")
-        return {}, mrm_score
+    for prob in problems:
+        log.error(f"Allocation rejected — {prob}")
+    return {}, mrm_score
 
 
 def check_emergency(portfolio, mrm_score):

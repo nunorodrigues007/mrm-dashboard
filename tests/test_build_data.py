@@ -92,6 +92,48 @@ def main():
     check(p["premium"].get("epEstimated") is True, "Premium declarado como estimativa")
     check(p["premium"].get("epAsOf") == "2026-08-31", "Premium com data do E/P")
 
+    print("\n── regras canonicas exportadas para o front-end ──")
+    import mrm_rules
+    r = data.get("rules", {})
+    check(r.get("etfMap", {}).get("Turbulence", {}).get("US_EQUITIES") == "SPY",
+          "data.json leva o mapa de ETF canonico")
+    check(r.get("criticalWeights", {}).get("Critical_FTQ", {}).get("US_TREASURIES") == 35.0,
+          "data.json leva o vector de pesos de Critical")
+    check(r.get("resilientMax") == mrm_rules.RESILIENT_MAX and r.get("criticalMin") == mrm_rules.CRITICAL_MIN,
+          "limiares publicados = limiares do motor")
+    check(r.get("regimeDecidedBy") == "gaugeB", "o JSON declara quem decide o regime")
+
+    print("\n── deltas dos pilares ──")
+    for pid in ("cycle", "liquidity", "premium", "solvency", "debt"):
+        check(p[pid].get("metricValue") is not None, f"{pid} publica metricValue para comparacao futura")
+    check(all(p[pid]["delta"] == "—" for pid in ("cycle", "premium", "solvency", "debt")),
+          "sem publicacao anterior comparavel, os deltas sao travessao e nao numeros inventados")
+    check("+0.02" not in json.dumps(data) and "\"+0.3\"" not in json.dumps(data),
+          "os deltas escritos a mao desapareceram")
+
+    real_prev = fetch_data.load_previous_metrics
+    fetch_data.load_previous_metrics = lambda path="data_prev.json": (
+        {"cycle": 0.22, "premium": -0.50, "solvency": 1.46, "debt": 11.0, "liquidity": 280.0},
+        {"cycle": 5.0, "premium": 9.5, "solvency": 3.0, "debt": 5.5, "liquidity": 9.0},
+        "2026-09-04T18:00:00Z")
+    d3 = fetch_data.build_data()
+    p3 = {x["id"]: x for x in d3["pillars"]}
+    fetch_data.load_previous_metrics = real_prev
+    check(p3["cycle"]["delta"] == "+0.21%", f"delta do Cycle real ({p3['cycle']['delta']})")
+    check(p3["solvency"]["delta"] == "-0.08 pp", f"delta da Solvency real ({p3['solvency']['delta']})")
+    # ERP de -0.95 contra -0.50 na publicacao anterior: o premio comprimiu-se mais
+    check(p3["premium"]["delta"] == "-0.45%", f"delta do Premium real ({p3['premium']['delta']})")
+    check(d3["meta"]["deltaBasis"] == "vs. 2026-09-04", f"base do delta declarada ({d3['meta']['deltaBasis']})")
+    # a direccao segue o score, nao o sinal do numero: o ERP caiu (-0.45) e isso
+    # e um agravamento, logo o pilar Premium subiu de 9.5 para 10.0 -> "worse"
+    check(p3["premium"]["deltaDirection"] == "worse",
+          f"Premium: ERP a cair e agravamento ({p3['premium']['deltaDirection']})")
+    check(p3["solvency"]["deltaDirection"] == "better",
+          f"Solvency: delinquencia a cair e melhoria ({p3['solvency']['deltaDirection']})")
+    check(p3["debt"]["deltaDirection"] == "flat", f"Debt sem mudanca de score ({p3['debt']['deltaDirection']})")
+    check(all(p[pid]["deltaDirection"] is None for pid in ("cycle", "premium")),
+          "sem base de comparacao a direccao e neutra")
+
     print("\n── n/d: simular DGS10 indisponivel ──")
     OBS["DGS10"] = []
     d2 = fetch_data.build_data()

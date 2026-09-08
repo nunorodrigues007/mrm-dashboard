@@ -312,6 +312,7 @@
     font-family: var(--mono); font-size: 10px;
   }
   .pillar-delta.up { color: var(--orange); }
+  .pillar-delta.flat { color: var(--text-muted); }
   .pillar-delta.down { color: var(--green); }
   .pillar-desc {
     margin-top: 10px; padding-top: 10px;
@@ -531,6 +532,16 @@
   .content-body strong {
     color: var(--text-primary); font-weight: 600;
   }
+  /* A classe .content-list ja era usada nos capitulos dos BDC mas nunca teve
+     estilo: as listas sairam sem marcador e sem indentacao, coladas ao texto. */
+  .content-body ul, .content-list {
+    margin: 0 0 16px 0; padding-left: 22px; list-style: disc;
+  }
+  .content-body li {
+    color: var(--text-secondary); line-height: 1.75;
+    font-size: 14px; margin-bottom: 10px;
+  }
+  .content-body li::marker { color: var(--blue); }
   .blockquote {
     border-left: 3px solid var(--blue);
     margin: 20px 0; padding: 14px 20px;
@@ -842,6 +853,13 @@
           <div class="chapter-nav-sub">Flight-to-Quality vs. Stress</div>
         </div>
       </button>
+      <button class="chapter-nav-item" onclick="showChapter(7, this)">
+        <span class="chapter-num">CH 8</span>
+        <div class="chapter-nav-text">
+          <div class="chapter-nav-title">The Second Gauge</div>
+          <div class="chapter-nav-sub">Why the score never called 2008</div>
+        </div>
+      </button>
     </aside>
 
     <!-- Chapter Content -->
@@ -860,7 +878,8 @@
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
-                  <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>Resilience vs. Robustness</h2>
@@ -948,6 +967,10 @@
             <div class="callout-label">✕ Score 8–10: Critical</div>
             <p>Systemic fragility across multiple dimensions. Ice dangerously thin. High probability of self-reinforcing contraction if a significant shock occurs.</p>
           </div>
+
+          <h2>The Limit of This Number</h2>
+          <p>Read the bands above as a measure of <em>fragility ahead</em>, on a 6–18 month horizon — not as a verdict on today. Reconstructed month by month from 2005 to 2026, this score never reached the Critical band, not even in 2008, and it <em>fell</em> through that crisis: three of its five pillars mechanically improve in a downturn.</p>
+          <p>That is why the framework carries a second instrument. Gauge B — concurrent stress, built from rates of change rather than levels — is what declares the Critical regime and moves the portfolio. <a href="#" onclick="navChapter(7);return false;" style="color:var(--blue);">Chapter 8</a> is the full account.</p>
         </div>
         <div class="chapter-footer">
           <button class="chapter-nav-btn" disabled>← Previous</button>
@@ -968,7 +991,8 @@
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
-                  <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>The 10Y–2Y Yield Curve: A Compressed History of Economic Cycles</h2>
@@ -1059,7 +1083,8 @@
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
-                  <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>M2 Money Supply: The Economy's Blood Volume</h2>
@@ -1141,7 +1166,8 @@
           <div class="progress-dot active"></div>
           <div class="progress-dot"></div>
           <div class="progress-dot"></div>
-                  <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>The Equity Risk Premium: Compensation for Uncertainty</h2>
@@ -1223,7 +1249,8 @@
           <div class="progress-dot done"></div>
           <div class="progress-dot active"></div>
           <div class="progress-dot"></div>
-                  <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>The Banking System as Systemic Plumbing</h2>
@@ -1305,7 +1332,8 @@
           <div class="progress-dot done"></div>
           <div class="progress-dot done"></div>
           <div class="progress-dot active"></div>
-                  <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
         </div>
         <div class="content-body">
           <h2>The Household Debt Service Ratio: The Economy's Structural Foundation</h2>
@@ -1394,13 +1422,14 @@
           <div class="progress-dot done"></div>
           <div class="progress-dot done"></div>
           <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
         </div>
 
         <div id="subregime-live-status" style="margin-bottom:28px;"></div>
 
         <div class="content-body">
           <h2>Not All Critical Readings Are the Same</h2>
-          <p>The MRM classifies the macro regime into three zones — Resilient, Turbulence, and Critical — from a weighted average of five independent pillars (Cycle, Liquidity, Premium, Solvency, Debt). The Critical portfolio (USMV, TLT, SGOV, GLD, BIL, VNQ) is well calibrated for a <strong>flight-to-quality</strong> Critical, where falling long yields (TLT) act as a natural hedge against an equity collapse — the mechanism that worked in 2008 and 2020.</p>
+          <p>The MRM classifies the macro regime into three zones — Resilient, Turbulence, and Critical. Critical is declared by Gauge B, the concurrent stress detector described in <a href="#" onclick="navChapter(7);return false;" style="color:var(--blue);">Chapter 8</a>, not by the Resilience Score. The Critical portfolio (USMV, TLT, SGOV, GLD, BIL, VNQ) is well calibrated for a <strong>flight-to-quality</strong> Critical, where falling long yields (TLT) act as a natural hedge against an equity collapse — the mechanism that worked in 2008 and 2020.</p>
 
           <p>The problem: a Critical score can also be reached <strong>without</strong> the 10-Year yield falling — a scenario of persistent monetary tightening where the Fed does not ease despite systemic stress. On that path, TLT loses its protective mechanism entirely and can lose value at the same time equities are falling. 2022 is the clearest real-world example: the yield curve inverted, liquidity contracted, and the equity risk premium compressed hard — a textbook stress profile — yet the 10-Year rose almost the entire year, and TLT lost approximately <strong>-31%</strong>, one of the worst annual performances in its history.</p>
 
@@ -1415,11 +1444,11 @@
           <p>The corrected rule uses a single decisive filter, with pillar composition reduced to explanatory context rather than a condition of the trigger:</p>
 
           <div style="margin: 28px 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
-            <div style="text-align:center; font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-secondary); background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:block; margin: 0 auto 20px; max-width:280px;">MRM Global Score 8–10 (Critical)</div>
+            <div style="text-align:center; font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-secondary); background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:block; margin: 0 auto 20px; max-width:320px;">Gauge B fires — concurrent stress (Ch. 8)</div>
             <div style="display:flex; justify-content:center; margin-bottom:20px;">
               <svg width="24" height="28" viewBox="0 0 24 28"><path d="M12 0 L12 20 M4 12 L12 20 L20 12" stroke="var(--text-muted)" stroke-width="2" fill="none"/></svg>
             </div>
-            <div style="text-align:center; font-family:var(--sans); font-size:13px; color:var(--text-secondary); border:1px dashed var(--border); border-radius:8px; padding:14px; max-width:360px; margin:0 auto 24px;">10Y Treasury trend — last 4 weeks?</div>
+            <div style="text-align:center; font-family:var(--sans); font-size:13px; color:var(--text-secondary); border:1px dashed var(--border); border-radius:8px; padding:14px; max-width:360px; margin:0 auto 24px;">10Y Treasury trend — last 3 months (FRED DGS10)?</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
               <div>
                 <div style="display:flex; justify-content:center; margin-bottom:8px;">
@@ -1550,11 +1579,98 @@
         </div>
         <div class="chapter-footer">
           <button class="chapter-nav-btn" onclick="navChapter(5)">← Chapter 6</button>
+          <button class="chapter-nav-btn" onclick="navChapter(7)">Next: The Second Gauge →</button>
+        </div>
+      </article>
+      <!-- ── CHAPTER 8 ── -->
+      <article class="chapter-view" id="chapter-7">
+        <span class="chapter-tag">Chapter 08 — The Second Gauge</span>
+        <h1 class="chapter-h1">The Second<br>Gauge</h1>
+        <p class="chapter-subtitle">The Resilience Score is a leading measure of fragility. It was never built to tell you that a crisis is happening now — and a backtest showed it never did.</p>
+        <div class="chapter-divider"></div>
+        <div class="chapter-progress">
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot done"></div>
+          <div class="progress-dot active"></div>
+        </div>
+
+        <div id="gauge-b-live-status" style="margin-bottom:28px;"></div>
+
+        <div class="content-body">
+          <h2>What the Backtest Found</h2>
+          <p>The five-pillar score was reconstructed month by month from 2005 to 2026, using published data with their real publication lags and expanding-window percentiles — no hindsight. Across 260 months it landed in Turbulence 256 times, in Resilient 4 times, and in Critical <strong>never</strong>. Not in 2008, not in 2020.</p>
+
+          <p>Worse than never reaching the threshold: through the 2008 crisis the score <em>fell</em>. It read 7.18 in June 2008 and 5.88 in December 2008, after Lehman. Its all-time high in the whole sample is February 2006, at 7.93 — eighteen months before the crisis began.</p>
+
+          <div class="blockquote">
+            <p>"The score was not broken. It was doing exactly what it was built to do, and we were asking it the wrong question."</p>
+            <cite>— US MRM Framework, Gauge B Extension, September 2026</cite>
+          </div>
+
+          <h2>Why It Falls Into a Crisis</h2>
+          <p>Three of the five pillars mechanically improve in a downturn, and together they carry 65% of the weight:</p>
+
+          <ul class="content-list">
+            <li><strong>Cycle (20%)</strong> — the curve dis-inverts and steepens as the front end is cut. The reading that flags danger 6–18 months ahead is the same reading that turns benign at the moment of impact.</li>
+            <li><strong>Liquidity (20%)</strong> — the Buffett Indicator is a valuation ratio. Equities fall faster than GDP, so the percentile collapses precisely when equity risk is being realised.</li>
+            <li><strong>Premium (25%)</strong> — the equity risk premium widens as prices fall. Compensation for risk improves at the worst possible moment to be told that risk is well compensated.</li>
+          </ul>
+
+          <p>Only Solvency and Debt — 35% of the weight between them — deteriorate during a crisis, and both are slow, quarterly series. The composite cannot outvote its own construction.</p>
+
+          <p>We tested whether re-weighting could fix it. It cannot. The weights that would have made 2008 read Critical are 100% Debt — and that same vector produces a Critical reading in 2006 and 2007 as well, and in 84 of the 96 months from 2005 to 2012. A gauge that says Critical for seven years running is not a gauge.</p>
+
+          <h2>Two Gauges, Two Questions</h2>
+          <p>The framework now carries two instruments, side by side, never averaged into one another.</p>
+
+          <div class="callout orange">
+            <div class="callout-label">Gauge A — Global Resilience Score</div>
+            <p><strong>Question:</strong> how much is there to go wrong? <strong>Horizon:</strong> 6–18 months. <strong>Built from:</strong> levels and percentiles across five pillars. This is the number on the front page and the spine of the weekly analysis. It measures thin ice, not the sound of it cracking.</p>
+          </div>
+
+          <div class="callout red">
+            <div class="callout-label">Gauge B — Concurrent Stress</div>
+            <p><strong>Question:</strong> is it going wrong now? <strong>Horizon:</strong> 0–3 months. <strong>Built from:</strong> rates of change, not levels. This is the gauge that decides the Critical regime and moves the portfolio.</p>
+          </div>
+
+          <h2>The Two Triggers</h2>
+          <p>Gauge B fires when either trigger fires. Both are published rules, and neither was calibrated on this sample — that discipline is what keeps the result from being a curve fitted to the past.</p>
+
+          <ul class="content-list">
+            <li><strong>The Sahm rule, real-time vintage (SAHMREALTIME ≥ 0.50).</strong> Claudia Sahm's published recession indicator, in the vintage form designed to survive later revisions to the unemployment data. Not a rule of ours, and not tuned by us.</li>
+            <li><strong>Bank delinquency acceleration (DRALACBN, 4-quarter change ≥ +0.81 pp).</strong> The threshold is the 90th percentile of that series' own history since 1987. Where Solvency reads the <em>level</em> of delinquency — which is still low at the start of every crisis — this reads the <em>rate of change</em>, which is not.</li>
+          </ul>
+
+          <p>Tested on 1996–2026 real-time vintages, Gauge B fires in 2001, in March 2008 (six months before Lehman), in 2020 and briefly in 2024. It stays silent through the 2011, 2018 and 2022 bear markets. That is the distinction that matters: it separates recessions from equity drawdowns. The 2024 firing is a known false positive of the Sahm rule and is published as such rather than filtered away.</p>
+
+          <h2>What Changes in the Portfolio</h2>
+          <p>When Gauge B fires, the portfolio moves to the Critical map — defensive instruments, split into Flight-to-Quality and Stress-without-relief by the 10-year signal described in the previous chapter — and to a declared set of Critical weights that override the newsletter's macro allocation for as long as stress persists. When it stands down, the portfolio returns to the Turbulence map and to those macro percentages, in the same week, without a confirmation window.</p>
+
+          <p>The absence of a confirmation window is deliberate. Both triggers are already slow: the Sahm rule is monthly with a month of publication lag, and delinquency is quarterly with five. Adding a waiting period to an indicator that already looks backwards only delays the response. Tested at one to six months of hysteresis, it cost roughly 0.3 percentage points of annual return without improving the maximum drawdown or reducing the number of switches.</p>
+
+          <h2>What This Costs</h2>
+          <p>Over 2007–2026, running the portfolio on Gauge B changed the maximum drawdown from −23.9% to −16.4%, and turned 2008 from −13.8% into +1.5%. It also cost 0.33 percentage points of compound annual return over the whole period — almost all of it paid back in the recoveries, where 2009 returned +2.2% against +13.5%. That is the price of the insurance, and it is stated here rather than buried: a system that protects the downside and claims no cost anywhere is a system that has not been measured honestly.</p>
+
+          <p>One more number belongs here, because it is the uncomfortable one. The worst drawdown of the current system is no longer a recession — it is −16.4% in September 2022, a year in which Gauge B stayed deliberately silent. That is not a failure of the gauge: 2022 was a bear market without a recession, and separating those two things is precisely what the gauge is for. But it is the honest consequence of the choice. This system does not protect against market declines that arrive without deterioration in employment and credit.</p>
+
+          <div class="callout">
+            <div class="callout-label">What Gauge A is still for</div>
+            <p>Nothing above demotes the Resilience Score. Fragility that builds over 6–18 months is the thing you can actually act on in advance — position sizing, duration, the willingness to hold illiquid risk. Gauge B tells you when to take cover; Gauge A tells you whether you should have been standing there in the first place.</p>
+          </div>
+        </div>
+        <div class="chapter-footer">
+          <button class="chapter-nav-btn" onclick="navChapter(6)">← Chapter 7</button>
           <button class="chapter-nav-btn" onclick="switchView('terminal', document.querySelector('.nav-tab'))" style="color: var(--blue); border-color: var(--blue);">
             ◉ Open Live Terminal →
           </button>
         </div>
       </article>
+
 
     </main>
   </div>
@@ -1598,15 +1714,20 @@ function switchView(view, btn) {
 // ──────────────────────────────────────────
 // SCORE → COLOR
 // ──────────────────────────────────────────
+// Limiares: vêm do data.json (bloco "rules", escrito por mrm_rules.as_dict()).
+// Estavam escritos aqui à mão, e a fronteira do laranja era 7 enquanto o motor
+// usava 8 — entre 7 e 8 o site pintava a cor de Critical enquanto o data.json e
+// a carteira continuavam em Turbulence.
+let RULES = { resilientMax: 4, criticalMin: 8 };
 function scoreColor(score) {
-  if (score <= 4) return 'green';
-  if (score <= 7) return 'orange';
+  if (score === null || score === undefined) return 'nd';
+  if (score <= RULES.resilientMax) return 'green';
+  if (score < RULES.criticalMin) return 'orange';
   return 'red';
 }
 function scoreCSSVar(score) {
-  if (score <= 4) return 'var(--green)';
-  if (score <= 7) return 'var(--orange)';
-  return 'var(--red)';
+  const c = scoreColor(score);
+  return c === 'nd' ? 'var(--text-muted)' : `var(--${c})`;
 }
 function statusClass(status) {
   const map = { stable: 'stable', caution: 'turbulence', warning: 'turbulence', critical: 'critical' };
@@ -1621,6 +1742,7 @@ async function loadData() {
     const res = await fetch('data.json');
     if (!res.ok) throw new Error('Network error');
     appData = await res.json();
+    if (appData.rules) RULES = Object.assign(RULES, appData.rules);
     renderTerminal(appData);
   } catch (e) {
     // Fallback: inline sample data for standalone demo
@@ -1793,6 +1915,38 @@ function renderChapters(data) {
 // to show, in plain terms, which of the two Critical sub-portfolios is currently
 // active — or that the rule isn't in play because the regime isn't Critical.
 // ──────────────────────────────────────────
+function initGaugeBStatus() {
+  const el = document.getElementById('gauge-b-live-status');
+  if (!el) return;
+  fetch('data.json?v=' + Date.now())
+    .then(r => r.json())
+    .then(d => {
+      const sg = d.stressGauge;
+      if (!sg) { el.innerHTML = ''; return; }
+      const t = sg.triggers || {};
+      const fmt = (o, unit) => (o && o.value !== null && o.value !== undefined)
+        ? `${o.value > 0 ? '+' : ''}${o.value}${unit} (fires at \u2265 ${o.threshold}${unit})` : 'n/d';
+      const on = sg.active === true, nd = sg.active === null || sg.active === undefined;
+      const cls = nd ? '' : (on ? 'red' : 'green');
+      const label = nd ? '\u25ce Live Status — Gauge B n/d'
+                       : (on ? `\u26a1 Live Status — ${sg.label || 'Stress ON'}` : '\u2713 Live Status — Stress OFF');
+      const lede = nd
+        ? 'Both triggers were unavailable on the last run. The previous state is retained — no assumption of calm is made.'
+        : (on ? 'Concurrent stress is confirmed. The portfolio is on the Critical map.'
+              : 'Neither trigger is active. The portfolio is on the Turbulence map.');
+      el.innerHTML = `
+        <div class="callout ${cls}">
+          <div class="callout-label">${label}</div>
+          <p>${lede}</p>
+          <p style="font-family:var(--mono); font-size:11px; color:var(--text-secondary); margin-top:8px;">
+            Sahm rule (real-time): ${fmt(t.sahmRealtime, '')}<br>
+            Delinquency, 4-qtr change: ${fmt(t.delinquencyAccel, ' pp')}
+          </p>
+        </div>`;
+    })
+    .catch(() => { el.innerHTML = ''; });
+}
+
 function initSubregimeStatus() {
   const el = document.getElementById('subregime-live-status');
   if (!el) return;
@@ -1814,7 +1968,7 @@ function renderSubregimeStatus(data) {
     el.innerHTML = `
       <div class="callout" style="background:var(--bg-card); border:1px solid var(--border);">
         <div class="callout-label" style="color:var(--text-secondary);">◎ Live Status</div>
-        <p style="color:var(--text-secondary);">Not currently applicable — the live regime is <strong style="color:var(--text-primary);">${regime || 'unknown'}</strong>. This rule only governs bond selection within the Critical zone (score 8–10). The portfolio is presently using the ${regime || 'active'} ETF map described in the earlier chapters.</p>
+        <p style="color:var(--text-secondary);">Not currently applicable — the live regime is <strong style="color:var(--text-primary);">${regime || 'unknown'}</strong>. This rule only governs bond selection within the Critical zone, which Gauge B declares. The portfolio is presently using the ${regime || 'active'} ETF map described in the earlier chapters.</p>
       </div>`;
     return;
   }
@@ -2007,8 +2161,11 @@ function renderMain(data) {
   // dashboard mostrava "Critical" enquanto o data.json e a carteira continuavam
   // em Turbulence. Alinhado com o motor.
   const statusKey = score === null || score === undefined ? 'nd'
-                  : score <= 4 ? 'stable' : score < 8 ? 'turbulence' : 'critical';
-  const statusLabels = { stable: 'Resilient', turbulence: 'Turbulence', critical: 'Critical', nd: 'n/d' };
+                  : score <= RULES.resilientMax ? 'stable'
+                  : score < RULES.criticalMin ? 'turbulence' : 'critical';
+  const L = (data.rules && data.rules.regimeLabels) || {};
+  const statusLabels = { stable: L.Resilient || 'Resilient', turbulence: L.Turbulence || 'Turbulence',
+                         critical: L.Critical || 'Critical', nd: L.nd || 'n/d' };
 
   const pillarsHTML = data.pillars.map(p => {
     // Um pilar pode vir com score null (serie FRED indisponivel). Antes disto,
@@ -2019,7 +2176,12 @@ function renderMain(data) {
     // parseFloat("—") e NaN: antes disto o cartao mostrava "▼ NaN".
     const dv = parseFloat(p.delta);
     const hasDelta = Number.isFinite(dv);
-    const deltaDir = hasDelta && dv > 0 ? 'up' : 'down';
+    const deltaBasis = (data.meta && data.meta.deltaBasis) ? `Change ${data.meta.deltaBasis}` : '';
+    // A cor vem do motor (deltaDirection), nao do sinal do numero: um ERP a cair
+    // e um numero negativo mas um agravamento do pilar.
+    const dirClass = p.deltaDirection === 'worse' ? 'up'
+                   : p.deltaDirection === 'better' ? 'down' : 'flat';
+
     return `
     <div class="pillar-card status-${p.status}" title="${p.description}">
       <div class="pillar-roman">Pillar ${p.roman}</div>
@@ -2030,7 +2192,7 @@ function renderMain(data) {
       </div>
       <div class="pillar-metric">${p.metric}</div>
       <div class="pillar-value">${p.value}</div>
-      <div class="pillar-delta ${deltaDir}">${hasDelta ? (dv > 0 ? '▲ ' : '▼ ') + Math.abs(dv) : ''}</div>
+      <div class="pillar-delta ${dirClass}" title="${deltaBasis}">${hasDelta ? (dv > 0 ? '▲ ' : dv < 0 ? '▼ ' : '— ') + String(p.delta).replace(/^[+-]/, '') : ''}</div>
       <div class="pillar-desc">${p.description}</div>
     </div>`;
   }).join('');
@@ -2374,6 +2536,7 @@ function navChapter(index) {
 // ──────────────────────────────────────────
 loadData();
 initSubregimeStatus();
+initGaugeBStatus();
 
 // ──────────────────────────────────────────
 // BDC NAVIGATION
