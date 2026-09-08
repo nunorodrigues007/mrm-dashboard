@@ -78,6 +78,19 @@ for m in re.finditer(r"WILL5000PRFC", HTML):
 true("Market Cap / M2" not in re.sub(r"<!--.*?-->", "", HTML.split("// ─")[0], flags=re.S),
      "Market Cap / M2 ainda aparece no corpo da pagina")
 
+# ── o data.json e sempre lido fresco, nunca do cache do browser ─────────────
+# Uma pagina aberta minutos depois de uma publicacao mostrava os numeros
+# anteriores sem o dizer. Desde que a Academia le as bandas do data.json, um
+# ficheiro velho o suficiente para nao as ter deixa os capitulos em branco.
+true("fetch('data.json', { cache: 'no-store' })" in HTML,
+     "o data.json tem de ser lido com cache: 'no-store'")
+true(re.search(r"fetch\('data\.json'\)\s*[;)]", HTML) is None,
+     "ficou um fetch do data.json sem instrucao de cache")
+
+# ── sem bandas, o capitulo explica-se em vez de ficar a carregar ────────────
+true("The scoring bands are published in data.json and this page could not read them" in HTML,
+     "falta o estado degradado para um data.json sem bandas")
+
 # ── o fallback de dados inventados foi removido ──────────────────────────────
 true("getSampleData" not in HTML, "o fallback de dados inventados voltou")
 true("globalResilienceScore: 6.4" not in HTML, "o score inventado voltou ao HTML")

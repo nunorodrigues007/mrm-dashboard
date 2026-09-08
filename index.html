@@ -1572,7 +1572,12 @@ function statusClass(status) {
 // ──────────────────────────────────────────
 async function loadData() {
   try {
-    const res = await fetch('data.json');
+    // 'no-store' obriga a ir buscar a publicacao actual em vez da copia
+    // guardada pelo browser. Antes disto, uma pagina aberta minutos depois de
+    // uma publicacao mostrava os numeros anteriores sem o dizer — e desde que a
+    // Academia passou a ler as bandas do data.json, um ficheiro velho o
+    // suficiente para nao as ter deixava os capitulos em branco.
+    const res = await fetch('data.json', { cache: 'no-store' });
     if (!res.ok) throw new Error('Network error');
     appData = await res.json();
     if (appData.rules) RULES = Object.assign(RULES, appData.rules);
@@ -1783,6 +1788,27 @@ function renderPillarScoring(data) {
   const order = (RULES && RULES.pillarOrder) || Object.keys(scoring);
   const pillars = {};
   (data.pillars || []).forEach(p => { pillars[p.id] = p; });
+
+  // As bandas vem do data.json. Um data.json anterior a esta versao nao as
+  // traz, e sem elas nao ha tabela nem frase para desenhar. O capitulo diz
+  // isso: uma casca a dizer "Loading" para sempre e uma falha silenciosa, que
+  // e exactamente o que esta alteracao veio eliminar.
+  if (!Object.keys(scoring).length) {
+    ['cycle', 'liquidity', 'premium', 'solvency', 'debt'].forEach(id => {
+      const tb = document.getElementById('table-' + id);
+      if (tb) tb.style.display = 'none';
+      const note = document.getElementById('note-' + id);
+      if (note) note.textContent = '';
+      const label = document.getElementById('callout-label-' + id);
+      if (label) label.textContent = '\u25ce Current Reading — unavailable';
+      const txt = document.getElementById('text-' + id);
+      if (txt) txt.textContent =
+        'The scoring bands are published in data.json and this page could not read them. ' +
+        'The chapter above still describes the method; the table and the live reading are ' +
+        'absent rather than approximated.';
+    });
+    return;
+  }
 
   order.forEach(id => {
     const spec = scoring[id];
