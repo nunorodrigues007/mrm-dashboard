@@ -1,6 +1,6 @@
 {
   "meta": {
-    "lastUpdated": "2026-09-08T11:13:17Z",
+    "lastUpdated": "2026-09-08T11:49:41Z",
     "source": "FRED API (Live)",
     "version": "3.0.0",
     "fredSeriesDates": {
@@ -118,7 +118,464 @@
         0.0,
         20.0
       ]
-    }
+    },
+    "pillarOrder": [
+      "cycle",
+      "liquidity",
+      "premium",
+      "solvency",
+      "debt"
+    ],
+    "pillarScoring": {
+      "cycle": {
+        "id": "cycle",
+        "coreQuestion": "Where are we in the credit cycle?",
+        "roman": "I",
+        "name": "Cycle",
+        "metric": "10Y\u20132Y Yield Curve",
+        "shortMetric": "10Y\u20132Y spread",
+        "unit": "%",
+        "digits": 2,
+        "signed": true,
+        "fredSeries": "T10Y2Y",
+        "weight": 0.2,
+        "scoredOn": "value",
+        "scoredOnLabel": "the spread itself, in percentage points",
+        "edges": "hi_exclusive",
+        "worseWhen": "lower",
+        "rangeHeader": "10Y\u20132Y Spread",
+        "contextHeader": "Historical Reference",
+        "bands": [
+          {
+            "lo": null,
+            "hi": -0.75,
+            "score": 9.5,
+            "label": "Deeply inverted",
+            "context": "2000, 2006\u201307, 2023",
+            "reading": "Peak monetary tightening. Credit contraction has historically followed within 6\u201318 months."
+          },
+          {
+            "lo": -0.75,
+            "hi": -0.5,
+            "score": 8.5,
+            "label": "Inverted",
+            "context": "2019, mid-2022",
+            "reading": "Inversion established. Bank net interest margins compressed; lending incentive falling."
+          },
+          {
+            "lo": -0.5,
+            "hi": -0.25,
+            "score": 7.5,
+            "label": "Moderately inverted",
+            "context": "1998, 2005",
+            "reading": "Cycle peak probability elevated. Credit still flowing, but on worsening terms."
+          },
+          {
+            "lo": -0.25,
+            "hi": 0.0,
+            "score": 6.5,
+            "label": "Marginally inverted",
+            "context": "The entry and exit of every inversion",
+            "reading": "The curve sits on the boundary. Direction matters more than level here."
+          },
+          {
+            "lo": 0.0,
+            "hi": 0.5,
+            "score": 5.5,
+            "label": "Normalizing",
+            "context": "2007\u201308, 2024\u201325",
+            "reading": "Post-inversion steepening \u2014 historically the phase immediately preceding recession onset, not an all-clear."
+          },
+          {
+            "lo": 0.5,
+            "hi": 0.75,
+            "score": 4.5,
+            "label": "Late normalization",
+            "context": "2008, 2020",
+            "reading": "Steepening well under way, usually because the front end is being cut into weakness."
+          },
+          {
+            "lo": 0.75,
+            "hi": 1.25,
+            "score": 3.5,
+            "label": "Normal",
+            "context": "2017\u20132018",
+            "reading": "Mid-cycle expansion. Credit conditions supportive."
+          },
+          {
+            "lo": 1.25,
+            "hi": 2.0,
+            "score": 2.5,
+            "label": "Comfortably positive",
+            "context": "2004, 2014",
+            "reading": "Expansion with a healthy term premium. Banks well compensated for maturity transformation."
+          },
+          {
+            "lo": 2.0,
+            "hi": null,
+            "score": 1.5,
+            "label": "Steep",
+            "context": "1992, 2010\u20132013",
+            "reading": "Early-cycle recovery. Maximum credit incentive for banks."
+          }
+        ]
+      },
+      "liquidity": {
+        "id": "liquidity",
+        "coreQuestion": "How large are equity claims against the economy that services them?",
+        "roman": "II",
+        "name": "Liquidity",
+        "metric": "Buffett Indicator (Total Equities / GDP)",
+        "shortMetric": "Buffett Indicator",
+        "unit": "%",
+        "digits": 1,
+        "signed": false,
+        "fredSeries": "NCBEILQ027S + FBCELLQ027S + GDP",
+        "weight": 0.2,
+        "scoredOn": "percentile",
+        "scoredOnLabel": "the percentile rank of the ratio against its own history since 1945",
+        "edges": "lo_exclusive",
+        "worseWhen": "higher",
+        "rangeHeader": "Percentile Rank",
+        "contextHeader": "Historical Reference",
+        "bands": [
+          {
+            "lo": null,
+            "hi": 20,
+            "score": 1.5,
+            "label": "Bottom quintile",
+            "context": "1974\u20131982, 2009",
+            "reading": "Equity capitalisation deeply depressed relative to output. Historically the best entry conditions on record."
+          },
+          {
+            "lo": 20,
+            "hi": 35,
+            "score": 3.0,
+            "label": "Well below average",
+            "context": "Early 1990s, 2011",
+            "reading": "Valuations undemanding against the size of the economy."
+          },
+          {
+            "lo": 35,
+            "hi": 50,
+            "score": 4.0,
+            "label": "Below median",
+            "context": "1994, 2016",
+            "reading": "Normal. Equity claims broadly proportionate to output."
+          },
+          {
+            "lo": 50,
+            "hi": 65,
+            "score": 5.5,
+            "label": "Above median",
+            "context": "1997, 2005",
+            "reading": "Beginning to run ahead of the real economy. Sensitivity to earnings disappointment rising."
+          },
+          {
+            "lo": 65,
+            "hi": 80,
+            "score": 6.5,
+            "label": "Elevated",
+            "context": "1998, 2006, 2017",
+            "reading": "Late-cycle territory. Returns increasingly dependent on multiple expansion rather than output growth."
+          },
+          {
+            "lo": 80,
+            "hi": 90,
+            "score": 7.5,
+            "label": "High",
+            "context": "1999, 2019",
+            "reading": "The claim on output is large enough that a normal recession implies a large repricing."
+          },
+          {
+            "lo": 90,
+            "hi": 95,
+            "score": 8.5,
+            "label": "Very high",
+            "context": "2000, 2020",
+            "reading": "Only the extremes of the record sit above here. Fragile to any liquidity withdrawal."
+          },
+          {
+            "lo": 95,
+            "hi": null,
+            "score": 9.5,
+            "label": "Extreme",
+            "context": "1999\u20132000 peak, 2021, present",
+            "reading": "Top 5% of eighty years of history. Every prior visit to this band was followed by a major drawdown."
+          }
+        ]
+      },
+      "premium": {
+        "id": "premium",
+        "coreQuestion": "Are investors being compensated for taking equity risk?",
+        "roman": "II",
+        "name": "Premium",
+        "metric": "Equity Risk Premium",
+        "shortMetric": "ERP",
+        "unit": "%",
+        "digits": 2,
+        "signed": false,
+        "fredSeries": "DGS10",
+        "weight": 0.25,
+        "scoredOn": "value",
+        "scoredOnLabel": "E/P minus the 10-year Treasury yield, in percentage points",
+        "edges": "hi_exclusive",
+        "worseWhen": "lower",
+        "rangeHeader": "ERP Level",
+        "contextHeader": "Interpretation",
+        "sentinelThreshold": 0.8,
+        "bands": [
+          {
+            "lo": null,
+            "hi": 0.0,
+            "score": 10.0,
+            "label": "Negative",
+            "context": "Equities yield less than the 10-year Treasury",
+            "reading": "No compensation whatsoever for holding equity risk. The bond is the higher-yielding asset."
+          },
+          {
+            "lo": 0.0,
+            "hi": 0.5,
+            "score": 9.0,
+            "label": "Critically compressed",
+            "context": "1999\u20132000, 2018 briefly",
+            "reading": "Effective risk parity with Treasuries. Sentinel alert active."
+          },
+          {
+            "lo": 0.5,
+            "hi": 0.8,
+            "score": 8.0,
+            "label": "Below the Sentinel threshold",
+            "context": "2021",
+            "reading": "Inside the Red Alert band. Any rate or earnings shock lands on no cushion."
+          },
+          {
+            "lo": 0.8,
+            "hi": 1.2,
+            "score": 7.0,
+            "label": "Compressed",
+            "context": "2007, 2018",
+            "reading": "Above the alert line but with little margin. Risk/return trade-off deteriorating."
+          },
+          {
+            "lo": 1.2,
+            "hi": 2.0,
+            "score": 5.5,
+            "label": "Thin",
+            "context": "2004\u20132006",
+            "reading": "Compensation present but slim. Sensitive to rate moves."
+          },
+          {
+            "lo": 2.0,
+            "hi": 3.0,
+            "score": 4.0,
+            "label": "Adequate",
+            "context": "2014\u20132017 range",
+            "reading": "Normal market functioning. Equities paid for their risk."
+          },
+          {
+            "lo": 3.0,
+            "hi": 4.0,
+            "score": 2.5,
+            "label": "Comfortable",
+            "context": "2012\u20132013",
+            "reading": "Equities clearly favoured over bonds on a forward basis."
+          },
+          {
+            "lo": 4.0,
+            "hi": null,
+            "score": 1.5,
+            "label": "Wide",
+            "context": "2009\u20132011",
+            "reading": "Deeply attractive against bonds. Large margin of safety."
+          }
+        ]
+      },
+      "solvency": {
+        "id": "solvency",
+        "coreQuestion": "Is the banking system functionally sound?",
+        "roman": "III",
+        "name": "Solvency",
+        "metric": "Bank Delinquency Rate",
+        "shortMetric": "delinquency rate",
+        "unit": "%",
+        "digits": 2,
+        "signed": false,
+        "fredSeries": "DRALACBN",
+        "weight": 0.15,
+        "scoredOn": "value",
+        "scoredOnLabel": "the share of all bank loans 30+ days past due",
+        "edges": "lo_exclusive",
+        "worseWhen": "higher",
+        "rangeHeader": "Delinquency Rate",
+        "contextHeader": "Historical Reference",
+        "bands": [
+          {
+            "lo": null,
+            "hi": 1.0,
+            "score": 1.5,
+            "label": "Very low",
+            "context": "2022\u20132023 trough",
+            "reading": "Loan books performing better than at any point in the series."
+          },
+          {
+            "lo": 1.0,
+            "hi": 1.5,
+            "score": 2.5,
+            "label": "Low",
+            "context": "2016\u20132019",
+            "reading": "Excellent credit quality. Banking plumbing unobstructed."
+          },
+          {
+            "lo": 1.5,
+            "hi": 2.0,
+            "score": 3.5,
+            "label": "Long-run normal, lower half",
+            "context": "2014\u20132015",
+            "reading": "Normal. Losses within the range banks provision for as a matter of course."
+          },
+          {
+            "lo": 2.0,
+            "hi": 2.5,
+            "score": 4.5,
+            "label": "Long-run normal, upper half",
+            "context": "1997\u20132000, 2005",
+            "reading": "Still normal, but the direction of travel starts to matter."
+          },
+          {
+            "lo": 2.5,
+            "hi": 3.0,
+            "score": 5.5,
+            "label": "Elevated",
+            "context": "2002, 2020 spike",
+            "reading": "Credit quality deteriorating. Acceleration is the signal, not the level."
+          },
+          {
+            "lo": 3.0,
+            "hi": 4.0,
+            "score": 6.5,
+            "label": "Deteriorating",
+            "context": "2003, early 2009",
+            "reading": "Provisioning rising fast enough to constrain new lending."
+          },
+          {
+            "lo": 4.0,
+            "hi": 5.0,
+            "score": 8.0,
+            "label": "Severe",
+            "context": "2009",
+            "reading": "Balance-sheet repair displaces credit extension. Systemic stress."
+          },
+          {
+            "lo": 5.0,
+            "hi": null,
+            "score": 9.5,
+            "label": "Systemic",
+            "context": "2009\u20132011 peak, near 5.0%",
+            "reading": "Government intervention has historically been required from here."
+          }
+        ]
+      },
+      "debt": {
+        "id": "debt",
+        "coreQuestion": "Can households service their obligations?",
+        "roman": "III",
+        "name": "Debt",
+        "metric": "Household DSR",
+        "shortMetric": "household debt service ratio",
+        "unit": "%",
+        "digits": 2,
+        "signed": false,
+        "fredSeries": "TDSP",
+        "weight": 0.2,
+        "scoredOn": "value",
+        "scoredOnLabel": "debt payments as a share of disposable personal income",
+        "edges": "lo_exclusive",
+        "worseWhen": "higher",
+        "rangeHeader": "DSR Level",
+        "contextHeader": "Historical Reference",
+        "bands": [
+          {
+            "lo": null,
+            "hi": 10.0,
+            "score": 2.0,
+            "label": "Low",
+            "context": "2020\u20132021 pandemic lows",
+            "reading": "Ample disposable income after debt service. Consumer can absorb an income shock."
+          },
+          {
+            "lo": 10.0,
+            "hi": 10.5,
+            "score": 3.5,
+            "label": "Healthy",
+            "context": "2012\u20132016 recovery",
+            "reading": "Balance sheets well positioned."
+          },
+          {
+            "lo": 10.5,
+            "hi": 11.0,
+            "score": 4.5,
+            "label": "Normal",
+            "context": "2017\u20132018",
+            "reading": "Within the post-crisis range. No constraint on consumption."
+          },
+          {
+            "lo": 11.0,
+            "hi": 11.5,
+            "score": 5.5,
+            "label": "Elevated",
+            "context": "2019, 2024\u201325",
+            "reading": "Sensitivity to income shocks rising. Marginal consumption starts to depend on credit."
+          },
+          {
+            "lo": 11.5,
+            "hi": 12.0,
+            "score": 6.5,
+            "label": "High",
+            "context": "2001, 2019 peak",
+            "reading": "Debt service claims enough income that a labour market wobble transmits quickly to spending."
+          },
+          {
+            "lo": 12.0,
+            "hi": 12.5,
+            "score": 7.5,
+            "label": "Approaching the critical band",
+            "context": "2005\u20132006",
+            "reading": "The last two visits to this level preceded consumer-led downturns."
+          },
+          {
+            "lo": 12.5,
+            "hi": 13.0,
+            "score": 8.5,
+            "label": "Critical",
+            "context": "2006\u20132008",
+            "reading": "Household cash flow severely constrained. Recession amplifier."
+          },
+          {
+            "lo": 13.0,
+            "hi": null,
+            "score": 9.5,
+            "label": "Peak-2007 territory",
+            "context": "2007\u20132009, peaked near 13.2%",
+            "reading": "Deleveraging becomes involuntary. Consumption contracts regardless of policy."
+          }
+        ]
+      }
+    },
+    "pillarStatusBands": [
+      [
+        4.0,
+        "stable"
+      ],
+      [
+        6.0,
+        "caution"
+      ],
+      [
+        7.5,
+        "warning"
+      ]
+    ]
   },
   "globalResilienceScore": 6.97,
   "status": "Turbulence",
@@ -146,19 +603,30 @@
         "note": "4-quarter change. Threshold = 90th percentile of its own history since 1987."
       }
     },
-    "computedAt": "2026-09-08T11:13:17Z"
+    "computedAt": "2026-09-08T11:49:40Z"
   },
   "pillars": [
     {
       "id": "cycle",
       "roman": "I",
       "name": "Cycle",
-      "score": 5.5,
-      "metric": "10Y-2Y Yield Curve",
-      "value": "+0.41%",
+      "metric": "10Y\u20132Y Yield Curve",
       "fredSeries": "T10Y2Y",
+      "score": 5.5,
+      "value": "+0.41%",
       "trend": "steepening",
       "metricValue": 0.41,
+      "band": {
+        "lo": 0.0,
+        "hi": 0.5,
+        "score": 5.5,
+        "label": "Normalizing",
+        "context": "2007\u201308, 2024\u201325",
+        "reading": "Post-inversion steepening \u2014 historically the phase immediately preceding recession onset, not an all-clear."
+      },
+      "scoredValue": 0.41,
+      "nextBandEdge": 0.0,
+      "distanceToNextBand": 0.41,
       "delta": "\u2014",
       "deltaDirection": null,
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
@@ -168,12 +636,23 @@
       "id": "liquidity",
       "roman": "II",
       "name": "Liquidity",
-      "score": 9.5,
       "metric": "Buffett Indicator (Total Equities / GDP)",
-      "value": "288.3%",
       "fredSeries": "NCBEILQ027S + FBCELLQ027S + GDP",
+      "score": 9.5,
+      "value": "288.3%",
       "trend": "elevated",
       "metricValue": 288.3,
+      "band": {
+        "lo": 95,
+        "hi": null,
+        "score": 9.5,
+        "label": "Extreme",
+        "context": "1999\u20132000 peak, 2021, present",
+        "reading": "Top 5% of eighty years of history. Every prior visit to this band was followed by a major drawdown."
+      },
+      "scoredValue": 99.3,
+      "nextBandEdge": null,
+      "distanceToNextBand": null,
       "delta": "\u2014",
       "deltaDirection": null,
       "m2YoyGrowthPct": 5.41,
@@ -185,10 +664,10 @@
       "id": "premium",
       "roman": "II",
       "name": "Premium",
-      "score": 10.0,
       "metric": "Equity Risk Premium",
-      "value": "-0.95%",
       "fredSeries": "DGS10",
+      "score": 10.0,
+      "value": "-0.95%",
       "epEstimated": true,
       "epValue": 3.82,
       "epAsOf": "2026-08-31",
@@ -206,6 +685,17 @@
       },
       "trend": "compressed",
       "metricValue": -0.95,
+      "band": {
+        "lo": null,
+        "hi": 0.0,
+        "score": 10.0,
+        "label": "Negative",
+        "context": "Equities yield less than the 10-year Treasury",
+        "reading": "No compensation whatsoever for holding equity risk. The bond is the higher-yielding asset."
+      },
+      "scoredValue": -0.95,
+      "nextBandEdge": null,
+      "distanceToNextBand": null,
       "delta": "\u2014",
       "deltaDirection": null,
       "description": "ERP = E/P (3.82%) minus the 10Y yield (4.77%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
@@ -215,12 +705,23 @@
       "id": "solvency",
       "roman": "III",
       "name": "Solvency",
-      "score": 2.5,
       "metric": "Bank Delinquency Rate",
-      "value": "1.4%",
       "fredSeries": "DRALACBN",
+      "score": 2.5,
+      "value": "1.4%",
       "trend": "stable",
       "metricValue": 1.38,
+      "band": {
+        "lo": 1.0,
+        "hi": 1.5,
+        "score": 2.5,
+        "label": "Low",
+        "context": "2016\u20132019",
+        "reading": "Excellent credit quality. Banking plumbing unobstructed."
+      },
+      "scoredValue": 1.38,
+      "nextBandEdge": 1.5,
+      "distanceToNextBand": 0.12,
       "delta": "\u2014",
       "deltaDirection": null,
       "description": "FRED DRALACBN delinquency rate at 1.38%. Systemic banking plumbing functioning normally.",
@@ -230,12 +731,23 @@
       "id": "debt",
       "roman": "III",
       "name": "Debt",
-      "score": 5.5,
       "metric": "Household DSR",
-      "value": "11.2%",
       "fredSeries": "TDSP",
+      "score": 5.5,
+      "value": "11.2%",
       "trend": "rising",
       "metricValue": 11.164138,
+      "band": {
+        "lo": 11.0,
+        "hi": 11.5,
+        "score": 5.5,
+        "label": "Elevated",
+        "context": "2019, 2024\u201325",
+        "reading": "Sensitivity to income shocks rising. Marginal consumption starts to depend on credit."
+      },
+      "scoredValue": 11.164138,
+      "nextBandEdge": 11.5,
+      "distanceToNextBand": 0.3359,
       "delta": "\u2014",
       "deltaDirection": null,
       "description": "Household debt service ratio at 11.2%. Consumer balance sheet strain increasing.",
