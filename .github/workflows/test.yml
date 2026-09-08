@@ -15,7 +15,17 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
+      - name: Regras canónicas (sem rede)
+        run: python tests/test_rules.py
       - name: Teste de integração do fetch_data.py (sem rede)
         run: python tests/test_build_data.py
       - name: Testes do update_portfolio.py (sem rede)
         run: python tests/test_update_portfolio.py
+      - name: Testes do send_newsletter.py (sem rede)
+        run: python tests/test_newsletter.py
+      - name: Corrida completa do gerador da newsletter (sem rede)
+        run: python tests/test_newsletter_main.py
+      - name: Cadeia completa, calma e sob stress (sem rede)
+        run: python tests/test_end_to_end.py
+      - name: Backtest 2007-2026 — números publicados (sem rede)
+        run: python tests/test_backtest.py
