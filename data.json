@@ -1,6 +1,6 @@
 {
   "meta": {
-    "lastUpdated": "2026-09-08T10:43:34Z",
+    "lastUpdated": "2026-09-08T11:13:17Z",
     "source": "FRED API (Live)",
     "version": "3.0.0",
     "fredSeriesDates": {
@@ -146,7 +146,7 @@
         "note": "4-quarter change. Threshold = 90th percentile of its own history since 1987."
       }
     },
-    "computedAt": "2026-09-08T10:43:34Z"
+    "computedAt": "2026-09-08T11:13:17Z"
   },
   "pillars": [
     {
@@ -187,16 +187,28 @@
       "name": "Premium",
       "score": 10.0,
       "metric": "Equity Risk Premium",
-      "value": "-0.93%",
+      "value": "-0.95%",
       "fredSeries": "DGS10",
       "epEstimated": true,
-      "epValue": 3.84,
+      "epValue": 3.82,
       "epAsOf": "2026-08-31",
+      "epAnchor": {
+        "refYieldPct": 3.84,
+        "refDate": "2026-08-31",
+        "indexRef": 7686.14,
+        "indexNow": 7718.6,
+        "indexNowDate": "2026-09-04",
+        "basis": "earnings held from the reference date, price marked to the latest close",
+        "indexRefDate": "2026-08-31",
+        "earningsPerIndexUnit": 295.15,
+        "ageDays": 8,
+        "stale": false
+      },
       "trend": "compressed",
-      "metricValue": -0.93,
+      "metricValue": -0.95,
       "delta": "\u2014",
       "deltaDirection": null,
-      "description": "ERP = estimated E/P (3.84%, as of 2026-08-31) minus the 10Y yield (4.77%). The E/P is a manually maintained constant, not a live measurement \u2014 this pillar moves only with the 10Y.",
+      "description": "ERP = E/P (3.82%) minus the 10Y yield (4.77%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
       "status": "critical"
     },
     {
@@ -250,16 +262,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -0.93,
+      "value": -0.95,
       "unit": "%",
-      "displayValue": "-0.93%",
+      "displayValue": "-0.95%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
       "delta": "\u2014",
       "alert": true,
-      "description": "ERP at -0.93%. Red alert triggers below 0.80%."
+      "description": "ERP at -0.95%. Red alert triggers below 0.80%."
     },
     {
       "id": "unemployment",
