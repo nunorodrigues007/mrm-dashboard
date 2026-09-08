@@ -1228,7 +1228,13 @@
           <h2>The Sentinel Connection</h2>
           <p>The ERP serves dual duty in the US MRM framework: it is both a Pillar score component (Premium, Pillar II) and one of two primary Sentinel triggers. This reflects its disproportionate importance as a cross-market signal: ERP compression affects not only equity allocation decisions but also credit spreads, leverage ratios, and risk appetite across asset classes. When ERP breaches the 0.80% threshold, the framework upgrades the overall system status regardless of Pillar composite scores.</p>
 
-          <p>The FRED series <span class="fred-tag">DGS10</span> provides the risk-free rate component. The earnings yield is derived from S&P 500 trailing twelve-month earnings and current price levels, typically sourced from data providers including Bloomberg or S&P Global.</p>
+          <p>The FRED series <span class="fred-tag">DGS10</span> provides the risk-free rate component. The earnings yield combines two things that move on very different clocks: aggregate earnings, which change once a quarter when results are reported, and price, which changes every day.</p>
+
+          <p>This framework treats them accordingly. Aggregate earnings are set by hand from a dated reference — the E/P observed on a stated day — and held until the next quarterly update. Price is marked daily from the FRED series <span class="fred-tag">SP500</span>. The published E/P is therefore <em>earnings from the reference date, divided by today's close</em>, and the reference date and its age travel with the data.</p>
+
+          <p>The distinction matters more than it sounds. Until September 2026 the E/P itself was held constant, which meant this pillar moved only with the 10-Year: a 20% market decline would have raised the true earnings yield by a quarter, opening the risk premium, and the reading would not have moved at all. That is a poor property in any pillar, and a serious one here — Premium is among the three that are supposed to improve in a downturn.</p>
+
+          <p>The remaining limitation is the mirror image, and is stated rather than hidden: between quarterly updates earnings are frozen, so in a recession where profits are falling the earnings yield is overstated. The reference carries an expiry — past 100 days the data declares itself stale, and past 180 the build fails rather than publishing a number nobody has checked.</p>
         </div>
         <div class="chapter-footer">
           <button class="chapter-nav-btn" onclick="navChapter(2)">← Chapter 3</button>
@@ -1654,7 +1660,7 @@
           <p>The absence of a confirmation window is deliberate. Both triggers are already slow: the Sahm rule is monthly with a month of publication lag, and delinquency is quarterly with five. Adding a waiting period to an indicator that already looks backwards only delays the response. Tested at one to six months of hysteresis, it cost roughly 0.3 percentage points of annual return without improving the maximum drawdown or reducing the number of switches.</p>
 
           <h2>What This Costs</h2>
-          <p>Over 2007–2026, running the portfolio on Gauge B changed the maximum drawdown from −23.9% to −16.4%, and turned 2008 from −13.8% into +1.5%. It also cost 0.33 percentage points of compound annual return over the whole period — almost all of it paid back in the recoveries, where 2009 returned +2.2% against +13.5%. That is the price of the insurance, and it is stated here rather than buried: a system that protects the downside and claims no cost anywhere is a system that has not been measured honestly.</p>
+          <p>Over 2007–2026, running the portfolio on Gauge B changed the maximum drawdown from −23.9% to −16.4%, and turned 2008 from −13.8% into +1.5%. It also cost 0.36 percentage points of compound annual return over the whole period — almost all of it paid back in the recoveries, where 2009 returned +2.2% against +13.5%. That is the price of the insurance, and it is stated here rather than buried: a system that protects the downside and claims no cost anywhere is a system that has not been measured honestly.</p>
 
           <p>One more number belongs here, because it is the uncomfortable one. The worst drawdown of the current system is no longer a recession — it is −16.4% in September 2022, a year in which Gauge B stayed deliberately silent. That is not a failure of the gauge: 2022 was a bear market without a recession, and separating those two things is precisely what the gauge is for. But it is the honest consequence of the choice. This system does not protect against market declines that arrive without deterioration in employment and credit.</p>
 

@@ -19,7 +19,7 @@ def run(sahm_thr, npl_thr, ftq_bp):
     m0=fb.MONTHS[0]; regime, subregime="Turbulence", None
     sh=fb.rebalance(10000.0, regime, subregime, m0); ser=[(m0,10000.0)]; low=0; n_on=0
     for m in fb.MONTHS[1:]:
-        v=fb.value(sh,m); score=fb.S[m]["score_frozen"]; stress=gauge_b(m)
+        v=fb.value(sh,m); score=fb.S[m][fb.V2_SCORE_KEY]; stress=gauge_b(m)
         if stress: n_on+=1
         want=rules.classify_regime(score, stress, regime)
         want_sub=None

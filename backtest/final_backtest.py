@@ -118,6 +118,15 @@ def is_semestral(m):
     return m[5:7] in ("01", "06")
 
 # ── v2: o sistema tal como esta em producao ─────────────────────────────────
+# O v2 usa o score com E/P marcado a mercado (`score_real`) porque e isso que a
+# producao passou a fazer em Set 2026: os earnings ficam ancorados numa referencia
+# trimestral e o preco e marcado ao fecho diario. O v1 usa `score_frozen`, o E/P
+# congelado do sistema anterior. A comparacao e, por isso, antes contra depois —
+# incluindo esta diferenca, e nao apesar dela.
+V2_SCORE_KEY = "score_real"
+V1_SCORE_KEY = "score_frozen"
+
+
 def run_v2():
     m0 = MONTHS[0]
     regime, subregime = "Turbulence", None
@@ -125,7 +134,7 @@ def run_v2():
     ser = [(m0, 10000.0)]; log = []; low_streak = 0
     for m in MONTHS[1:]:
         v = value(sh, m)
-        score = S[m]["score_frozen"]
+        score = S[m][V2_SCORE_KEY]
         stress = gauge_b(m)
         want = rules.classify_regime(score, stress, regime)
 
@@ -155,7 +164,7 @@ def run_v1():
     ser = [(m0, 10000.0)]; pend = None; streak = 0
     for m in MONTHS[1:]:
         v = value(sh, m)
-        want = S[m]["regime_frozen"]
+        want = S[m]["regime_" + V1_SCORE_KEY.split("_")[1]]
         if want != cur:
             streak = streak + 1 if want == pend else 1; pend = want
         else:
