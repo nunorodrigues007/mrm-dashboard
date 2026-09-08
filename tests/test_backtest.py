@@ -39,11 +39,11 @@ eq(len(fb.MONTHS), 235, "periodo de 235 meses (2007-02 a 2026-08)")
 # ── os numeros publicados na Academia e no relatorio ────────────────────────
 close(s1["cagr"] * 100, 6.93, 0.05, "v1 CAGR")
 close(s1["mdd"] * 100, -23.9, 0.1, "v1 quebra maxima")
-close(s2["cagr"] * 100, 6.60, 0.05, "v2 CAGR")
+close(s2["cagr"] * 100, 6.57, 0.05, "v2 CAGR")
 close(s2["mdd"] * 100, -16.4, 0.1, "v2 quebra maxima")
-close(s2["sortino"], 0.911, 0.01, "v2 Sortino")
-close(s2["sharpe"], 0.681, 0.01, "v2 Sharpe")
-close((s1["cagr"] - s2["cagr"]) * 100, 0.33, 0.05, "custo do seguro em pp de CAGR")
+close(s2["sortino"], 0.910, 0.01, "v2 Sortino")
+close(s2["sharpe"], 0.683, 0.01, "v2 Sharpe")
+close((s1["cagr"] - s2["cagr"]) * 100, 0.36, 0.05, "custo do seguro em pp de CAGR")
 
 y = lambda d, a, b: (d[b] / d[a] - 1) * 100
 close(y(d1, "2007-12", "2008-12"), -13.8, 0.2, "2008 no sistema anterior")
@@ -66,7 +66,10 @@ ok += 1
 reasons = [t.split("[")[1].rstrip("]") for _, t in log]
 eq(reasons.count("stress_on"), 3, "tres entradas em stress (2008, 2020, 2024)")
 eq(reasons.count("stress_off"), 3, "tres saidas de stress")
-eq(reasons.count("resilient_off"), 1, "uma saida de Resilient — a que faltava ao motor")
+# Com o E/P marcado a mercado o score nunca desce a 4,0 nesta amostra, por isso o
+# episodio Resilient de 2021 desaparece. A regra continua testada em test_rules.py.
+eq(reasons.count("resilient_off"), 0, "sem episodio Resilient com o E/P a mercado")
+eq(len(log), 15, "quinze mudancas de estado")
 assert all(r.startswith("critical_subregime_switch") or r in
            ("stress_on", "stress_off", "resilient_off", "semestral_rebalance")
            or r.startswith("emergency_resilient") for r in reasons), "motivos conhecidos"

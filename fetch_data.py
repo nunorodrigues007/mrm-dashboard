@@ -104,6 +104,76 @@ def history_values(series_id, n=7, limit=12):
     return [(float(o["value"]), o["date"]) for o in valid]
 
 # ──────────────────────────────────────────
+# PREMIUM PILLAR — E/P ANCORADO NOS EARNINGS
+# ──────────────────────────────────────────
+# O E/P do S&P 500 era uma constante mantida a mao, e por isso o pilar Premium
+# so se movia com o 10Y. O erro nao era a constante envelhecer: era estar fixada
+# na variavel errada. O E/P tem duas partes — os earnings, que so mudam quando
+# saem resultados, uma vez por trimestre, e o preco, que muda todos os dias.
+# Fixar o E/P fixava as duas: numa queda de 20% do mercado os earnings seriam os
+# mesmos e o E/P real subiria um quarto, mas o pilar nao mexia. E este e um dos
+# tres pilares que devem melhorar numa crise.
+#
+# Passa a ancorar-se nos EARNINGS: guarda-se E = (E/P de referencia) x (indice na
+# data de referencia) e calcula-se E/P = E / indice de hoje. O indice diario vem
+# da FRED (serie SP500), que ja usamos. O input manual continua a ser o mesmo par
+# de numeros, uma vez por trimestre, mas passa a significar o que deve significar.
+#
+# Limitacao declarada, e o simetrico do erro anterior: entre actualizacoes os
+# earnings ficam congelados, pelo que numa recessao com lucros a cair o E/P fica
+# sobrestimado. Por isso ha um prazo de validade — ver EP_STALE_AFTER_DAYS.
+
+# ── A referencia manual do E/P. Actualizar uma vez por trimestre, quando saem os
+# resultados agregados: pos-se aqui o E/P observado e a data da observacao. Entre
+# actualizacoes, o preco do indice faz o resto.
+SP500_EARNINGS_YIELD = 3.84
+SP500_EARNINGS_YIELD_ASOF = "2026-08-31"
+
+EP_STALE_AFTER_DAYS = 100   # acima disto o data.json declara a referencia velha
+EP_MAX_AGE_DAYS = 180       # acima disto os testes falham — ver tests/test_build_data.py
+
+
+def earnings_yield_now(ref_yield_pct, ref_date, index_obs):
+    """(E/P de hoje em %, detalhe). Mantem os earnings da data de referencia e
+    deixa o preco mexer. Sem serie do indice devolve a referencia inalterada, com
+    o motivo declarado — nunca inventa."""
+    detail = {
+        "refYieldPct": ref_yield_pct,
+        "refDate": ref_date,
+        "indexRef": None, "indexNow": None, "indexNowDate": None,
+        "basis": "reference only — S&P 500 index series unavailable",
+    }
+    if not index_obs:
+        return ref_yield_pct, detail
+
+    # o fecho na data de referencia, ou o ultimo anterior a ela
+    at_or_before = [o for o in index_obs if o["date"] <= ref_date]
+    if not at_or_before:
+        detail["basis"] = f"reference only — no index close on or before {ref_date}"
+        return ref_yield_pct, detail
+
+    index_ref = float(at_or_before[0]["value"])
+    index_now = float(index_obs[0]["value"])
+    earnings = ref_yield_pct / 100.0 * index_ref      # earnings por unidade de indice
+    detail.update({
+        "indexRef": round(index_ref, 2),
+        "indexRefDate": at_or_before[0]["date"],
+        "indexNow": round(index_now, 2),
+        "indexNowDate": index_obs[0]["date"],
+        "earningsPerIndexUnit": round(earnings, 2),
+        "basis": "earnings held from the reference date, price marked to the latest close",
+    })
+    return round(earnings / index_now * 100.0, 2), detail
+
+
+def days_since(date_str):
+    try:
+        return (datetime.utcnow().date() - datetime.strptime(date_str, "%Y-%m-%d").date()).days
+    except Exception:
+        return None
+
+
+# ──────────────────────────────────────────
 # LIQUIDITY PILLAR — REAL BUFFETT INDICATOR
 # ──────────────────────────────────────────
 # Background: the original Liquidity pillar divided the FRED series WILL5000PRFC
@@ -393,9 +463,18 @@ def build_data():
     # constante, mas deixa de ser apresentado como medicao: passa a ter data, a ser
     # declarado como estimativa no data.json, e a exigir actualizacao manual.
     # Na pratica o ERP publicado e "constante menos 10Y" — move-se so com o 10Y.
-    SP500_EARNINGS_YIELD = 3.84            # E/P trailing do S&P 500
-    SP500_EARNINGS_YIELD_ASOF = "2026-08-31"
-    erp_val = round(SP500_EARNINGS_YIELD - dgs10_val, 2) if dgs10_val is not None else None
+    print("  📡 SP500    (indice, para marcar o E/P a mercado)...")
+    sp500_obs = fetch_fred("SP500", limit=400)          # ~18 meses de dias uteis
+    ep_now, ep_detail = earnings_yield_now(SP500_EARNINGS_YIELD, SP500_EARNINGS_YIELD_ASOF, sp500_obs)
+    ep_age = days_since(SP500_EARNINGS_YIELD_ASOF)
+    ep_stale = ep_age is not None and ep_age > EP_STALE_AFTER_DAYS
+    ep_detail["ageDays"] = ep_age
+    ep_detail["stale"] = ep_stale
+    if ep_stale:
+        print(f"  [WARN] referencia do E/P tem {ep_age} dias (limite {EP_STALE_AFTER_DAYS}) — actualizar")
+    print(f"  ✅ E/P: {ep_now}% ({ep_detail['basis']})")
+
+    erp_val = round(ep_now - dgs10_val, 2) if dgs10_val is not None else None
 
     # ── Compute Scores ──
     print("\n  📊 Computing Pillar Scores...")
@@ -418,7 +497,7 @@ def build_data():
 
     print(f"\n  ✅ Cycle:     {s_cycle} (T10Y2Y={t10y2y_val}%)")
     print(f"  ✅ Liquidity: {s_liquidity} (Buffett={f'{buffett_ratio*100:.1f}' if buffett_ratio is not None else 'N/A'}%, pctile={buffett_pct})")
-    print(f"  ✅ Premium:   {s_premium} (ERP={erp_val}%, E/P estimado {SP500_EARNINGS_YIELD}% a {SP500_EARNINGS_YIELD_ASOF})")
+    print(f"  ✅ Premium:   {s_premium} (ERP={erp_val}%, E/P {ep_now}% ancorado em {SP500_EARNINGS_YIELD}% a {SP500_EARNINGS_YIELD_ASOF})")
     print(f"  ✅ Solvency:  {s_solvency} (NPL={npl_val}%)")
     print(f"  ✅ Debt:      {s_debt} (DSR={dsr_val}%)")
     print(f"\n  🌐 GLOBAL RESILIENCE SCORE: {g_score} — {status_label(g_score)}")
@@ -569,16 +648,21 @@ def build_data():
                 "value": f"{erp_val:.2f}%" if erp_val is not None else "n/d",
                 "fredSeries": "DGS10",
                 "epEstimated": True,
-                "epValue": SP500_EARNINGS_YIELD,
+                "epValue": ep_now,
                 "epAsOf": SP500_EARNINGS_YIELD_ASOF,
+                "epAnchor": ep_detail,
                 "trend": ("compressed" if erp_val < 2.0 else "adequate") if erp_val is not None else "nd",
                 "metricValue": erp_val,
                 "delta": d_premium,
                 "deltaDirection": delta_direction("premium", s_premium, d_premium),
                 "description": (
-                    f"ERP = estimated E/P ({SP500_EARNINGS_YIELD}%, as of {SP500_EARNINGS_YIELD_ASOF}) minus the 10Y "
-                    f"yield ({f'{dgs10_val:.2f}' if dgs10_val is not None else 'n/d'}%). The E/P is a manually "
-                    f"maintained constant, not a live measurement — this pillar moves only with the 10Y."
+                    f"ERP = E/P ({ep_now}%) minus the 10Y yield "
+                    f"({f'{dgs10_val:.2f}' if dgs10_val is not None else 'n/d'}%). Earnings are held from the "
+                    f"{SP500_EARNINGS_YIELD_ASOF} reference ({SP500_EARNINGS_YIELD}% E/P) and marked to the latest "
+                    f"S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are "
+                    f"updated by hand each quarter"
+                    + (f" — this reference is {ep_detail['ageDays']} days old and due for an update."
+                       if ep_detail.get("stale") else ".")
                 ) if erp_val is not None else "ERP n/d — DGS10 unavailable this run.",
                 "status": pillar_status(s_premium)
             },

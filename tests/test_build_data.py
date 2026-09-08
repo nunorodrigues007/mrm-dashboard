@@ -30,6 +30,12 @@ OBS = {
                 {"date": "2026-06-01", "value": "4.2"}],
     "SAHMREALTIME": [{"date": "2026-08-01", "value": "-0.07"}, {"date": "2026-07-01", "value": "-0.03"},
                      {"date": "2026-06-01", "value": "0.07"}],
+    # Mesmo nivel na data de referencia e hoje: E/P fica igual a referencia, para
+    # que as ancoras acima (score 6.97, Premium 10.0) continuem a valer. O efeito
+    # do movimento do preco e testado a parte, mais abaixo.
+    "SP500":   [{"date": "2026-09-04", "value": "7670.00"},
+                {"date": "2026-08-31", "value": "7670.00"},
+                {"date": "2026-06-30", "value": "7460.00"}],
 }
 
 def fake_fetch_fred(series_id, limit=12, retries=3, backoff=5):
@@ -91,6 +97,45 @@ def main():
     check(json.dumps(data) and True, "data.json serializavel")
     check(p["premium"].get("epEstimated") is True, "Premium declarado como estimativa")
     check(p["premium"].get("epAsOf") == "2026-08-31", "Premium com data do E/P")
+
+    print("\n── E/P ancorado nos earnings ──")
+    ep = p["premium"]
+    anchor = ep.get("epAnchor", {})
+    check(ep["epValue"] == fetch_data.SP500_EARNINGS_YIELD,
+          f"indice ao nivel da referencia -> E/P igual a referencia ({ep['epValue']})")
+    check(anchor.get("indexRef") == 7670.0 and anchor.get("indexNow") == 7670.0,
+          f"o data.json declara os dois niveis do indice ({anchor.get('indexRef')}, {anchor.get('indexNow')})")
+    check(anchor.get("earningsPerIndexUnit") is not None,
+          "o data.json declara os earnings por unidade de indice")
+    check("marked to the latest close" in anchor.get("basis", ""),
+          f"a base do calculo e declarada ({anchor.get('basis')})")
+    check(anchor.get("ageDays") is not None, "a idade da referencia e publicada")
+
+    # o movimento do preco tem de mover o E/P — era isto que faltava ao pilar
+    ref, ref_date = fetch_data.SP500_EARNINGS_YIELD, fetch_data.SP500_EARNINGS_YIELD_ASOF
+    crash = [{"date": "2026-09-04", "value": "6136.00"}, {"date": ref_date, "value": "7670.00"}]
+    rally = [{"date": "2026-09-04", "value": "9204.00"}, {"date": ref_date, "value": "7670.00"}]
+    y_crash, _ = fetch_data.earnings_yield_now(ref, ref_date, crash)
+    y_rally, _ = fetch_data.earnings_yield_now(ref, ref_date, rally)
+    check(y_crash == 4.8, f"queda de 20% do indice -> E/P sobe de {ref} para {y_crash}")
+    check(y_rally == 3.2, f"subida de 20% do indice -> E/P desce de {ref} para {y_rally}")
+    check(fetch_data.score_premium(round(y_crash - 4.79, 2)) < fetch_data.score_premium(round(ref - 4.79, 2)),
+          "o pilar Premium melhora numa queda do mercado, como deve")
+
+    # sem serie do indice nao inventa: devolve a referencia e diz porque
+    y_none, d_none = fetch_data.earnings_yield_now(ref, ref_date, [])
+    check(y_none == ref and "unavailable" in d_none["basis"],
+          "sem serie do indice devolve a referencia com o motivo declarado")
+    y_old, d_old = fetch_data.earnings_yield_now(ref, "2000-01-01",
+                                                 [{"date": "2026-09-04", "value": "7670.00"}])
+    check(y_old == ref and "on or before" in d_old["basis"],
+          "referencia anterior a serie disponivel cai no mesmo caminho seguro")
+
+    # alarme duro: a referencia manual nao pode apodrecer em silencio
+    age = fetch_data.days_since(fetch_data.SP500_EARNINGS_YIELD_ASOF)
+    check(age is not None and age <= fetch_data.EP_MAX_AGE_DAYS,
+          f"a referencia do E/P tem {age} dias (limite {fetch_data.EP_MAX_AGE_DAYS}) — "
+          f"se falhar, actualizar SP500_EARNINGS_YIELD e SP500_EARNINGS_YIELD_ASOF no fetch_data.py")
 
     print("\n── regras canonicas exportadas para o front-end ──")
     import mrm_rules

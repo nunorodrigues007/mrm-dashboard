@@ -26,6 +26,14 @@ semestral.
 de Critical a sobreporem-se à alocação macro, saída imediata, e a porta assimétrica
 FTQ/Stress.
 
+Uma diferença que não é detalhe: o v1 usa o score com o **E/P congelado** e o v2 o
+score com o **E/P marcado a mercado**, porque foi isso que mudou na produção em
+Setembro de 2026 — os earnings ficam ancorados numa referência trimestral e o preço
+é marcado ao fecho diário. A comparação é antes contra depois, incluindo esta
+diferença e não apesar dela. O efeito isolado é pequeno: 6,60% contra 6,57% de CAGR,
+quebra máxima igual, 2008 igual. Muda uma coisa só — com o E/P a responder ao preço
+o score nunca desce a 4,0 nesta amostra, e o episódio Resilient de 2021 desaparece.
+
 ## Dados
 
 | Ficheiro | Conteúdo |
@@ -69,7 +77,7 @@ Período: 2007-02 a 2026-08, 235 meses.
 | | CAGR | Vol | Sharpe | Sortino | Quebra máx. | (mês) |
 |---|---|---|---|---|---|---|
 | v1 — sistema anterior | 6,93% | 8,17% | 0,671 | 0,870 | −23,9% | 2009-02 |
-| **v2 — sistema actual** | **6,60%** | **7,54%** | **0,681** | **0,911** | **−16,4%** | **2022-09** |
+| **v2 — sistema actual** | **6,57%** | **7,47%** | **0,683** | **0,910** | **−16,4%** | **2022-09** |
 | SPY buy & hold | 11,10% | 15,45% | 0,661 | 0,899 | −50,8% | 2009-02 |
 | 60/40 SPY-IEF anual | 8,39% | 9,38% | 0,742 | 0,993 | −27,3% | 2009-02 |
 
@@ -88,7 +96,7 @@ e 2024-08 a 2024-11. Ficou calado em 2011, 2018 e 2022.
 ## O que estes números dizem, e o que não dizem
 
 **O seguro funciona e tem preço.** 2008 passa de −13,8% para +1,5% e a quebra
-máxima cai de −23,9% para −16,4%. Custa 0,33 pontos percentuais de CAGR ao longo
+máxima cai de −23,9% para −16,4%. Custa 0,36 pontos percentuais de CAGR ao longo
 de dezanove anos, quase todos pagos nas recuperações: 2009 rende +2,2% contra
 +13,5%, porque a regra de Sahm continua acima do limiar muito depois de o mercado
 ter feito o fundo.
@@ -99,7 +107,7 @@ falha do medidor: 2022 foi um bear market sem recessão, e o medidor existe para
 separar as duas coisas. Mas é a consequência honesta da escolha: o sistema não
 protege contra quedas de mercado sem deterioração do emprego e do crédito.
 
-**O v2 continua a perder muito para o SPY.** 6,60% contra 11,10%, com um terço
+**O v2 continua a perder muito para o SPY.** 6,57% contra 11,10%, com um terço
 da volatilidade e menos de um terço da quebra máxima. Quem compara só o CAGR
 está a comparar coisas diferentes.
 
@@ -115,24 +123,24 @@ importa saber quão frágil é o resultado:
 
 | Sahm | ΔNPL | FTQ | CAGR | Sortino | Quebra máx. | 2008 | Meses ON |
 |---|---|---|---|---|---|---|---|
-| **0,50** | **0,81** | **−0,10** | **6,60%** | **0,911** | **−16,4%** | **+1,5%** | **48** |
-| 0,40 | 0,81 | −0,10 | 6,74% | 0,932 | −16,4% | +1,6% | 55 |
-| 0,60 | 0,81 | −0,10 | 6,69% | 0,926 | −16,4% | +1,5% | 45 |
-| 0,50 | 0,60 | −0,10 | 6,60% | 0,911 | −16,4% | +1,5% | 48 |
-| 0,50 | 1,00 | −0,10 | 6,88% | 0,959 | −16,4% | +3,5% | 43 |
-| 0,50 | 0,81 | −0,05 | 6,56% | 0,905 | −16,4% | +0,7% | 48 |
-| 0,50 | 0,81 | −0,20 | 6,29% | 0,857 | −16,4% | −3,9% | 48 |
-| só Sahm | — | −0,10 | 6,83% | 0,955 | −16,4% | +3,5% | 41 |
-| — | só ΔNPL | −0,10 | 7,12% | 1,004 | −16,4% | +1,5% | 33 |
+| **0,50** | **0,81** | **−0,10** | **6,57%** | **0,910** | **−16,4%** | **+1,5%** | **48** |
+| 0,40 | 0,81 | −0,10 | 6,71% | 0,932 | −16,4% | +1,6% | 55 |
+| 0,60 | 0,81 | −0,10 | 6,66% | 0,926 | −16,4% | +1,5% | 45 |
+| 0,50 | 0,60 | −0,10 | 6,57% | 0,910 | −16,4% | +1,5% | 48 |
+| 0,50 | 1,00 | −0,10 | 6,85% | 0,959 | −16,4% | +3,5% | 43 |
+| 0,50 | 0,81 | −0,05 | 6,53% | 0,905 | −16,4% | +0,7% | 48 |
+| 0,50 | 0,81 | −0,20 | 6,26% | 0,856 | −16,4% | −3,9% | 48 |
+| só Sahm | — | −0,10 | 6,80% | 0,955 | −16,4% | +3,5% | 41 |
+| — | só ΔNPL | −0,10 | 7,10% | 1,004 | −16,4% | +1,5% | 33 |
 
 Duas leituras honestas desta tabela.
 
 A primeira: o resultado é robusto. Em nenhuma variante a quebra máxima muda, o
-CAGR fica entre 6,29% e 7,12%, e 2008 fica entre −3,9% e +3,5% — muito acima dos
+CAGR fica entre 6,26% e 7,10%, e 2008 fica entre −3,9% e +3,5% — muito acima dos
 −13,8% do sistema anterior em qualquer configuração.
 
 A segunda: **a configuração escolhida não é a melhor desta amostra.** Usar só a
-aceleração da delinquência daria 7,12% e Sortino 1,004. Mantemos os dois gatilhos
+aceleração da delinquência daria 7,10% e Sortino 1,004. Mantemos os dois gatilhos
 na mesma. A regra de Sahm é publicada, validada por terceiros e desenhada para
 sobreviver a revisões; o limiar da delinquência é nosso, tirado dos mesmos dados.
 Escolher o que ganha nesta amostra é exactamente o exercício de sobreajuste que o
@@ -146,5 +154,7 @@ uma série falhar, ser revista ou ser descontinuada.
 - Um único caminho histórico: dezanove anos e três episódios de stress. Três
   observações não são uma amostra estatística, e nenhum intervalo de confiança
   daqui seria honesto.
-- O E/P do S&P 500 na reconstrução usa a série real, enquanto a produção usa uma
-  constante mantida à mão. É a diferença conhecida entre o backtest e o sistema vivo.
+- O E/P da reconstrução usa os earnings reais de cada trimestre; a produção usa uma
+  referência manual actualizada trimestralmente e marcada ao preço diário. São
+  próximos mas não idênticos — a produção conhece os earnings com o atraso da
+  actualização manual, a reconstrução não.
