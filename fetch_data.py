@@ -253,109 +253,57 @@ def fetch_liquidity_percentile():
 # ──────────────────────────────────────────
 # SCORING LOGIC
 # ──────────────────────────────────────────
-def score_cycle(spread):
-    """10Y-2Y Yield Curve spread → score 1-10"""
-    if spread is None: return None   # n/d — nunca um valor inventado
-    if spread < -0.75:  return 9.5
-    if spread < -0.50:  return 8.5
-    if spread < -0.25:  return 7.5
-    if spread < 0.00:   return 6.5
-    if spread < 0.50:   return 5.5
-    if spread < 0.75:   return 4.5
-    if spread < 1.25:   return 3.5
-    if spread < 2.00:   return 2.5
-    return 1.5
+# As bandas de scoring dos cinco pilares, os pesos do composto e os limiares de
+# cor dos pilares vivem no mrm_rules.py, ao lado das regras do portfolio, e vao
+# no data.json para o site desenhar as tabelas da Academia a partir delas. As
+# funcoes que aqui estavam escritas a mao foram substituidas por chamadas ao
+# modulo canonico: um limiar mexido muda o score, a tabela publicada e a frase
+# que o leitor ve, tudo na mesma passagem.
+#
+# Um pilar sem dados devolve None e e EXCLUIDO do composto com os pesos
+# renormalizados sobre os restantes — nunca substituido por um valor inventado
+# a meio da escala.
 
-def score_liquidity(percentile):
-    """Buffett Indicator (Total US Corporate Equities / GDP) percentile rank (0-100)
-    against its own full history (1945-present) → score 1-10. Percentile-based rather
-    than fixed dollar thresholds because the ratio's nominal scale drifts over decades —
-    self-calibrating, no re-tuning needed as the economy grows."""
-    if percentile is None: return None   # n/d — nunca um valor inventado
-    if percentile > 95: return 9.5
-    if percentile > 90: return 8.5
-    if percentile > 80: return 7.5
-    if percentile > 65: return 6.5
-    if percentile > 50: return 5.5
-    if percentile > 35: return 4.0
-    if percentile > 20: return 3.0
-    return 1.5
+def score_cycle(spread):      return rules.score_pillar("cycle", spread)
+def score_liquidity(pct):     return rules.score_pillar("liquidity", pct)
+def score_premium(erp):       return rules.score_pillar("premium", erp)
+def score_solvency(npl):      return rules.score_pillar("solvency", npl)
+def score_debt(dsr):          return rules.score_pillar("debt", dsr)
 
-def score_premium(erp):
-    """Equity Risk Premium % → score 1-10"""
-    if erp is None: return None   # n/d — nunca um valor inventado
-    if erp < 0.00:  return 10.0
-    if erp < 0.50:  return 9.0
-    if erp < 0.80:  return 8.0
-    if erp < 1.20:  return 7.0
-    if erp < 2.00:  return 5.5
-    if erp < 3.00:  return 4.0
-    if erp < 4.00:  return 2.5
-    return 1.5
+global_score  = rules.global_score
+pillar_status = rules.pillar_status
 
-def score_solvency(npl):
-    """Bank NPL / Delinquency Rate % → score 1-10"""
-    if npl is None: return None   # n/d — nunca um valor inventado
-    if npl > 5.00:  return 9.5
-    if npl > 4.00:  return 8.0
-    if npl > 3.00:  return 6.5
-    if npl > 2.50:  return 5.5
-    if npl > 2.00:  return 4.5
-    if npl > 1.50:  return 3.5
-    if npl > 1.00:  return 2.5
-    return 1.5
-
-def score_debt(dsr):
-    """Household Debt Service Ratio % → score 1-10"""
-    if dsr is None: return None   # n/d — nunca um valor inventado
-    if dsr > 13.00: return 9.5
-    if dsr > 12.50: return 8.5
-    if dsr > 12.00: return 7.5
-    if dsr > 11.50: return 6.5
-    if dsr > 11.00: return 5.5
-    if dsr > 10.50: return 4.5
-    if dsr > 10.00: return 3.5
-    return 2.0
-
-def global_score(scores):
-    """
-    Composto ponderado. Premium e Liquidity pesam mais.
-
-    Pilares em n/d sao EXCLUIDOS e os pesos renormalizados sobre os restantes.
-    Antes, um pilar em falta entrava no composto com um score inventado a meio
-    da escala, sem qualquer sinalizacao.
-
-    Devolve (score, lista_de_pilares_em_nd).
-    """
-    weights = {
-        "cycle":    0.20,
-        "liquidity":0.20,
-        "premium":  0.25,
-        "solvency": 0.15,
-        "debt":     0.20,
-    }
-    nd = sorted(k for k in weights if scores.get(k) is None)
-    ok = {k: w for k, w in weights.items() if scores.get(k) is not None}
-    if not ok:
-        return None, nd
-    total = sum(ok.values())
-    return round(sum(scores[k] * w / total for k, w in ok.items()), 2), nd
 
 def status_label(score):
-    # Must stay in sync with classify_regime() in update_portfolio.py — that script
-    # decides actual ETF selection (and, for Critical, the FTQ/Stress sub-regime)
-    # using >=8.0 / <=4.0. A mismatch here would show a "Critical" badge on the
-    # site while the portfolio itself is still operating in Turbulence, or vice versa.
-    if score <= 4.0: return "Resilient"
-    if score >= 8.0: return "Critical"
-    return "Turbulence"
+    """Rotulo do composto. Tem de ficar coerente com score_band() do mrm_rules,
+    que e o que o resto do sistema usa."""
+    return rules.score_band(score)
 
-def pillar_status(score):
-    if score is None: return "nd"
-    if score <= 4.0: return "stable"
-    if score <= 6.0: return "caution"
-    if score <= 7.5: return "warning"
-    return "critical"
+
+def pillar_identity(pillar_id):
+    """id/roman/name/metric/fredSeries vindos do mrm_rules, para nao existir uma
+    terceira copia destes campos no data.json."""
+    spec = rules.PILLAR_SCORING[pillar_id]
+    return {k: spec[k] for k in ("id", "roman", "name", "metric", "fredSeries")}
+
+
+def pillar_band_fields(pillar_id, scored_value):
+    """A banda em que a leitura caiu e a distancia ao limiar seguinte na
+    direccao do risco. E isto que permite ao site escrever a frase da caixa
+    "Current Reading" sem ter numeros escritos a mao."""
+    spec = rules.PILLAR_SCORING[pillar_id]
+    band = rules.pillar_band(pillar_id, scored_value)
+    if band is None:
+        return {"band": None, "distanceToNextBand": None}
+    edge = band["lo"] if spec["worseWhen"] == "lower" else band["hi"]
+    return {
+        "band": {k: band[k] for k in ("lo", "hi", "score", "label", "context", "reading")},
+        "scoredValue": scored_value,
+        "nextBandEdge": edge,
+        "distanceToNextBand": (round(abs(scored_value - edge), 4)
+                               if edge is not None and scored_value is not None else None),
+    }
+
 
 def load_previous_metrics(path="data_prev.json"):
     """{pilar: metricValue} da ultima publicacao. Os deltas dos pilares eram
@@ -608,30 +556,24 @@ def build_data():
         "stressGauge": stress_gauge,
         "pillars": [
             {
-                "id": "cycle",
-                "roman": "I",
-                "name": "Cycle",
+                **pillar_identity("cycle"),
                 "score": s_cycle,
-                "metric": "10Y-2Y Yield Curve",
                 "value": f"{t10y2y_val:+.2f}%" if t10y2y_val else "N/A",
-                "fredSeries": "T10Y2Y",
                 "trend": "steepening" if (t10y2y_val or 0) > 0 else "inverted",
                 "metricValue": t10y2y_val,
+                **pillar_band_fields("cycle", t10y2y_val),
                 "delta": d_cycle,
                 "deltaDirection": delta_direction("cycle", s_cycle, d_cycle),
                 "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6–18 months.",
                 "status": pillar_status(s_cycle)
             },
             {
-                "id": "liquidity",
-                "roman": "II",
-                "name": "Liquidity",
+                **pillar_identity("liquidity"),
                 "score": s_liquidity,
-                "metric": "Buffett Indicator (Total Equities / GDP)",
                 "value": buffett_display,
-                "fredSeries": "NCBEILQ027S + FBCELLQ027S + GDP",
                 "trend": liquidity_trend,
                 "metricValue": buffett_val_pct,
+                **pillar_band_fields("liquidity", buffett_pct),
                 "delta": d_liquidity,
                 "deltaDirection": delta_direction("liquidity", s_liquidity, d_liquidity),
                 "m2YoyGrowthPct": m2_yoy_growth_pct,
@@ -640,19 +582,16 @@ def build_data():
                 "status": pillar_status(s_liquidity)
             },
             {
-                "id": "premium",
-                "roman": "II",
-                "name": "Premium",
+                **pillar_identity("premium"),
                 "score": s_premium,
-                "metric": "Equity Risk Premium",
                 "value": f"{erp_val:.2f}%" if erp_val is not None else "n/d",
-                "fredSeries": "DGS10",
                 "epEstimated": True,
                 "epValue": ep_now,
                 "epAsOf": SP500_EARNINGS_YIELD_ASOF,
                 "epAnchor": ep_detail,
                 "trend": ("compressed" if erp_val < 2.0 else "adequate") if erp_val is not None else "nd",
                 "metricValue": erp_val,
+                **pillar_band_fields("premium", erp_val),
                 "delta": d_premium,
                 "deltaDirection": delta_direction("premium", s_premium, d_premium),
                 "description": (
@@ -667,30 +606,24 @@ def build_data():
                 "status": pillar_status(s_premium)
             },
             {
-                "id": "solvency",
-                "roman": "III",
-                "name": "Solvency",
+                **pillar_identity("solvency"),
                 "score": s_solvency,
-                "metric": "Bank Delinquency Rate",
                 "value": f"{npl_val:.1f}%" if npl_val else "N/A",
-                "fredSeries": "DRALACBN",
                 "trend": "stable" if s_solvency < 5 else "rising",
                 "metricValue": npl_val,
+                **pillar_band_fields("solvency", npl_val),
                 "delta": d_solvency,
                 "deltaDirection": delta_direction("solvency", s_solvency, d_solvency),
                 "description": f"FRED DRALACBN delinquency rate at {f'{npl_val:.2f}' if npl_val is not None else 'N/A'}%. Systemic banking plumbing {'functioning normally.' if s_solvency < 5 else 'showing stress.'}",
                 "status": pillar_status(s_solvency)
             },
             {
-                "id": "debt",
-                "roman": "III",
-                "name": "Debt",
+                **pillar_identity("debt"),
                 "score": s_debt,
-                "metric": "Household DSR",
                 "value": f"{dsr_val:.1f}%" if dsr_val else "N/A",
-                "fredSeries": "TDSP",
                 "trend": "rising" if s_debt > 5 else "stable",
                 "metricValue": dsr_val,
+                **pillar_band_fields("debt", dsr_val),
                 "delta": d_debt,
                 "deltaDirection": delta_direction("debt", s_debt, d_debt),
                 "description": f"Household debt service ratio at {f'{dsr_val:.1f}' if dsr_val is not None else 'N/A'}%. {'Consumer balance sheet strain increasing.' if s_debt > 5 else 'Consumer balance sheets healthy.'}",
