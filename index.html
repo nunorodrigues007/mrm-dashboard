@@ -574,6 +574,12 @@
     border-color: rgba(215,58,73,0.3);
     background: var(--red-dim);
   }
+  .band-current td { background: rgba(255,255,255,0.04); font-weight: 500; }
+  .band-here { font-size: 10px; letter-spacing: 0.06em; opacity: 0.75; }
+  .table-note {
+    font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+    margin: -8px 0 28px; opacity: 0.8;
+  }
   .callout-label {
     font-family: var(--mono); font-size: 9px; font-weight: 600;
     letter-spacing: 0.14em; text-transform: uppercase;
@@ -907,47 +913,17 @@
           <h2>The Five Pillars: A Structural Architecture</h2>
           <p>The framework organizes macro-resilience into five orthogonal dimensions. Each Pillar captures a distinct failure mode of the economic system:</p>
 
-          <table class="data-table">
+          <table class="data-table" id="table-pillar-overview">
             <thead>
               <tr>
                 <th>Pillar</th>
                 <th>Core Question</th>
                 <th>Primary Signal</th>
+                <th>Weight</th>
                 <th>FRED Series</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td><strong>I. Cycle</strong></td>
-                <td>Where are we in the credit cycle?</td>
-                <td class="mono">10Y–2Y Yield Curve</td>
-                <td class="mono fred-tag">T10Y2Y</td>
-              </tr>
-              <tr>
-                <td><strong>II. Liquidity</strong></td>
-                <td>Is money plentiful or scarce?</td>
-                <td class="mono">Market Cap / M2</td>
-                <td class="mono fred-tag">M2SL, WILL5000</td>
-              </tr>
-              <tr>
-                <td><strong>II. Premium</strong></td>
-                <td>Are investors being compensated for risk?</td>
-                <td class="mono">ERP (E/P – 10Y)</td>
-                <td class="mono fred-tag">DGS10</td>
-              </tr>
-              <tr>
-                <td><strong>III. Solvency</strong></td>
-                <td>Is the banking system functionally sound?</td>
-                <td class="mono">Bank NPL Ratio</td>
-                <td class="mono fred-tag">DRALACBN</td>
-              </tr>
-              <tr>
-                <td><strong>III. Debt</strong></td>
-                <td>Can households service their obligations?</td>
-                <td class="mono">Household DSR</td>
-                <td class="mono fred-tag">TDSP</td>
-              </tr>
-            </tbody>
+            <tbody id="pillar-overview"></tbody>
           </table>
 
           <p>Notice that Pillar II appears twice — for Liquidity and Premium. This reflects the dual nature of capital markets as both a plumbing system (liquidity) and a pricing mechanism (premium). Separating them allows the framework to detect divergences: conditions where liquidity is ample but risk is mis-priced, or where premiums are adequate but monetary plumbing is seizing.</p>
@@ -1008,57 +984,20 @@
             <cite>— US MRM Framework, Pillar I Analysis</cite>
           </div>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Curve Shape</th>
-                <th>10Y–2Y Spread</th>
-                <th>Interpretation</th>
-                <th>Pillar Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Deeply Inverted</strong></td>
-                <td class="mono red">Below –0.50%</td>
-                <td>Peak monetary tightening. Credit contraction imminent.</td>
-                <td class="mono red">8–10</td>
-              </tr>
-              <tr>
-                <td><strong>Mildly Inverted</strong></td>
-                <td class="mono orange">–0.50% to 0.00%</td>
-                <td>Caution. Cycle peak probability elevated.</td>
-                <td class="mono orange">5–7</td>
-              </tr>
-              <tr>
-                <td><strong>Normalizing</strong></td>
-                <td class="mono orange">0.00% to +0.75%</td>
-                <td>Post-inversion steepening. Historically precedes recession onset.</td>
-                <td class="mono orange">5–7</td>
-              </tr>
-              <tr>
-                <td><strong>Normal</strong></td>
-                <td class="mono green">+0.75% to +2.00%</td>
-                <td>Mid-cycle expansion. Credit conditions supportive.</td>
-                <td class="mono green">2–4</td>
-              </tr>
-              <tr>
-                <td><strong>Steep</strong></td>
-                <td class="mono green">Above +2.00%</td>
-                <td>Early cycle recovery. Maximum credit incentive for banks.</td>
-                <td class="mono green">1–3</td>
-              </tr>
-            </tbody>
+                    <table class="data-table" id="table-cycle">
+            <thead id="thead-cycle"></thead>
+            <tbody id="bands-cycle"></tbody>
           </table>
+          <p class="table-note" id="note-cycle"></p>
 
           <h2>Normalization & Steepening: The Counterintuitive Danger</h2>
           <p>Here is the most important — and most frequently misunderstood — insight about yield curve analysis: <strong>the normalization phase, when the curve moves from inverted back to positive, is not a "all-clear" signal. Historically, it is one of the most dangerous phases of the cycle.</strong></p>
 
           <p>When the curve is deeply inverted, monetary conditions are extremely tight. As the Fed begins cutting rates in response to economic weakness, short-term yields fall faster than long-term yields. The spread widens — but this steepening typically occurs concurrent with rising unemployment, credit defaults, and equity market stress. The "good-looking" yield curve is often recording its best reading just as the recession is officially arriving.</p>
 
-          <div class="callout orange" id="callout-cycle">
-            <div class="callout-label">⚡ Current Reading</div>
-            <p>The 10Y–2Y spread is currently at <span class="inline-metric" id="value-cycle">+0.34%</span> — the normalization phase. The curve has re-steepened from its 2022–2023 deep inversion. The Cycle Pillar scores <span id="score-cycle">5.8</span>/10, reflecting the historical pattern that this normalization phase requires elevated vigilance.</p>
+                    <div class="callout orange" id="callout-cycle">
+            <div class="callout-label" id="callout-label-cycle">Current Reading</div>
+            <p id="text-cycle">Loading live reading…</p>
           </div>
 
           <h2>The FRED Series: T10Y2Y</h2>
@@ -1092,60 +1031,41 @@
 
           <p>The 2022 experience was historically instructive: for the first time in the post-war era, M2 contracted in nominal terms — falling over 4% from its 2022 peak. The simultaneous tightening of fiscal policy (as pandemic-era transfers wound down), monetary policy (aggressive Fed rate hikes), and money supply created a liquidity triple-tightening that dramatically elevated systemic stress across multiple Pillars simultaneously.</p>
 
-          <h2>The Market Cap / M2 Ratio: The "Buffett Indicator"</h2>
-          <p>While M2 growth measures the flow of monetary fuel, the <strong>Market Cap / M2 Ratio</strong> measures how much of that fuel has been deployed into equity markets. This ratio — popularized by Warren Buffett's 2001 Fortune magazine commentary and subsequently known informally as the "Buffett Indicator" — compares the total value of publicly traded equities to the total money supply.</p>
+          <h2>The Buffett Indicator: Equity Claims Against Output</h2>
+          <p>M2 growth measures the flow of monetary fuel. The <strong>Buffett Indicator</strong> measures something different and more durable: how large the stock market has become relative to the economy that has to service it. It is the total market value of US corporate equities divided by GDP — the ratio Warren Buffett described in his 2001 <em>Fortune</em> commentary as "probably the best single measure of where valuations stand at any given moment."</p>
 
-          <p>The ratio's utility derives from its anchoring logic: equity valuations are ultimately a claim on real economic output, which is itself constrained by the stock of money circulating in the economy. When the ratio is historically elevated, it signals that equity prices have outpaced the monetary support structure — that valuations are priced for perfection in a world where liquidity may not be sufficient to sustain them.</p>
+          <p>The anchoring logic is what makes it useful. Equity valuations are ultimately a claim on real economic output. Output is measurable. When the ratio is historically elevated, it says that the claims have outrun the thing being claimed — that prices depend on multiple expansion continuing rather than on the economy growing into them.</p>
+
+          <div class="callout" style="border-left-color:var(--text-secondary);">
+            <div class="callout-label" style="color:var(--text-secondary);">◎ A note on what this pillar used to measure</div>
+            <p>Until 2026 this pillar was built on the ratio of the Wilshire 5000 index to M2 money supply, and this chapter called that ratio the Buffett Indicator. Two things were wrong with it. FRED discontinued the <span class="fred-tag">WILL5000PRFC</span> series, so the numerator was decaying; and the Buffett Indicator has never been market cap over money supply — it is market cap over GDP. The pillar now uses <span class="fred-tag">NCBEILQ027S</span> + <span class="fred-tag">FBCELLQ027S</span> (total corporate equities held, financial and non-financial) over <span class="fred-tag">GDP</span>, which is the actual definition and rests on series the Fed maintains as part of the Financial Accounts. M2 has not disappeared from the framework — it is published alongside the pillar as year-over-year growth — but it is no longer the denominator.</p>
+          </div>
+
+          <h2>Why a Percentile and Not a Level</h2>
+          <p>Every other pillar in this framework scores against fixed thresholds: a yield curve at −0.60% means the same thing in 1998 and 2026. The Buffett Indicator does not work that way. Its nominal level drifts upward across decades as capital markets deepen, as more of the economy is listed rather than privately held, and as foreign earnings enter the numerator without entering US GDP. A threshold set at 150% in 1995 would have been screaming for thirty years.</p>
+
+          <p>So this pillar scores the <strong>percentile rank</strong> of the ratio against its own full history since 1945, rather than the ratio itself. The question it answers is not "is this number big" but "how many of the last eighty years were more expensive than today." That recalibrates itself as history accumulates and needs no re-tuning as the economy grows.</p>
 
           <div class="blockquote">
-            <p>"The ratio of market capitalization to money supply is telling you, in the simplest possible terms, how much of the economy's blood has been redirected into the financial markets — and how much would need to flow back out if sentiment shifted."</p>
+            <p>"The ratio is telling you, in the simplest possible terms, how much of the economy's future output has already been capitalised into today's prices — and how much would have to be given back if the assumptions behind it changed."</p>
             <cite>— US MRM Framework, Pillar II Analysis</cite>
           </div>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Ratio Range</th>
-                <th>Historical Context</th>
-                <th>Liquidity Reading</th>
-                <th>Pillar Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="mono green">Below 0.80x</td>
-                <td>Early 1990s, 2009 lows</td>
-                <td>Equity deeply undervalued vs. monetary base. Supportive.</td>
-                <td class="mono green">1–3</td>
-              </tr>
-              <tr>
-                <td class="mono green">0.80x – 1.20x</td>
-                <td>Mid-cycle normal</td>
-                <td>Healthy relationship. Monetary base supports valuations.</td>
-                <td class="mono green">2–4</td>
-              </tr>
-              <tr>
-                <td class="mono orange">1.20x – 1.60x</td>
-                <td>Late 1990s, 2014–2018</td>
-                <td>Elevated. Equity sensitivity to M2 deceleration increases.</td>
-                <td class="mono orange">5–7</td>
-              </tr>
-              <tr>
-                <td class="mono red">Above 1.60x</td>
-                <td>2000 Tech Bubble, 2021, Present</td>
-                <td>Historically preceded major corrections. Fragile liquidity dependency.</td>
-                <td class="mono red">7–10</td>
-              </tr>
-            </tbody>
+                    <table class="data-table" id="table-liquidity">
+            <thead id="thead-liquidity"></thead>
+            <tbody id="bands-liquidity"></tbody>
           </table>
+          <p class="table-note" id="note-liquidity"></p>
 
-          <div class="callout orange" id="callout-liquidity">
-            <div class="callout-label">⚡ Current Reading</div>
-            <p>The Market Cap / M2 Ratio currently stands at <span class="inline-metric" id="value-liquidity">1.82x</span>, placing it in historical territory previously seen only during the 1999–2000 equity bubble and briefly in 2021. The Liquidity Pillar scores <span id="score-liquidity">7.1</span>/10, reflecting significant elevation in equity valuation relative to the monetary support structure.</p>
+                    <div class="callout orange" id="callout-liquidity">
+            <div class="callout-label" id="callout-label-liquidity">Current Reading</div>
+            <p id="text-liquidity">Loading live reading…</p>
           </div>
 
           <h2>FRED Series</h2>
-          <p>Two series are combined to construct the Liquidity Pillar: <span class="fred-tag">M2SL</span> (M2 Money Supply, seasonally adjusted, monthly) and <span class="fred-tag">WILL5000PRFC</span> (Wilshire 5000 Total Market Full Cap Index), which serves as a proxy for total US equity market capitalization. The ratio is computed monthly and scored against historical percentile thresholds.</p>
+          <p>Three series build the numerator and denominator: <span class="fred-tag">NCBEILQ027S</span> (corporate equities held by non-financial corporate business) and <span class="fred-tag">FBCELLQ027S</span> (equities held by the financial sector) sum to total US corporate equity market value, and <span class="fred-tag">GDP</span> is the denominator. All three are quarterly, published by the Federal Reserve as part of the Financial Accounts of the United States, with history back to 1945. A fourth series, <span class="fred-tag">M2SL</span>, is fetched but not scored: its year-over-year growth is published alongside the pillar as context on the direction of monetary fuel.</p>
+
+          <p>Because the inputs are quarterly, this pillar moves in steps rather than continuously. That is a feature of the data, not a lag in the system — and it is one reason the framework does not rely on Gauge A to detect stress that is already happening. That is Gauge B's job, and it runs on series that publish weekly and monthly.</p>
         </div>
         <div class="chapter-footer">
           <button class="chapter-nav-btn" onclick="navChapter(1)">← Chapter 2</button>
@@ -1183,46 +1103,15 @@
             <cite>— US MRM Framework, Pillar II Premium Analysis</cite>
           </div>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>ERP Level</th>
-                <th>Interpretation</th>
-                <th>Market Vulnerability</th>
-                <th>Pillar Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="mono green">Above 4.0%</td>
-                <td>Equities deeply attractive vs. bonds. High margin of safety.</td>
-                <td>Low. Strong fundamental support.</td>
-                <td class="mono green">1–3</td>
-              </tr>
-              <tr>
-                <td class="mono green">2.0% – 4.0%</td>
-                <td>Normal. Adequate risk compensation.</td>
-                <td>Moderate. Normal market functioning.</td>
-                <td class="mono green">3–5</td>
-              </tr>
-              <tr>
-                <td class="mono orange">0.8% – 2.0%</td>
-                <td>Compressed. Risk/return trade-off deteriorating.</td>
-                <td>Elevated. Sensitive to rate or earnings shocks.</td>
-                <td class="mono orange">5–8</td>
-              </tr>
-              <tr>
-                <td class="mono red">Below 0.8%</td>
-                <td>Critical compression. Near risk parity with bonds.</td>
-                <td>High. Red Alert threshold triggered.</td>
-                <td class="mono red">8–10</td>
-              </tr>
-            </tbody>
+                    <table class="data-table" id="table-premium">
+            <thead id="thead-premium"></thead>
+            <tbody id="bands-premium"></tbody>
           </table>
+          <p class="table-note" id="note-premium"></p>
 
-          <div class="callout orange" id="callout-premium">
-            <div class="callout-label" id="callout-label-premium">⚡ Current Reading — Approaching Alert Zone</div>
-            <p>The current ERP stands at <span class="inline-metric" id="value-premium">1.02%</span> — within the Compressed range and approaching the <strong>Red Alert threshold of 0.80%</strong>. At this level, a 22bps further compression (from either falling earnings or rising rates) would trigger a Sentinel alert. The Premium Pillar scores <span id="score-premium">7.9</span>/10 — the highest current stress reading in the framework.</p>
+                    <div class="callout orange" id="callout-premium">
+            <div class="callout-label" id="callout-label-premium">Current Reading</div>
+            <p id="text-premium">Loading live reading…</p>
           </div>
 
           <h2>The Sentinel Connection</h2>
@@ -1274,46 +1163,15 @@
             <cite>— US MRM Framework, Pillar III Solvency Analysis</cite>
           </div>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>NPL Ratio</th>
-                <th>Historical Reference</th>
-                <th>Solvency Assessment</th>
-                <th>Pillar Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="mono green">Below 1.5%</td>
-                <td>2016–2019, 2022</td>
-                <td>Excellent. Loan book performing strongly.</td>
-                <td class="mono green">1–3</td>
-              </tr>
-              <tr>
-                <td class="mono green">1.5% – 2.5%</td>
-                <td>Long-run average range</td>
-                <td>Normal. Systemic plumbing functioning within parameters.</td>
-                <td class="mono green">3–5</td>
-              </tr>
-              <tr>
-                <td class="mono orange">2.5% – 4.0%</td>
-                <td>2002–2003, 2020 brief spike</td>
-                <td>Elevated. Credit quality deteriorating. Monitor acceleration.</td>
-                <td class="mono orange">5–7</td>
-              </tr>
-              <tr>
-                <td class="mono red">Above 4.0%</td>
-                <td>2009–2011: peaked near 5.0%</td>
-                <td>Critical. Systemic solvency stress. Government intervention historically required.</td>
-                <td class="mono red">8–10</td>
-              </tr>
-            </tbody>
+                    <table class="data-table" id="table-solvency">
+            <thead id="thead-solvency"></thead>
+            <tbody id="bands-solvency"></tbody>
           </table>
+          <p class="table-note" id="note-solvency"></p>
 
-          <div class="callout green" id="callout-solvency">
-            <div class="callout-label">✓ Current Reading</div>
-            <p>Bank NPL ratios currently stand at approximately <span class="inline-metric" id="value-solvency">1.8%</span> — within the normal range, reflecting the post-2020 credit quality improvement driven by strong employment and government support programs. The Solvency Pillar scores <span id="score-solvency">4.2</span>/10, the healthiest reading in the current framework. However, the trajectory warrants monitoring as higher interest rates extend their impact on variable-rate commercial real estate and leveraged loan portfolios.</p>
+                    <div class="callout orange" id="callout-solvency">
+            <div class="callout-label" id="callout-label-solvency">Current Reading</div>
+            <p id="text-solvency">Loading live reading…</p>
           </div>
 
           <h2>FRED Series and Data Notes</h2>
@@ -1355,46 +1213,15 @@
             <cite>— US MRM Framework, Pillar III Debt Analysis</cite>
           </div>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>DSR Level</th>
-                <th>Historical Reference</th>
-                <th>Consumer Assessment</th>
-                <th>Pillar Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="mono green">Below 10.0%</td>
-                <td>2020–2021 pandemic lows</td>
-                <td>Strong. Ample disposable income after debt service.</td>
-                <td class="mono green">1–3</td>
-              </tr>
-              <tr>
-                <td class="mono green">10.0% – 11.0%</td>
-                <td>2012–2016 recovery</td>
-                <td>Healthy. Consumer balance sheets well-positioned.</td>
-                <td class="mono green">2–4</td>
-              </tr>
-              <tr>
-                <td class="mono orange">11.0% – 12.5%</td>
-                <td>2018–2019, current</td>
-                <td>Elevated. Consumer sensitivity to income shocks rising.</td>
-                <td class="mono orange">5–7</td>
-              </tr>
-              <tr>
-                <td class="mono red">Above 12.5%</td>
-                <td>2007–2009: peaked near 13.2%</td>
-                <td>Critical. Household cash flow severely constrained. Recession amplifier.</td>
-                <td class="mono red">8–10</td>
-              </tr>
-            </tbody>
+                    <table class="data-table" id="table-debt">
+            <thead id="thead-debt"></thead>
+            <tbody id="bands-debt"></tbody>
           </table>
+          <p class="table-note" id="note-debt"></p>
 
-          <div class="callout orange" id="callout-debt">
-            <div class="callout-label" id="callout-label-debt">⚡ Current Reading — Rising Trajectory</div>
-            <p>The Household DSR currently stands at <span class="inline-metric" id="value-debt">11.4%</span> and has been trending higher for six consecutive quarters. This trajectory — rather than the absolute level — is the primary concern. If the rate of increase continues at its current pace, the 12.5% critical threshold would be reached within 18–24 months, coinciding with the typical lag between monetary tightening and its full consumer impact. The Debt Pillar scores <span id="score-debt">6.1</span>/10.</p>
+                    <div class="callout orange" id="callout-debt">
+            <div class="callout-label" id="callout-label-debt">Current Reading</div>
+            <p id="text-debt">Loading live reading…</p>
           </div>
 
           <h2>The Interaction Effect: DSR and Credit Cycles</h2>
@@ -1751,33 +1578,44 @@ async function loadData() {
     if (appData.rules) RULES = Object.assign(RULES, appData.rules);
     renderTerminal(appData);
   } catch (e) {
-    // Fallback: inline sample data for standalone demo
-    appData = getSampleData();
-    renderTerminal(appData);
+    // Sem data.json nao ha leitura. O que aqui estava era um objecto de dados
+    // inventados do dia do lancamento — score 6.4, ERP 1.02%, DSR 11.4% — que
+    // o site desenhava exactamente como desenha os dados reais, sem nada a
+    // distinguir os dois no ecra. Um visitante numa falha de rede veria numeros
+    // de 2025 com o carimbo de hoje.
+    //
+    // O framework recusa-se a inventar um pilar em falta; nao pode inventar a
+    // leitura inteira. Falha a vista.
+    showDataUnavailable(e);
   }
 }
 
-function getSampleData() {
-  return {
-    meta: { lastUpdated: new Date().toISOString(), source: "Demo Data" },
-    globalResilienceScore: 6.4,
-    status: "Turbulence",
-    pillars: [
-      { id:"cycle", roman:"I", name:"Cycle", score:5.8, metric:"10Y-2Y Yield Curve", value:"+0.34%", trend:"steepening", delta:"+0.12", description:"Yield curve normalizing post-inversion. Historically precedes credit stress.", status:"caution" },
-      { id:"liquidity", roman:"II", name:"Liquidity", score:7.1, metric:"Market Cap / M2 Ratio", value:"1.82x", trend:"elevated", delta:"+0.04", description:"Buffett Indicator elevated. M2 growth decelerating. Liquidity conditions tightening.", status:"warning" },
-      { id:"premium", roman:"II", name:"Premium", score:7.9, metric:"Equity Risk Premium", value:"1.02%", trend:"compressed", delta:"-0.18", description:"ERP approaching critical threshold. Equity compensation for risk historically thin.", status:"warning" },
-      { id:"solvency", roman:"III", name:"Solvency", score:4.2, metric:"Bank NPL Ratio", value:"1.8%", trend:"stable", delta:"+0.02", description:"Non-performing loans contained. Systemic banking plumbing functioning within normal parameters.", status:"stable" },
-      { id:"debt", roman:"III", name:"Debt", score:6.1, metric:"Household DSR", value:"11.4%", trend:"rising", delta:"+0.3", description:"Debt service burden creeping higher. Consumer balance sheets showing early strain signals.", status:"caution" }
-    ],
-    sentinels: [
-      { id:"jobless", name:"Initial Jobless Claims", fredSeries:"ICSA", value:231000, displayValue:"231K", threshold:275000, thresholdDisplay:"275K", status:"normal", delta:"-4K", alert:false, description:"Weekly initial claims. Red alert triggers above 275,000." },
-      { id:"erp", name:"Equity Risk Premium", fredSeries:"DGS10", value:1.02, displayValue:"1.02%", threshold:0.8, thresholdDisplay:"0.80%", status:"caution", delta:"-0.18%", alert:false, description:"ERP = E/P ratio minus 10Y yield. Red alert triggers below 0.80%." }
-    ],
-    historicalScores: [
-      { date:"Sep '24", score:4.2 }, { date:"Oct '24", score:4.8 }, { date:"Nov '24", score:5.3 },
-      { date:"Dec '24", score:5.9 }, { date:"Jan '25", score:6.1 }, { date:"Feb '25", score:6.2 }, { date:"Mar '25", score:6.4 }
-    ]
-  };
+function showDataUnavailable(err) {
+  const banner = document.createElement('div');
+  banner.setAttribute('role', 'alert');
+  banner.style.cssText =
+    'position:sticky;top:0;z-index:9999;padding:14px 20px;background:var(--red);' +
+    'color:#fff;font-size:13px;line-height:1.5;text-align:center;';
+  banner.innerHTML =
+    '<strong>Live data unavailable.</strong> data.json could not be loaded, so no reading is shown. ' +
+    'The Academy chapters below explain the method; the numbers they would normally carry are absent ' +
+    'rather than assumed.' +
+    (err && err.message ? ` <span style="opacity:.75">(${err.message})</span>` : '');
+  document.body.insertBefore(banner, document.body.firstChild);
+
+  document.querySelectorAll('[id^="text-"], [id^="callout-label-"]').forEach(el => {
+    if (el.id.startsWith('callout-label-')) el.textContent = '◎ Current Reading — unavailable';
+    else el.textContent = 'No live reading: data.json could not be loaded.';
+  });
+
+  const terminal = document.getElementById('terminal') ||
+                   document.querySelector('.score-header');
+  if (terminal) {
+    terminal.innerHTML =
+      '<div style="padding:40px;text-align:center;color:var(--text-secondary);font-size:14px;">' +
+      'No reading available. The pipeline publishes data.json every Friday; if this persists, the ' +
+      'run did not complete.</div>';
+  }
 }
 
 // ──────────────────────────────────────────
@@ -1854,47 +1692,199 @@ function renderTerminal(data) {
 }
 
 // ──────────────────────────────────────────
-// RENDER METHODOLOGY CHAPTER "CURRENT READING" CALLOUTS
-// Keeps Chapters 2–6 in sync with live data.json instead of static launch-day text.
+// ACADEMY — TABELAS DE SCORING E CAIXAS "CURRENT READING"
+//
+// Nada aqui está escrito à mão. As bandas, os limiares, os rótulos e o texto de
+// cada banda vêm do bloco `rules.pillarScoring` do data.json, que por sua vez
+// vem do mrm_rules.py — o mesmo módulo que pontua os pilares à sexta-feira.
+//
+// Isto existe porque a versão anterior tinha as tabelas escritas no HTML no dia
+// do lançamento e uma frase estática por baixo com números do dia do lançamento.
+// O JavaScript injectava o valor ao vivo no meio dessa frase, e o resultado era
+// um capítulo a dizer que o ERP estava "a aproximar-se" de um limiar que já
+// tinha sido rompido, e outro a chamar Market Cap / M2 a um número que é
+// Market Cap / GDP. Uma frase gerada não pode contradizer o valor que cita.
 // ──────────────────────────────────────────
-function renderChapters(data) {
+
+function fmtBandEdge(spec, v) {
+  if (v === null || v === undefined) return null;
+  if (spec.scoredOn === 'percentile') return String(v);
+  const d = (spec.digits === undefined) ? 2 : spec.digits;
+  const s = (spec.signed && v > 0 ? '+' : '') + v.toFixed(d);
+  return s + (spec.unit || '');
+}
+
+function bandRangeText(spec, band) {
+  const lo = fmtBandEdge(spec, band.lo), hi = fmtBandEdge(spec, band.hi);
+  if (lo === null) return 'Below ' + hi;
+  if (hi === null) return 'Above ' + lo;
+  return lo + ' – ' + hi;
+}
+
+function bandTone(score) {
+  if (score <= 4.0) return 'green';
+  if (score <= 7.5) return 'orange';
+  return 'red';
+}
+
+function calloutIcon(status) {
+  if (status === 'stable') return '✓';
+  if (status === 'critical') return '✕';
+  if (status === 'nd') return '◎';
+  return '⚡';
+}
+
+// A distância que interessa é a que falta para piorar, e o lado depende do
+// pilar: no Premium o risco está em baixo, na Liquidity em cima.
+function riskEdge(spec, band) {
+  if (!band) return null;
+  const e = (spec.worseWhen === 'lower') ? band.lo : band.hi;
+  return (e === null || e === undefined) ? null : e;
+}
+
+// A tabela-resumo do Capítulo 1 e a lista de séries no rodapé técnico: as duas
+// eram listas escritas à mão que envelheceram em silêncio — a primeira ainda
+// dizia "Market Cap / M2, M2SL, WILL5000", séries que o sistema deixou de usar.
+function renderPillarOverview(data) {
+  const scoring = (RULES && RULES.pillarScoring) || {};
+  const order = (RULES && RULES.pillarOrder) || Object.keys(scoring);
+
+  const tbody = document.getElementById('pillar-overview');
+  if (tbody) {
+    tbody.innerHTML = order.map(id => {
+      const s = scoring[id];
+      if (!s) return '';
+      return '<tr>' +
+        `<td><strong>${s.roman}. ${s.name}</strong></td>` +
+        `<td>${s.coreQuestion || ''}</td>` +
+        `<td class="mono">${s.metric}</td>` +
+        `<td class="mono">${Math.round(s.weight * 100)}%</td>` +
+        `<td class="mono fred-tag">${s.fredSeries}</td></tr>`;
+    }).join('');
+  }
+
+  // A lista de séries é o que o data.json declara ter usado nesta corrida:
+  // os cinco pilares, os sentinelas, e os gatilhos do medidor B.
+  const el = document.getElementById('fred-series-list');
+  if (el) {
+    const seen = [];
+    const add = (s) => String(s || '').split('+').map(x => x.trim())
+      .filter(Boolean).forEach(x => { if (!seen.includes(x)) seen.push(x); });
+    (data.pillars || []).forEach(p => add(p.fredSeries));
+    (data.sentinels || []).forEach(s => add(s.fredSeries));
+    const g = data.stressGauge && data.stressGauge.triggers;
+    if (g) Object.keys(g).forEach(k => add(g[k] && (g[k].series || g[k].fredSeries)));
+    el.textContent = seen.length ? seen.join(', ') + '.' : '—';
+  }
+}
+
+function renderPillarScoring(data) {
+  const scoring = (RULES && RULES.pillarScoring) || {};
+  const order = (RULES && RULES.pillarOrder) || Object.keys(scoring);
   const pillars = {};
   (data.pillars || []).forEach(p => { pillars[p.id] = p; });
 
-  const calloutColorClass = (status) => {
-    if (status === 'stable') return 'green';
-    if (status === 'critical') return 'red';
-    return 'orange'; // caution / warning
-  };
-
-  ['cycle', 'liquidity', 'premium', 'solvency', 'debt'].forEach(id => {
+  order.forEach(id => {
+    const spec = scoring[id];
     const p = pillars[id];
-    if (!p) return;
-    const valueEl = document.getElementById(`value-${id}`);
-    const scoreEl = document.getElementById(`score-${id}`);
-    const calloutEl = document.getElementById(`callout-${id}`);
-    if (valueEl) valueEl.textContent = p.value;
-    if (scoreEl) scoreEl.textContent = p.score.toFixed(1);
-    if (calloutEl) {
-      calloutEl.classList.remove('green', 'orange', 'red');
-      calloutEl.classList.add(calloutColorClass(p.status));
+    if (!spec) return;
+
+    const live = p && p.band ? p.band : null;
+
+    // ── a tabela de scoring ────────────────────────────────────────────────
+    const thead = document.getElementById('thead-' + id);
+    const tbody = document.getElementById('bands-' + id);
+    if (thead) {
+      thead.innerHTML = '<tr>' +
+        `<th>${spec.rangeHeader || 'Range'}</th>` +
+        `<th>${spec.contextHeader || 'Historical Reference'}</th>` +
+        '<th>Reading</th><th>Pillar Score</th></tr>';
+    }
+    if (tbody) {
+      // pior primeiro, que é a ordem em que o leitor deve varrer a tabela
+      const rows = spec.bands.slice().sort((a, b) => b.score - a.score);
+      tbody.innerHTML = rows.map(b => {
+        const tone = bandTone(b.score);
+        const here = live && b.score === live.score && b.label === live.label;
+        return `<tr${here ? ' class="band-current"' : ''}>` +
+          `<td class="mono ${tone}">${bandRangeText(spec, b)}${here ? ' <span class="band-here">← now</span>' : ''}</td>` +
+          `<td>${b.context}</td>` +
+          `<td>${b.reading}</td>` +
+          `<td class="mono ${tone}">${b.score.toFixed(1)}</td></tr>`;
+      }).join('');
+    }
+    const note = document.getElementById('note-' + id);
+    if (note) {
+      note.textContent = `Scored on ${spec.scoredOnLabel}. Source: FRED ${spec.fredSeries}. ` +
+        `Weight in the composite: ${Math.round(spec.weight * 100)}%. ` +
+        `These bands are published from mrm_rules.py — the same thresholds that score the pillar each Friday.`;
+    }
+
+    // ── a caixa "Current Reading" ──────────────────────────────────────────
+    const labelEl = document.getElementById('callout-label-' + id);
+    const textEl  = document.getElementById('text-' + id);
+    const boxEl   = document.getElementById('callout-' + id);
+    if (!textEl) return;
+
+    if (!p || p.score === null || p.score === undefined) {
+      if (labelEl) labelEl.textContent = '◎ Current Reading — no data';
+      textEl.textContent = `The ${spec.name} Pillar is n/d this week: the underlying series did not ` +
+        `publish in time. The pillar is excluded from the composite and its weight redistributed ` +
+        `across the remaining pillars, rather than being filled with an assumed value.`;
+      if (boxEl) { boxEl.classList.remove('green', 'orange', 'red'); }
+      return;
+    }
+
+    const parts = [];
+    parts.push(`The ${spec.shortMetric} currently reads <span class="inline-metric">${p.value}</span>.`);
+
+    if (spec.scoredOn === 'percentile' && p.percentileRank !== null && p.percentileRank !== undefined) {
+      parts.push(`That is higher than ` +
+        `<strong>${Number(p.percentileRank).toFixed(1)}%</strong> of every quarterly reading since 1945 — ` +
+        `and it is that rank, not the level, that the pillar scores.`);
+    }
+
+    if (live) {
+      parts.push(`That places it in the <strong>${live.label}</strong> band: ${live.reading}`);
+    }
+
+    const edge = riskEdge(spec, live);
+    if (edge !== null && p.scoredValue !== null && p.scoredValue !== undefined) {
+      const dist = Math.abs(p.scoredValue - edge);
+      const dir  = (spec.worseWhen === 'lower') ? 'further decline' : 'further increase';
+      const unit = (spec.scoredOn === 'percentile') ? ' percentile points' : (spec.unit === '%' ? 'pp' : '');
+      const nxt  = spec.bands.filter(b => (spec.worseWhen === 'lower') ? b.hi === edge : b.lo === edge)[0];
+      const dd   = (spec.scoredOn === 'percentile') ? 1 : (spec.digits === undefined ? 2 : spec.digits);
+      const tail = nxt
+        ? ` would move it into the <strong>${nxt.label}</strong> band (score ${nxt.score.toFixed(1)}).`
+        : ` would move it into the next band.`;
+      parts.push(`A ${dist.toFixed(dd)}${unit} ${dir}` + tail);
+    } else if (live) {
+      parts.push(`There is no band beyond this one: this is the most stressed reading the scale allows.`);
+    }
+
+    parts.push(`The ${spec.name} Pillar scores <strong>${p.score.toFixed(1)}</strong>/10` +
+      (p.delta && p.delta !== '—' ? `, ${p.delta} versus the previous publication.` : '.'));
+
+    textEl.innerHTML = parts.join(' ');
+    if (labelEl) {
+      labelEl.textContent = `${calloutIcon(p.status)} Current Reading — ${live ? live.label : p.status}`;
+    }
+    if (boxEl) {
+      boxEl.classList.remove('green', 'orange', 'red');
+      boxEl.classList.add(bandTone(p.score));
     }
   });
+}
 
-  // Premium callout label: only call it "Approaching Alert Zone" if actually near/past the ERP sentinel threshold
-  const premiumLabelEl = document.getElementById('callout-label-premium');
-  if (premiumLabelEl && pillars.premium) {
-    const erpSentinel = (data.sentinels || []).find(s => s.id === 'erp');
-    const alert = erpSentinel ? erpSentinel.alert : (pillars.premium.status === 'critical');
-    premiumLabelEl.textContent = alert ? '⚡ Current Reading — Alert Zone Breached' : '⚡ Current Reading';
-  }
+// A caixa de convergência continua a ser calculada aqui: não é uma banda de um
+// pilar, é uma leitura sobre os cinco ao mesmo tempo.
+function renderChapters(data) {
+  renderPillarScoring(data);
+  renderPillarOverview(data);
 
-  // Debt callout label: only flag "Rising Trajectory" if delta is actually positive
-  const debtLabelEl = document.getElementById('callout-label-debt');
-  if (debtLabelEl && pillars.debt) {
-    const rising = pillars.debt.delta && pillars.debt.delta.toString().startsWith('+');
-    debtLabelEl.textContent = rising ? '⚡ Current Reading — Rising Trajectory' : '⚡ Current Reading';
-  }
+  const pillars = {};
+  (data.pillars || []).forEach(p => { pillars[p.id] = p; });
 
   // Multi-Pillar Convergence Risk: recompute which pillars are actually elevated (score >= 6)
   const convergenceEl = document.getElementById('text-convergence');
@@ -2037,7 +2027,7 @@ function renderBDCUnrateStatus(data) {
   el.innerHTML = `
     <div class="callout ${colorClass}">
       <div class="callout-label">${icon} Live Reading — Unemployment Rate</div>
-      <p>UNRATE currently stands at <span class="inline-metric">${sentinel.displayValue}</span> (${sentinel.trend}, ${sentinel.delta} vs. prior reading). ${sentinel.alert ? 'The Stagflation Scenario trigger is ACTIVE — the threshold of 5.2% has been breached.' : `Below the 5.2% Stagflation Scenario trigger.`}</p>
+      <p>UNRATE currently stands at <span class="inline-metric">${sentinel.displayValue}</span> (${sentinel.trend}, ${sentinel.delta} vs. prior reading). ${sentinel.alert ? `The Stagflation Scenario trigger is ACTIVE — the threshold of ${sentinel.thresholdDisplay} has been breached.` : `Below the ${sentinel.thresholdDisplay} Stagflation Scenario trigger.`}</p>
     </div>`;
 }
 
@@ -2350,7 +2340,7 @@ function renderSidebar(data) {
       <div style="margin-top:16px;padding:12px;background:var(--bg-primary);border-radius:8px;border:1px solid var(--border-subtle)">
         <div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Framework Automation</div>
         <div style="font-size:11px;color:var(--text-muted);line-height:1.6">
-          Production deployments connect directly to the <strong style="color:var(--text-secondary)">FRED API</strong> for live data ingestion. Series: T10Y2Y, M2SL, WILL5000PRFC, DGS10, DRALACBN, TDSP, ICSA, UNRATE.
+          Production deployments connect directly to the <strong style="color:var(--text-secondary)">FRED API</strong> for live data ingestion. Series: <span id="fred-series-list">—</span>
         </div>
       </div>
     </div>
@@ -3368,7 +3358,7 @@ function renderRebalanceLog(data) {
 
           <h2>Crisis Management Guide</h2>
           <div id="bdc-unrate-status" style="margin-bottom:16px;"></div>
-          <p>If the Stress Test scenario is confirmed (Unemployment Rate above 5.2% — see live reading above):</p>
+          <p>If the Stress Test scenario is confirmed (Unemployment Rate above the Sentinel threshold — see live reading above):</p>
 
           <div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">
             <div style="display:flex;gap:14px;align-items:flex-start;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
