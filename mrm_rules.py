@@ -100,6 +100,13 @@ ALLOCATION_BANDS = {
 }
 ALLOCATION_TOTAL_TOLERANCE = 5.0   # o total tem de ficar a 100 ± isto
 
+# Um bucket sem banda declarada era um `KeyError` la dentro do
+# `validate_allocation` — no meio do job da carteira, com a causa a tres
+# ficheiros de distancia. Se as duas listas divergirem, que divirjam aqui.
+assert set(BUCKETS) == set(ALLOCATION_BANDS), (
+    "BUCKETS e ALLOCATION_BANDS tem de cobrir exactamente os mesmos buckets: "
+    f"{sorted(set(BUCKETS) ^ set(ALLOCATION_BANDS))}")
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Limiares
 # ─────────────────────────────────────────────────────────────────────────────
@@ -136,11 +143,58 @@ GAUGE_B_CAPTION = (
     "This is what decides the Critical regime."
 )
 
+# ── Custos de transacção ─────────────────────────────────────────────────────
+#
+# Vivem aqui porque o backtest e a carteira real têm de cobrar o mesmo. Enquanto
+# estiveram só no backtest, o site publicava lado a lado um histórico com
+# comissões deduzidas e uma carteira real sem custo nenhum, como se fossem
+# comparáveis: cinco rebalanceamentos × seis posições ≈ $300 sobre $10.000, quase
+# metade do P&L publicado de +6,18%.
+#
+# Uma posição é um ticker: dois buckets que partilhem instrumento são uma linha
+# só no corretor, e pagam uma vez.
+COST_OPEN  = 10.0
+COST_CLOSE = 10.0
+
+
+def trade_cost(old_shares, new_shares, model="open_close"):
+    """(custo em dólares, detalhe) de passar de uma carteira à outra.
+
+    `open_close` é a leitura literal — paga-se ao abrir e ao fechar uma posição.
+    `every_trade` acrescenta o acerto de peso de uma posição já detida, que num
+    corretor que cobre por ordem também é uma ordem.
+
+    A carteira real cobra a literal, e convém dizer com franqueza o que isso
+    significa: é o limite INFERIOR, não o superior. Um rebalanceamento semestral
+    dentro do mesmo mapa não abre nem fecha linha nenhuma — só acerta pesos — e
+    sob `open_close` custa $0, quando um corretor por ordem cobraria $60. O P&L
+    publicado é, nessas semanas, o mais favorável dos dois. A escolha é uma
+    convenção declarada — o backtest publica os dois modelos lado a lado, para
+    que se veja a diferença — e não uma afirmação de que os custos estão
+    resolvidos."""
+    old_shares = {t: q for t, q in (old_shares or {}).items() if q}
+    new_shares = {t: q for t, q in (new_shares or {}).items() if q}
+    abertas  = [t for t in new_shares if t not in old_shares]
+    fechadas = [t for t in old_shares if t not in new_shares]
+    ajustadas = [t for t in new_shares if t in old_shares
+                 and abs(new_shares[t] - old_shares[t]) > 1e-9]
+    custo = COST_OPEN * len(abertas) + COST_CLOSE * len(fechadas)
+    if model == "every_trade":
+        custo += COST_OPEN * len(ajustadas)
+    return round(custo, 2), {"opened": sorted(abertas), "closed": sorted(fechadas),
+                             "adjusted": sorted(ajustadas), "model": model}
+
+
 REBALANCE_COPY = {
     "stress_on": (
         "Gauge B fired. The portfolio moved to the Critical map: defensive "
         "instruments and the declared Critical weights, which override this "
         "week's newsletter allocation for as long as stress persists."
+    ),
+    "stress_off_to_resilient": (
+        "Gauge B stood down and the Resilience Score has held at or below 4.0 for "
+        "two consecutive readings. The portfolio moved directly from the Critical "
+        "map to the Resilient map, without passing through Turbulence."
     ),
     "stress_off": (
         "Gauge B stood down. The portfolio returned to the Turbulence map and "
@@ -165,6 +219,32 @@ REBALANCE_COPY = {
     "hold": (
         "No trigger this week. Positions held; no transactions."
     ),
+    "valuation_incomplete_held": (
+        "A rebalance was due, but at least one held instrument could not be priced "
+        "at all. Sizing new positions against an incomplete portfolio value would "
+        "have lost that capital, so positions were held instead."
+    ),
+    "valuation_not_credible_held": (
+        "A rebalance was due, but the price used for at least one held instrument "
+        "has been frozen for longer than the declared limit. That valuation is no "
+        "longer credible, and sizing new positions against it would have committed "
+        "capital that may not exist, so positions were held instead."
+    ),
+    "missing_prices_held": (
+        "A rebalance was due but at least one instrument had no usable price. "
+        "Positions were held rather than executing a partial allocation that "
+        "would have left part of the portfolio unassigned."
+    ),
+    "aborted_invalid_shares": (
+        "A rebalance was computed but failed its value check before execution. "
+        "Positions were held."
+    ),
+    "stale_allocation_held": (
+        "The scheduled semi-annual rebalance was due, but this week's allocation "
+        "table could not be read. The semi-annual rebalance exists to apply THIS "
+        "week's published percentages, so positions were held rather than traded "
+        "on an allocation from an earlier edition that nobody published this week."
+    ),
     "no_allocation_available": (
         "A rebalance was due but this week's allocation could not be read. "
         "Positions held rather than traded on an unverified allocation."
@@ -186,7 +266,18 @@ def classify_regime(score, stress_active=None, previous_regime="Turbulence"):
         return previous_regime or "Turbulence"
     if stress_active:
         return "Critical"
-    if score is not None and score <= RESILIENT_MAX:
+    if score is None:
+        # Sem score, uma avaria de dados nao pode gerar transaccoes: estando em
+        # Resilient, o codigo devolvia "Turbulence" e isso produzia um
+        # `resilient_off` — uma rotacao completa da carteira por falha de rede.
+        #
+        # A excepcao e Critical: o medidor disse explicitamente OFF, e quem
+        # decide Critical e o medidor, nao o score. Sair e obrigatorio, e sem
+        # score nao ha como confirmar Resilient — logo, Turbulence.
+        if previous_regime == "Critical":
+            return "Turbulence"
+        return previous_regime or "Turbulence"
+    if score <= RESILIENT_MAX:
         return "Resilient"
     return "Turbulence"
 
@@ -204,12 +295,217 @@ def score_band(score):
     return "Turbulence"
 
 
+# Os regimes que a carteira pode deter. Declarados, para que quem lê um regime
+# de um ficheiro possa perguntar se é um deles em vez de supor que sim.
+REGIMES = ("Resilient", "Turbulence", "Critical")
+
+
+def subregime_do_mapa(active_etf_map):
+    """Qual dos dois vectores de Critical um mapa de ETFs É, ou None.
+
+    Não é uma adivinha: os dois vectores diferem no instrumento da manga de
+    duração (TLT contra SHY), e o mapa está escrito no `portfolio.json`. Quando
+    o campo `critical_subregime` se perde — um ficheiro reconstruído à mão, uma
+    versão anterior — a carteira continua a DIZER o que detém; lê-se dela, em
+    vez de se inventar um valor por omissão ou de se congelar para sempre."""
+    if not isinstance(active_etf_map, dict) or not active_etf_map:
+        return None
+    for chave in CRITICAL_WEIGHTS:
+        if all(active_etf_map.get(b) == t
+               for b, t in REGIME_ETF_MAP[chave].items()):
+            return chave
+    return None
+
+
+def normaliza_regime(regime, critical_subregime=None, active_etf_map=None):
+    """(regime, sub-regime, nota) a partir do que estiver escrito no ficheiro.
+
+    O `critical_subregime` já era validado; o `regime` não, e é o campo com a
+    confusão mais convidativa de todas: o site imprime "Portfolio on the
+    Critical_FTQ map", o RUNBOOK fala em `Critical_FTQ`/`Critical_Stress` como
+    o estado da carteira, e o Caso 4 manda o operador reconstruir estado à mão.
+    Quem escrever `"regime": "Critical_FTQ"` fazia
+    `was_critical_last_week = (was_regime == "Critical")` ficar FALSO: a porta
+    assimétrica via uma entrada fresca e o motor vendia todo o TLT — 35% da
+    carteira — numa semana em que o medidor tinha confirmado a descida do 10Y.
+    E `resolve_etf_map_key` devolvia a string intacta, que caía no mapa de
+    Turbulence por omissão: risk-on, com o ficheiro a dizer Critical.
+
+    Um sub-vector de Critical no campo do regime NÃO é uma adivinha: a string
+    nomeia um dos dois vectores de crise, portanto a carteira está em Critical
+    e é esse o sub-regime. O resto — maiúsculas trocadas, um regime que não
+    existe — é ilegível, e devolve-se `None` para quem chama decidir o que faz
+    com isso. Nunca se devolve em silêncio um regime que ninguém escreveu."""
+    # O sub-regime leva a MESMA tolerância que o regime. Repará-la só num dos
+    # campos era pior do que não a ter: o mesmo texto — "critical_ftq",
+    # "Critical_FTQ " — escrito no campo do regime era reparado, e escrito no
+    # campo a que pertence era deitado fora. E deitá-lo fora custava a
+    # transacção: com o sub-regime anterior apagado, o ramo "corrida sem dados"
+    # (que existe precisamente para RETER) não tinha nada para reter, degradava
+    # para o vector defensivo, e `decide_rebalance` via uma troca — vendia o
+    # TLT, 35% da carteira, numa semana em que o medidor não leu nada, e a nota
+    # gravada ao lado dizia "previous sub-regime retained".
+    #
+    # "FTQ"/"STRESS" entram aqui porque são o vocabulário que o PRÓPRIO produtor
+    # publica em `stressGauge.subregime`, e é o que o site mostra a quem
+    # reconstrói estado à mão.
+    _mapa_sub = {k.casefold(): k for k in CRITICAL_WEIGHTS}
+    _mapa_sub.update({"ftq": "Critical_FTQ", "stress": "Critical_Stress"})
+    sub, _nota_sub = None, None
+    if isinstance(critical_subregime, str):
+        sub = _mapa_sub.get(critical_subregime.strip().casefold())
+        if sub is None:
+            _nota_sub = f"critical_subregime ilegivel: {critical_subregime!r}"
+        elif sub != critical_subregime:
+            _nota_sub = (f"critical_subregime com grafia diferente "
+                         f"({critical_subregime!r}); lido como {sub}")
+    elif critical_subregime is not None:
+        _nota_sub = f"critical_subregime ilegivel: {critical_subregime!r}"
+
+    def _junta(*partes):
+        # As duas queixas acumulam-se. A versao anterior descartava a do
+        # sub-regime sempre que o regime tambem fosse ilegivel — e era esse o
+        # caso em que quem le mais precisava de saber das duas.
+        return "; ".join(x for x in partes if x) or None
+
+    def _sai(reg_, sub_, *notas):
+        # UM so ponto de saida decide "Critical sem sub-regime le-se do mapa".
+        # Com a regra espalhada por ramo, o ramo da grafia diferente ficou sem
+        # ela: `"critical"` em minusculas era reparado como regime mas nao
+        # perguntava nada ao mapa, e a jusante forcava-se o lado defensivo sobre
+        # uma carteira que detem o vector FTQ — uma rotacao completa da carteira
+        # publicada sob um motivo que descreve uma troca a partir de um
+        # sub-regime em que ela nunca esteve.
+        if reg_ == "Critical" and sub_ is None:
+            sub_ = subregime_do_mapa(active_etf_map)
+            if sub_:
+                notas = notas + (f"sub-regime lido do mapa detido: {sub_}",)
+        return reg_, sub_, _junta(*notas)
+
+    nota = _nota_sub
+    if isinstance(regime, str):
+        if regime in REGIMES:
+            return _sai(regime, sub, nota)
+        # Um so ramo por caso, e a comparacao insensivel a grafia SUBSUME a
+        # exacta: manter as duas deixava um par de mutantes equivalentes, cada
+        # um a tapar o outro, que e outra maneira de dizer que uma delas nao
+        # estava testada.
+        _casado = {r.casefold(): r for r in REGIMES}.get(regime.strip().casefold())
+        if _casado:
+            return _sai(_casado, sub,
+                        None if regime == _casado else
+                        f"regime com grafia diferente ({regime!r})", _nota_sub)
+        # "Critical_FTQ" no campo do regime: a carteira ESTA em Critical, e a
+        # string diz em que vector. Adopta-se, e o sub-regime lido so prevalece
+        # se ele proprio for legivel.
+        # A MESMA tabela que o sub-regime usa: "FTQ" e "STRESS" sao o
+        # vocabulario que o produtor publica, e reparar essa grafia num campo e
+        # deita-la fora no outro foi exactamente a queixa que custou uma venda
+        # do TLT — nao se repete com os campos trocados.
+        _casado_sub = _mapa_sub.get(regime.strip().casefold())
+        if _casado_sub:
+            return _sai("Critical", (sub or _casado_sub),
+                        f"regime escrito como sub-vector ({regime!r}); lido como "
+                        f"Critical/{sub or _casado_sub}", _nota_sub)
+
+    # Nem o campo do regime nem o do sub-regime se leram. Antes de declarar o
+    # regime ilegivel, pergunta-se ao MAPA que a carteira detem — que e o mesmo
+    # principio que ja se aplica ao sub-regime perdido, e e mais forte do que
+    # qualquer string: os dois vectores de Critical diferem no instrumento da
+    # manga de duracao, e o mapa esta escrito no ficheiro. Sem isto, uma
+    # carteira com TLT e o campo mal escrito era declarada Turbulence, a porta
+    # assimetrica via uma entrada fresca, e vendiam-se 35% dela; e com o medidor
+    # calmo, a edicao publicava aos subscritores os ETFs de Turbulence sobre uma
+    # carteira que detem os de Critical, semana apos semana.
+    # Um SUB-REGIME legivel diz, por si so, que a carteira esta em Critical: os
+    # dois vectores so existem la dentro. E informacao do proprio ficheiro, nao
+    # uma adivinha, e vale mais do que uma string do regime que ninguem
+    # consegue ler.
+    if sub:
+        return _sai("Critical", sub, _junta(
+            f"regime ilegivel ({regime!r}); o sub-regime {sub} so existe dentro "
+            f"de Critical, e e esse o estado", _nota_sub))
+    _do_mapa = subregime_do_mapa(active_etf_map)
+    if _do_mapa:
+        return _sai("Critical", (sub or _do_mapa),
+                    f"regime ilegivel ({regime!r}); a carteira detem o mapa "
+                    f"{_do_mapa}, e e esse o estado", _nota_sub)
+    return None, sub, _junta(f"regime ilegivel: {regime!r}", _nota_sub)
+
+
+def numero_de_edicao(valor):
+    """O numero de edicao que `valor` representa, ou None.
+
+    Aceita `27`, `27.0`, `"27"` e `"#27"` (a forma que sai de copiar a linha
+    "Issue #27: 412 enviados" do log, que e o que o RUNBOOK manda procurar).
+    NAO aceita a string `"27.0"`: ai nao se sabe se o autor queria a edicao 27
+    ou escreveu outra coisa, e uma marca inventada e pior do que uma marca
+    ilegivel — esta ultima e preservada e corrigida a mao. As tres formas saem de sitios diferentes — o
+    codigo escreve int, um JSON reconstruido a mao escreve string, um editor
+    distraido escreve float — e os leitores tratavam-nas de maneiras diferentes:
+    o `already_sent` comparava com `==`, portanto `"27" == 27` era False e a
+    marca ficava INERTE. A edicao era gerada de novo, com texto novo, publicada
+    por cima e enviada a lista toda uma segunda vez — que e exactamente o
+    desastre que este ficheiro existe para impedir. O `mark_sent`, por sua vez,
+    descartava `27.0` que o `already_sent` honrava. Um so normalizador para os
+    tres.
+    """
+    if isinstance(valor, bool):
+        return None
+    if isinstance(valor, int):
+        return valor
+    if isinstance(valor, float):
+        return int(valor) if valor.is_integer() else None
+    if isinstance(valor, str):
+        # O `#` tolera-se: a linha que o RUNBOOK manda o operador procurar no
+        # log e "Issue #N: X enviados", e copia-la da `"#27"`. Sem esta linha,
+        # o `already_sent` nao reconhecia a marca, a edicao era gerada de novo e
+        # enviada a lista toda uma segunda vez.
+        v = valor.strip().lstrip("#").strip()
+        # `isdigit()` nao chega: `"\u00b2".isdigit()` e True e `int("\u00b2")` levanta.
+        # E o `sanear_marca` e a PRIMEIRA coisa que o `main()` faz — uma
+        # excepcao aqui mata o job antes de gerar seja o que for, que e
+        # exactamente o que aquela funcao nao pode ser.
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
 def resolve_etf_map_key(regime, critical_subregime=None):
-    """Critical tem duas chaves de mapa; os outros regimes mapeiam 1:1. Sem
-    sub-regime resolvido, cai no lado defensivo."""
+    """Critical tem duas chaves de mapa; os outros regimes mapeiam 1:1. Um
+    sub-regime que não seja uma das duas chaves cai no lado defensivo.
+
+    `critical_subregime or "Critical_Stress"` só protegia contra None e "". Um
+    valor QUALQUER — a forma curta que o medidor publica ("FTQ"), um
+    `portfolio.json` reconstruído à mão, um estado de uma versão anterior —
+    passava intacto, e a jusante degradava em silêncio para o lado errado:
+    `get_active_tickers` faz `REGIME_ETF_MAP.get(key, REGIME_ETF_MAP["Turbulence"])`
+    e `effective_bucket_alloc` vê que a chave não está em `CRITICAL_WEIGHTS` e
+    devolve a alocação da NEWSLETTER. Resultado: com o regime a dizer Critical,
+    a carteira ia para o mapa risk-on e para as percentagens macro — a rotação
+    exactamente oposta à que Critical existe para fazer, publicada sob a
+    etiqueta "Critical". Um regime de crise não pode resolver para o mapa de
+    Turbulence por causa de uma string."""
     if regime == "Critical":
-        return critical_subregime or "Critical_Stress"
-    return regime
+        # `isinstance(str)` antes do `in`: um portfolio.json corrompido com uma
+        # lista ou um dicionario neste campo faz `x in dict` levantar
+        # TypeError, e um TypeError aqui e uma sexta sem carteira e sem
+        # newsletter. Um valor absurdo tem de cair no lado defensivo, nao
+        # rebentar o motor.
+        if isinstance(critical_subregime, str) and critical_subregime in CRITICAL_WEIGHTS:
+            return critical_subregime
+        return "Critical_Stress"
+    if regime in REGIMES:
+        return regime
+    # Um regime que ninguem escreveu nao pode resolver em silencio para o mapa
+    # risk-on. O `get(key, REGIME_ETF_MAP["Turbulence"])` a jusante fazia
+    # exactamente isso — inclusive com "Critical_FTQ" ou "critical" no campo, que
+    # e o oposto do que a carteira detem. Aqui a duvida cai no lado defensivo.
+    if isinstance(regime, str) and regime in CRITICAL_WEIGHTS:
+        return regime
+    return "Critical_Stress"
 
 
 def get_active_tickers(regime, critical_subregime=None):
@@ -217,22 +513,38 @@ def get_active_tickers(regime, critical_subregime=None):
     return list(REGIME_ETF_MAP.get(key, REGIME_ETF_MAP["Turbulence"]).values())
 
 
-def subregime_from_gauge(gauge_subregime, was_critical_last_week):
+def subregime_from_gauge(gauge_subregime, was_critical_last_week,
+                         was_subregime=None):
     """(sub-regime, nota). Porta assimétrica confirmada em Jul 2026: o TLT só se
-    reconquista com uma queda do 10Y confirmada, e entrada fresca, sinal ausente
-    ou qualquer dúvida caem no lado defensivo. `gauge_subregime` é o campo
-    `stressGauge.subregime` — "FTQ", "STRESS" ou None."""
+    reconquista com uma queda do 10Y confirmada, e entrada fresca ou uma leitura
+    que não confirma a descida caem no lado defensivo. `gauge_subregime` é o
+    campo `stressGauge.subregime` — "FTQ", "STRESS" ou None.
+
+    None é AUSÊNCIA de leitura, não uma leitura negativa, e as duas não podem
+    dar o mesmo resultado. A janela de 3 meses do 10Y é a única coisa que separa
+    35% da carteira em TLT de 20% em SHY: tratar a ausência como "não há
+    descida" faz uma falha de rede vender o TLT — a transacção que o motor já se
+    recusa a fazer quando o medidor inteiro fica sem dados. Já dentro de
+    Critical, a ausência mantém o que a carteira detém; a entrada fresca
+    continua a ir para o lado defensivo, porque aí não há nada para manter e o
+    TLT teria de ser CONQUISTADO por uma medição que não houve."""
     if not was_critical_last_week:
         return ("Critical_Stress",
                 "Fresh entry into Critical — defaulting to Stress-without-relief "
                 "until a 10Y decline is confirmed.")
+    if gauge_subregime is None:
+        anterior = was_subregime if was_subregime in CRITICAL_WEIGHTS else "Critical_Stress"
+        return (anterior,
+                "Gauge B could not measure the 3-month 10Y window this run — the "
+                "sub-regime in force was retained. Absence of a signal is not a "
+                "signal, and a data outage does not move the portfolio.")
     if gauge_subregime == "FTQ":
         return ("Critical_FTQ",
                 "Gauge B confirms a 10Y decline of at least 10bp over 3 months — "
                 "Flight-to-Quality, TLT retained.")
-    trend = "unavailable" if gauge_subregime is None else "no confirmed decline"
     return ("Critical_Stress",
-            f"Gauge B reports {trend} on the 10Y — Stress-without-relief (defensive).")
+            "Gauge B reports no confirmed decline on the 10Y — "
+            "Stress-without-relief (defensive).")
 
 
 def decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
@@ -240,16 +552,24 @@ def decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
     """Motivo do rebalanceamento, ou None para manter as posições.
 
     Precedência: entrada e saída de Critical primeiro — é o evento a que a
-    carteira existe para responder — depois o calendário semestral, depois a
-    emergência por score baixo, e por fim a troca de sub-regime dentro de
-    Critical (mesmas percentagens, outro instrumento)."""
+    carteira existe para responder — depois a saída de Resilient, depois a
+    emergência por score baixo, depois a troca de sub-regime dentro de Critical,
+    e só por fim o calendário semestral. Os factos específicos vêm antes da
+    data: quando coincidem, o rebalanceamento acontece na mesma e o que muda é
+    a etiqueta publicada, que passa a dizer o que realmente mudou."""
     # Entrada e saída são imediatas, sem janela de confirmação: os gatilhos do
     # medidor B já são séries publicadas com atraso (Sahm mensal com um mês de
     # lag, delinquência trimestral com cinco) e, no backtest 2007-2026, uma
     # histerese de 1 a 6 meses custou ~0,3 pp de CAGR sem melhorar a quebra
     # máxima nem reduzir o número de trocas.
     if (regime == "Critical") != (was_regime == "Critical"):
-        return "stress_on" if regime == "Critical" else "stress_off"
+        if regime == "Critical":
+            return "stress_on"
+        # A saida de Critical pode ir para Turbulence OU para Resilient (medidor
+        # OFF com a confirmacao de score baixo ja feita). O texto de "stress_off"
+        # fala do mapa de Turbulence, e era publicado numa semana em que a
+        # carteira tinha ido para QQQ/HYG/IWO.
+        return "stress_off_to_resilient" if regime == "Resilient" else "stress_off"
     # Saida de Resilient, pela mesma razao e com a mesma simetria: a entrada exige
     # confirmacao de duas semanas (o ramo de emergencia), a saida e imediata. Sem
     # isto, entrava-se em Resilient e so se saia no rebalanceamento semestral
@@ -257,13 +577,59 @@ def decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
     # final contra este modulo.
     if was_regime == "Resilient" and regime != "Resilient":
         return "resilient_off"
-    if semestral:
-        return "semestral_rebalance"
-    if emergency_reason:
+    # A emergencia e a troca de sub-regime vem ANTES do calendario. Sao factos
+    # especificos sobre o que mudou; "semestral_rebalance" e so a data. Quando
+    # coincidiam, o texto publicado dizia "rebalanceamento de calendario" numa
+    # semana em que o instrumento da manga de duracao tinha mudado.
+    # A emergencia e a ENTRADA confirmada em Resilient. Dentro de Critical nao
+    # tem sentido: o medidor B esta ON, a carteira esta no mapa defensivo, e o
+    # score baixo e esperado — o proprio framework declara que tres dos cinco
+    # pilares melhoram mecanicamente numa crise. Sem esta guarda, uma crise com
+    # score <= 4,0 duas semanas seguidas devolvia `emergency_resilient`, a
+    # newsletter dizia "the portfolio rotated to the Resilient map" enquanto o
+    # cabecalho dizia "Critical · No Relief", e executava um rebalanceamento
+    # TODAS as semanas enquanto a condicao se mantivesse.
+    # `regime == "Resilient"`, nao `!= "Critical"`.
+    #
+    # A emergencia E a entrada confirmada em Resilient — so faz sentido quando o
+    # regime resultante e Resilient. Com `!= "Critical"` disparava tambem em
+    # Turbulence (rebalanceando o mapa de Turbulence e publicando "the portfolio
+    # rotated to the Resilient map", que e falso) e voltava a disparar TODAS as
+    # semanas ja dentro de Resilient, contra a regra declarada de nao haver
+    # rebalanceamento tactico semanal.
+    if emergency_reason and regime == "Resilient" and was_regime != "Resilient":
         return emergency_reason
     if regime == "Critical" and critical_subregime != was_subregime:
         return f"critical_subregime_switch:{was_subregime or 'none'}->{critical_subregime}"
+    if semestral:
+        return "semestral_rebalance"
     return None
+
+
+def confirm_regime(want, was_regime, emergency_reason=None):
+    """O regime que a carteira PODE deter, dado o que foi sinalizado.
+
+    A entrada em Resilient exige confirmacao de duas leituras — e o ramo de
+    emergencia que a concede. Sem ela, o regime sinalizado nao pode tornar-se
+    operativo, e isso tem de ser decidido aqui e nao no motivo do
+    rebalanceamento: bastava a semana calhar na ultima sexta de Janeiro ou Junho
+    para um unico score <= 4,0 rodar a carteira para QQQ/HYG/IWO sob a etiqueta
+    "semestral_rebalance", saltando por cima da confirmacao.
+
+    Critical nao passa por aqui: e decidido pelo medidor B e e imediato por
+    desenho, com o custo dessa escolha medido no backtest."""
+    if want == "Resilient" and was_regime != "Resilient" and not emergency_reason:
+        # Turbulence, NAO `was_regime`. Devolver o regime anterior prendia a
+        # carteira em Critical: com o medidor a dizer OFF e o score <= 4,0, o
+        # Resilient nao se confirma e o codigo devolvia "Critical", pelo que
+        # decide_rebalance nao via mudanca nenhuma e nao havia sequer gatilho de
+        # saida. Bastava uma corrida falhada para a janela de datas do
+        # check_emergency nunca confirmar e o bloqueio ser indefinido.
+        #
+        # O regime nao confirmado cai no do meio, que e o unico que nao afirma
+        # nada: Critical so vem do medidor B, e o medidor disse OFF.
+        return "Turbulence"
+    return want
 
 
 def rebalance_copy(reason):
@@ -295,13 +661,24 @@ def validate_allocation(alloc):
     total = sum(alloc.values())
     if abs(total - 100.0) > ALLOCATION_TOTAL_TOLERANCE:
         problems.append(f"total {total:.1f}% is outside 100 ± {ALLOCATION_TOTAL_TOLERANCE:.0f}")
+    # Um bucket em falta e o modo de falha mais provavel do parser: uma linha
+    # cujo nome de classe de activo o LLM inventou e o mapeamento nao apanhou.
+    # Sem esta verificacao, {40, 25, 15, 10, 8} soma 98 e passa na tolerancia,
+    # com ALTERNATIVES a zero e sem um unico aviso. Um bucket ausente e uma
+    # leitura falhada, nao uma decisao de alocar zero.
+    missing = [b for b in BUCKETS if b not in alloc]
+    if missing:
+        problems.append(f"missing bucket(s): {', '.join(missing)}")
     for bucket, pct in alloc.items():
         if bucket not in BUCKETS:
             problems.append(f"unknown bucket {bucket!r}")
             continue
         lo, hi = ALLOCATION_BANDS[bucket]
         if not (lo <= pct <= hi):
-            problems.append(f"{bucket} at {pct:.1f}% is outside its {lo:.0f}–{hi:.0f}% band")
+            # `:g`, nao `:.0f`: com uma banda de 5,4 a mensagem dizia "outside
+            # its 5–60% band" para um 5,0 rejeitado, e o operador lia um numero
+            # que nao explicava a recusa.
+            problems.append(f"{bucket} at {pct:.1f}% is outside its {lo:g}–{hi:g}% band")
     return (not problems), problems
 
 
@@ -595,6 +972,27 @@ PILLAR_SCORING = {
 }
 
 PILLAR_ORDER = ["cycle", "liquidity", "premium", "solvency", "debt"]
+
+# Séries que ENTRAM num pilar sem serem a série que lhe dá o nome.
+#
+# O E/P do pilar Premium é earnings/preço: os earnings vêm da âncora posta à
+# mão, o preço vem do SP500. Uma SP500 parada não põe o Premium em n/d — ele
+# continua a pontuar — mas pontua sobre o preço de outro dia, e o composto com
+# ele. Enquanto esta dependência não estava declarada em lado nenhum, o
+# consumidor via "SP500 não alimenta pilar nenhum" e publicava, como aviso
+# obrigatório copiado à letra, "so the Resilience Score is unchanged" — numa
+# semana em que o score está construído sobre um preço parado.
+PILLAR_EXTRA_SERIES = {"premium": ["SP500"]}
+
+# Uma série indirecta não pode ser, ao mesmo tempo, a série nomeada do pilar:
+# se alguém a promover a `fredSeries`, o consumidor passaria a ter dois ramos
+# para o mesmo caso e o mais fraco venceria.
+for _pid_x, _sx in PILLAR_EXTRA_SERIES.items():
+    assert _pid_x in PILLAR_ORDER, f"pilar desconhecido em PILLAR_EXTRA_SERIES: {_pid_x}"
+    _nomeadas = str(PILLAR_SCORING[_pid_x].get("fredSeries") or "")
+    for _s_x in _sx:
+        assert _s_x not in _nomeadas, (
+            f"{_s_x} já é a série nomeada do pilar {_pid_x}")
 PILLAR_WEIGHTS = {pid: PILLAR_SCORING[pid]["weight"] for pid in PILLAR_ORDER}
 
 PILLAR_STATUS_BANDS = [(4.0, "stable"), (6.0, "caution"), (7.5, "warning")]
@@ -646,11 +1044,40 @@ def pillar_status(score):
     return "critical"
 
 
+# Peso mínimo dos pilares vivos para o composto poder DECIDIR alguma coisa.
+#
+# A renormalização sobre os pilares que restam é o comportamento certo — um
+# pilar em n/d não pode entrar com um valor inventado — mas não tinha chão: com
+# quatro dos cinco em n/d, o composto passava a ser um único pilar com peso 1,0,
+# e duas leituras seguidas ≤ 4,0 desse pilar rodavam a carteira inteira para o
+# mapa Resilient. Todo o resto do sistema falha para o lado seguro quando os
+# dados degradam — mantém posições e declara-o; era este o único sítio onde a
+# degradação produzia a acção máxima, e na direcção risk-on, precisamente
+# durante a cegueira.
+#
+# Três dos cinco pilares vivem de séries trimestrais: uma suspensão prolongada
+# das publicações do BEA ou do Fed Z.1 deixa dois pilares de pé, e isso não é um
+# cenário exótico.
+#
+# Metade do peso total. Com estes pesos (0,20 / 0,20 / 0,25 / 0,15 / 0,20) a
+# fronteira cai limpa entre dois e três pilares: os dois mais pesados somam 0,45
+# e os três mais leves somam 0,55. O limiar diz portanto, na prática, "pelo menos
+# três dos cinco, sejam quais forem" — e continua a dizê-lo se os pesos mudarem,
+# porque o que se exige é evidência, não uma contagem.
+#
+# Abaixo disso o composto é n/d, e o protocolo n/d que já existe mantém o regime
+# anterior em vez de decidir.
+MIN_PILLAR_WEIGHT = 0.50
+
+
 def global_score(scores):
     """Composto ponderado dos cinco pilares.
 
     Pilares em n/d são EXCLUÍDOS e os pesos renormalizados sobre os restantes,
-    em vez de entrarem no composto com um score inventado.
+    em vez de entrarem no composto com um score inventado. Mas só há composto
+    enquanto os pilares vivos valerem pelo menos `MIN_PILLAR_WEIGHT` do peso
+    total: abaixo disso não há evidência suficiente para uma decisão, e o
+    composto é n/d.
 
     Devolve (score, lista_de_pilares_em_nd).
     """
@@ -659,6 +1086,8 @@ def global_score(scores):
     if not ok:
         return None, nd
     total = sum(ok.values())
+    if total < MIN_PILLAR_WEIGHT * sum(PILLAR_WEIGHTS.values()) - 1e-9:
+        return None, nd
     return round(sum(scores[pid] * w / total for pid, w in ok.items()), 2), nd
 
 
@@ -666,6 +1095,14 @@ def as_dict():
     """Bloco `rules` do data.json. O index.html lê os limiares e os rótulos
     daqui em vez de os ter escritos no JavaScript."""
     return {
+        # A lista canonica dos motivos de rebalanceamento. O index.html tinha
+        # o seu proprio vocabulario escrito a mao e ficou sem o
+        # `valuation_incomplete_held` desde o dia em que este foi criado: a
+        # semana em que o motor recusou rebalancar por nao conseguir valorizar
+        # a carteira aparecia no site como "Valuation incomplete held", sem
+        # icone nem cor de aviso. Publicando-a aqui, um motivo novo passa a ser
+        # detectavel do lado do JavaScript em vez de silenciosamente ignorado.
+        "rebalanceReasons": sorted(REBALANCE_COPY),
         "resilientMax": RESILIENT_MAX,
         "criticalMin": CRITICAL_MIN,
         "regimeDecidedBy": "gaugeB",

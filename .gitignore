@@ -1,2 +1,10 @@
 __pycache__/
 *.pyc
+
+# Ficheiros temporários da escrita atómica (nunca devem sobreviver a uma corrida).
+*.tmp
+
+# Estado que o test_end_to_end produz para o test_frontend.js correr os
+# renderers do site sobre o que o motor escreveu, em vez de sobre um objecto
+# inventado. E saida de teste, nao estado do sistema.
+tests/.produzido/

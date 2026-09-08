@@ -114,4 +114,48 @@ lidos = set(re.findall(r"\bspec\.([A-Za-z]+)", HTML))
 publicados = set(d["pillarScoring"]["cycle"]) | {"bands"}
 eq(sorted(lidos - publicados), [], "o index.html le campos que o as_dict nao publica")
 
+# ── Os limiares do medidor B que o site ESCREVE sao os do codigo ──────────
+#
+# O painel ao vivo passou a le-los do data.json; a prosa da Academia continua a
+# escreve-los a mao, e e prosa que descreve o mecanismo — nao se interpola. Mas
+# duas copias do mesmo numero divergem sempre pelo lado da copia, e foi assim
+# que o site anunciou durante meses um controlo que nao existia. Aqui compara-se
+# o que a pagina DIZ com o que o codigo FAZ: se um dos dois mudar sozinho, isto
+# fica vermelho.
+import importlib.util as _iu_gb_a
+_sp_gb_a = _iu_gb_a.spec_from_file_location("gb_a", ROOT / "mrm_gauge_b.py")
+_gb_a = _iu_gb_a.module_from_spec(_sp_gb_a)
+import os as _os_a
+_os_a.environ.setdefault("FRED_API_KEY", "x")
+_sp_gb_a.loader.exec_module(_gb_a)
+
+# Os numeros lêem-se do SITIO onde a prosa os afirma, nao de qualquer sitio da
+# pagina: "0.6" aparece por acaso numa pagina com mil numeros, e uma procura
+# solta dava-se por satisfeita com a coincidencia.
+for _nome_l, _padrao_l, _esperado_l in (
+        ("SAHM_TRIGGER", r"SAHMREALTIME\s*(?:&ge;|>=|\u2265)\s*([0-9.]+)",
+         f"{_gb_a.SAHM_TRIGGER:.2f}"),
+        ("NPL_ACCEL_TRIGGER",
+         r"DRALACBN,\s*4-quarter change\s*(?:&ge;|>=|\u2265)\s*\+?([0-9.]+)\s*pp",
+         f"{_gb_a.NPL_ACCEL_TRIGGER:.2f}"),
+        ("TENY_FTQ_BP", r"(?:at least|or more)?\s*-([0-9]+)bp",
+         f"{abs(_gb_a.TENY_FTQ_BP * 100):.0f}")):
+    _achados_l = re.findall(_padrao_l, HTML)
+    true(_achados_l,
+         f"a prosa do site afirma o limiar de {_nome_l} (padrao {_padrao_l})")
+    for _a_l in _achados_l:
+        eq(float(_a_l), float(_esperado_l),
+           f"o limiar de {_nome_l} que o site ESCREVE e o do codigo "
+           f"(site {_a_l}, codigo {_esperado_l})")
+
+# E o painel ao vivo NAO tem o numero escrito a mao: le-o do ficheiro, nos TRES
+# gatilhos. Um so `limiarDe(` na pagina deixava os outros dois cravados.
+true("const limiarDe = (" in HTML, "a derivacao do limiar existe")
+eq(HTML.count("limiarDe(t."), 3,
+   f"e os TRES gatilhos usam-na — um so `limiarDe` deixava os outros dois "
+   f"cravados (encontrados {HTML.count('limiarDe(t.')})")
+for _cravado in ("'&ge; 0.50'", "'&ge; +0.81 pp'", "'&le; &minus;10 bp"):
+    true(_cravado not in HTML,
+         f"e nao ha uma segunda copia escrita a mao no painel ({_cravado})")
+
 print(f"TODOS OS {ok} TESTES PASSARAM")
