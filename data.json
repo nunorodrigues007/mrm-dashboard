@@ -1,10 +1,10 @@
 {
   "meta": {
-    "lastUpdated": "2026-09-08T20:24:03Z",
+    "lastUpdated": "2026-09-09T20:07:49Z",
     "source": "FRED API (Live)",
     "version": "3.0.0",
     "fredSeriesDates": {
-      "T10Y2Y": "2026-09-04",
+      "T10Y2Y": "2026-09-08",
       "M2SL": "2026-07-01",
       "NCBEILQ027S_FBCELLQ027S_GDP": "2026-01-01",
       "DGS10": "2026-09-04",
@@ -603,7 +603,7 @@
         "note": "4-quarter change. Threshold = 90th percentile of its own history since 1987."
       }
     },
-    "computedAt": "2026-09-08T20:24:02Z"
+    "computedAt": "2026-09-09T20:07:48Z"
   },
   "pillars": [
     {
@@ -667,24 +667,24 @@
       "metric": "Equity Risk Premium",
       "fredSeries": "DGS10",
       "score": 10.0,
-      "value": "-0.96%",
+      "value": "-0.93%",
       "epEstimated": true,
-      "epValue": 3.82,
+      "epValue": 3.85,
       "epAsOf": "2026-08-31",
       "epAnchor": {
         "refYieldPct": 3.84,
         "refDate": "2026-08-31",
         "indexRef": 7686.14,
-        "indexNow": 7718.6,
-        "indexNowDate": "2026-09-04",
+        "indexNow": 7673.52,
+        "indexNowDate": "2026-09-08",
         "basis": "earnings held from the reference date, price marked to the latest close",
         "indexRefDate": "2026-08-31",
         "earningsPerIndexUnit": 295.15,
-        "ageDays": 8,
+        "ageDays": 9,
         "stale": false
       },
       "trend": "compressed",
-      "metricValue": -0.96,
+      "metricValue": -0.93,
       "band": {
         "lo": null,
         "hi": 0.0,
@@ -693,12 +693,12 @@
         "context": "Equities yield less than the 10-year Treasury",
         "reading": "No compensation whatsoever for holding equity risk. The bond is the higher-yielding asset."
       },
-      "scoredValue": -0.96,
+      "scoredValue": -0.93,
       "nextBandEdge": null,
       "distanceToNextBand": null,
       "delta": "\u2014",
       "deltaDirection": null,
-      "description": "ERP = E/P (3.82%) minus the 10Y yield (4.78%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
+      "description": "ERP = E/P (3.85%) minus the 10Y yield (4.78%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
       "status": "critical"
     },
     {
@@ -774,16 +774,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -0.96,
+      "value": -0.93,
       "unit": "%",
-      "displayValue": "-0.96%",
+      "displayValue": "-0.93%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
       "delta": "\u2014",
       "alert": true,
-      "description": "ERP at -0.96%. Red alert triggers below 0.80%."
+      "description": "ERP at -0.93%. Red alert triggers below 0.80%."
     },
     {
       "id": "unemployment",
