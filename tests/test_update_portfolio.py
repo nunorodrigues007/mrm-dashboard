@@ -14,6 +14,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import update_portfolio as up
 
 ok = 0
+def true(c, what):
+    eq(bool(c), True, what)
+
 def eq(got, want, what):
     global ok
     assert got == want, f"{what}: esperado {want!r}, obtido {got!r}"
@@ -66,18 +69,47 @@ with tempfile.TemporaryDirectory() as d:
     p.write_text(json.dumps({"globalResilienceScore": 6.97}))
     eq(up.read_stress_gauge(p)[0], None, "data.json sem stressGauge -> n/d")
 
-    p.write_text(json.dumps({"stressGauge": {"active": False, "subregime": None, "basis": "no trigger active"}}))
-    eq(up.read_stress_gauge(p), (False, None, "no trigger active"), "stressGauge desligado")
+    # O data.json tem de declarar quando foi gerado. Um ficheiro sem carimbo e
+    # tratado como velho — era assim que uma corrida falhada do fetch_data
+    # deixava a carteira a decidir sobre os dados de ontem sem dar sinal.
+    from datetime import datetime, timedelta
+    AGORA = datetime(2026, 9, 11, 22, 0, 0)
+    def doc(active, sub, basis, horas):
+        gen = (AGORA - timedelta(hours=horas)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return json.dumps({"meta": {"generatedAt": gen,
+                                    "freshness": {"warnAfterHours": 30, "refuseAfterHours": 48}},
+                           "stressGauge": {"active": active, "subregime": sub, "basis": basis}})
 
-    p.write_text(json.dumps({"stressGauge": {"active": True, "subregime": "FTQ", "basis": "Sahm"}}))
-    eq(up.read_stress_gauge(p), (True, "FTQ", "Sahm"), "stressGauge ligado")
+    p.write_text(doc(False, None, "no trigger active", 4))
+    eq(up.read_stress_gauge(p, now=AGORA), (False, None, "no trigger active"), "stressGauge desligado")
+
+    p.write_text(doc(True, "FTQ", "Sahm", 4))
+    eq(up.read_stress_gauge(p, now=AGORA), (True, "FTQ", "Sahm"), "stressGauge ligado")
+
+    # 28 h: uma corrida falhada, tolerada com aviso
+    p.write_text(doc(False, None, "no trigger active", 28))
+    eq(up.read_stress_gauge(p, now=AGORA)[0], False, "28 h ainda decide, com aviso")
+
+    # 50 h: duas corridas falhadas, recusa
+    p.write_text(doc(False, None, "no trigger active", 50))
+    a, s, b = up.read_stress_gauge(p, now=AGORA)
+    eq(a, None, "50 h e velho demais -> n/d, mantem o regime anterior")
+    true("50.0h old" in b, "e o motivo diz a idade")
+
+    # um ficheiro sem carimbo nenhum e velho por definicao
+    p.write_text(json.dumps({"stressGauge": {"active": False, "subregime": None, "basis": "x"}}))
+    eq(up.read_stress_gauge(p, now=AGORA)[0], None, "sem carimbo de geracao -> n/d")
+
+    # e um medidor LIGADO num ficheiro velho tambem nao passa: velho e velho
+    p.write_text(doc(True, "FTQ", "Sahm", 72))
+    eq(up.read_stress_gauge(p, now=AGORA)[0], None, "ficheiro velho nao afirma stress tambem")
 
 # ── emergencia: o ramo defensivo por score desapareceu ──────────────────────────
-hi = {"history": [{"mrm_score": 9.0}]}
+hi = {"history": [{"mrm_score": 9.0, "score_complete": True}]}
 eq(up.check_emergency(hi, 9.5)[0], False, "score alto ja nao dispara emergencia")
-lo = {"history": [{"mrm_score": 3.5}]}
+lo = {"history": [{"mrm_score": 3.5, "score_complete": True}]}
 eq(up.check_emergency(lo, 3.8), (True, "emergency_resilient_3.8"), "score baixo continua a disparar")
-mix = {"history": [{"mrm_score": 5.0}]}
+mix = {"history": [{"mrm_score": 5.0, "score_complete": True}]}
 eq(up.check_emergency(mix, 3.8)[0], False, "so uma semana abaixo nao chega")
 
 # ── rebalance_shares: conservacao de valor com o mapa de Critical ───────────────
@@ -114,5 +146,63 @@ a_out, _ = up.effective_bucket_alloc("Turbulence", None, news)
 eq(a_in["US_EQUITIES"],  15.0, "em Critical corta accoes para 15%")
 eq(a_out["US_EQUITIES"], 40.0, "a saida devolve as % da newsletter")
 eq(a_out, news, "a saida restitui a alocacao macro inteira")
+
+# ── Feriados do NYSE: calculados, nao escritos a mao para um ano so ───────
+# A tabela anterior tinha 2026 e mais nada. A partir de 1 de Janeiro de 2027 o
+# ajuste degradava em silencio para "so fins-de-semana", e uma sexta-feira de
+# feriado passava a ser tratada como dia de negociacao.
+from datetime import date as _date, timedelta as _td
+
+# A prova de que as regras reproduzem a tabela que ca estava, feriado a feriado.
+_TABELA_2026 = {_date(2026, 1, 1), _date(2026, 1, 19), _date(2026, 2, 16),
+                _date(2026, 4, 3), _date(2026, 5, 25), _date(2026, 6, 19),
+                _date(2026, 7, 3), _date(2026, 9, 7), _date(2026, 11, 26),
+                _date(2026, 12, 25)}
+eq(up.feriados_nyse(2026), _TABELA_2026,
+   "as regras reproduzem exactamente a tabela de 2026 escrita a mao")
+
+# E continuam a valer nos anos seguintes.
+eq(up.feriados_nyse(2027) & {_date(2027, 3, 26)}, {_date(2027, 3, 26)},
+   "a Sexta-feira Santa de 2027 (26 Mar) e feriado")
+eq(up.adjust_for_market_holiday(_date(2027, 3, 26)), _date(2027, 3, 25),
+   "e uma sexta-feira alvo nessa data recua para a quinta")
+eq(up.adjust_for_market_holiday(_date(2027, 12, 24)), _date(2027, 12, 23),
+   "o Natal observado a 24 Dez 2027 tambem")
+# O Ano Novo ao sabado NAO fecha a sexta anterior — e a excepcao do NYSE.
+true(_date(2027, 12, 31) not in up.feriados_nyse(2028),
+   "o Ano Novo de 2028 cai a sabado e o NYSE nao fecha a sexta anterior")
+eq(up.adjust_for_market_holiday(_date(2027, 12, 31)), _date(2027, 12, 31),
+   "por isso 31 Dez 2027 e um dia de negociacao normal")
+# As DATAS, ano a ano, e nao so a contagem: contar feriados nao apanha um que
+# esteja uma semana adiantado. O `_ultima` partia do dia 28 e nunca chegava aos
+# dias 29-31, e o Memorial Day saia errado em 5 dos proximos 10 anos.
+_MEMORIAL = {2026: _date(2026, 5, 25), 2027: _date(2027, 5, 31),
+             2028: _date(2028, 5, 29), 2029: _date(2029, 5, 28),
+             2030: _date(2030, 5, 27), 2031: _date(2031, 5, 26),
+             2032: _date(2032, 5, 31), 2033: _date(2033, 5, 30),
+             2034: _date(2034, 5, 29), 2035: _date(2035, 5, 28)}
+for _ano, _md in _MEMORIAL.items():
+    _mai = sorted(d for d in up.feriados_nyse(_ano) if d.month == 5)
+    eq(_mai, [_md], f"Memorial Day de {_ano} e {_md}")
+_THANKS = {2026: _date(2026, 11, 26), 2027: _date(2027, 11, 25),
+           2028: _date(2028, 11, 23), 2029: _date(2029, 11, 22)}
+for _ano, _td_ in _THANKS.items():
+    _nov = sorted(d for d in up.feriados_nyse(_ano) if d.month == 11)
+    eq(_nov, [_td_], f"Thanksgiving de {_ano} e {_td_}")
+eq(sorted(d for d in up.feriados_nyse(2027) if d.month == 9), [_date(2027, 9, 6)],
+   "Labor Day de 2027 e 6 Set")
+
+# Cada ano tem dez feriados (nove quando o Ano Novo cai a sabado).
+for _ano in range(2026, 2036):
+    _n = len(up.feriados_nyse(_ano))
+    true(_n in (9, 10), f"{_ano} tem 9 ou 10 feriados (obtido {_n})")
+# E o ajuste nunca devolve um fim-de-semana nem um feriado.
+for _ano in range(2026, 2031):
+    _d = _date(_ano, 1, 1)
+    while _d.year == _ano:
+        _a = up.adjust_for_market_holiday(_d)
+        true(_a.weekday() < 5 and _a not in up.feriados_nyse(_a.year),
+             f"o ajuste de {_d} da um dia de negociacao ({_a})")
+        _d += _td(days=97)
 
 print(f"TODOS OS {ok} TESTES PASSARAM")

@@ -7,14 +7,38 @@ on:
 
 permissions:
   contents: write
+  issues: write
+
+concurrency:
+  group: mrm-data-update
+  cancel-in-progress: false
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
+    # O mesmo calculo do `refresh-data`: o portao correr dentro do laco de
+    # recuperacao triplicou o pior caso, e o prazo tem de caber no contrato que
+    # o codigo declara (series x tentativas x backoff, mais as tres voltas). Com
+    # 15 minutos o job era morto a meio e o data.json nao era publicado.
+    timeout-minutes: 40
+    # A chave ao nivel do JOB, nao do passo.
+    #
+    # Estava declarada so no passo "Fetch live FRED data". O passo do commit tem
+    # um laco de recuperacao que, em caso de conflito de rebase, faz
+    # `git reset --hard origin/main` e volta a correr o fetch_data.py para
+    # regenerar o ficheiro sobre a base nova — e nesse passo a chave nao existia.
+    # O fetch_data.py levanta RuntimeError no proprio import quando a FRED_API_KEY
+    # falta, portanto o laco de recuperacao NUNCA podia funcionar: bastava o
+    # update.yml das 18:00 derrapar para a hora do pipeline para o conflito
+    # acontecer, o passo morrer, e os jobs da carteira e da newsletter serem
+    # saltados. Sem carteira e sem newsletter nessa semana.
+    env:
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
     steps:
       - name: 🛸 Checkout Repository
         uses: actions/checkout@v4
         with:
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🐍 Set up Python 3.11
@@ -25,15 +49,79 @@ jobs:
       - name: 📦 Install Dependencies
         run: pip install -r requirements.txt
 
+      # O mesmo portao dos outros jobs que agem: este publica o data.json para
+      # `main`, que E o site. Sem ele, este job era o unico caminho por onde uma
+      # suite vermelha chegava ao mundo real.
+      - name: ✅ Toda a suite, antes de publicar dados
+        run: bash tests/portao.sh
+
       - name: 📡 Fetch Live FRED Data
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python fetch_data.py
 
       - name: 📋 Commit Updated data.json
         run: |
-          git config --local user.email "action@github.com"
+          git config --local user.email "noreply@usmrm.net"
           git config --local user.name "MRM Data Bot"
           git add data.json
-          git diff --staged --quiet || git commit -m "Auto-update MRM data"
-          git push
+          if [ -f score_history.json ]; then git add score_history.json; fi
+          if git diff --cached --quiet; then
+            echo "Sem alterações no data.json."
+          else
+            git commit -m "Auto-update MRM data"
+            # O pipeline de sexta escreve o mesmo ficheiro. Dois commits do mesmo
+            # JSON sobre a mesma base dão CONFLITO de rebase, não merge: aborta-se,
+            # regenera-se sobre o que estiver no remoto, e tenta-se outra vez.
+            for i in 1 2 3; do
+              if git pull --rebase --autostash origin main; then
+                git push && exit 0
+              else
+                echo "conflito ou pull falhado (tentativa $i) — a abortar e regenerar"
+                git rebase --abort 2>/dev/null || true
+                git reset --hard origin/main
+                # A partir daqui a arvore e o codigo que estiver em origin/main
+                # NESTE instante — que nao e o codigo sobre o qual a suite
+                # correu no passo do portao. A garantia "este job so publica com
+                # a suite verde" estava amarrada a ORDEM DOS PASSOS, e este
+                # caminho passa por baixo dela: e o caminho construido
+                # precisamente para o dia em que os dois workflows colidem. Se a
+                # base nova estiver vermelha, o `bash -e` mata o passo aqui e o
+                # alerta dispara — que e o que tem de acontecer, porque um
+                # `reset --hard` para uma base por testar e uma re-corrida
+                # disfarcada de retry.
+                bash tests/portao.sh
+                python fetch_data.py
+                git add data.json
+                if [ -f score_history.json ]; then git add score_history.json; fi
+                git diff --cached --quiet || git commit -m "Auto-update MRM data (regenerado após conflito)"
+              fi
+              sleep 10
+            done
+            echo "::error::não foi possível publicar data.json após 3 tentativas"
+            exit 1
+          fi
+
+  alert-on-failure:
+    needs: update-data
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 🚨 Abrir issue com a falha
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const hoje = new Date().toISOString().slice(0, 10);
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title: `⚠️ Actualização de dados falhou — ${hoje}`,
+              body: [
+                `O \`fetch_data.py\` não completou em ${hoje}, portanto o \`data.json\` **não foi actualizado**.`,
+                ``,
+                `Corrida: ${url}`,
+                ``,
+                `O motor da carteira recusa dados com mais de 48 h e mantém as posições,`,
+                `por isso isto não corrompe nada — mas duas falhas seguidas param as decisões.`,
+              ].join("\n"),
+              labels: ["data-failure"],
+            });

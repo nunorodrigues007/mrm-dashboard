@@ -1,7 +1,9 @@
 """Sensibilidade dos limiares — nao para escolher, para saber quao fragil e o resultado."""
 import importlib.util, sys, io, contextlib
-sys.path.insert(0,'/root/mrm-repo')
-spec=importlib.util.spec_from_file_location("fb","final_backtest.py")
+from pathlib import Path
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))          # mrm_rules.py, seja de onde for chamado
+spec=importlib.util.spec_from_file_location("fb", HERE / "final_backtest.py")
 fb=importlib.util.module_from_spec(spec)
 with contextlib.redirect_stdout(io.StringIO()):
     spec.loader.exec_module(fb)
@@ -17,7 +19,11 @@ def run(sahm_thr, npl_thr, ftq_bp):
         if a is None or b is None: return None
         return "FTQ" if (a-b)<=ftq_bp else "STRESS"
     m0=fb.MONTHS[0]; regime, subregime="Turbulence", None
-    sh=fb.rebalance(10000.0, regime, subregime, m0); ser=[(m0,10000.0)]; low=0; n_on=0
+    # Sem corretagem, de proposito: esta tabela isola o efeito dos limiares. A
+    # corretagem e identica em todas as variantes, por isso so acrescentaria uma
+    # constante a todas as linhas.
+    cap=fb.INITIAL_CAPITAL
+    sh=fb.rebalance(cap, regime, subregime, m0); ser=[(m0,cap)]; low=0; n_on=0
     for m in fb.MONTHS[1:]:
         v=fb.value(sh,m); score=fb.S[m][fb.V2_SCORE_KEY]; stress=gauge_b(m)
         if stress: n_on+=1
@@ -25,7 +31,9 @@ def run(sahm_thr, npl_thr, ftq_bp):
         want_sub=None
         if want=="Critical": want_sub,_=rules.subregime_from_gauge(gsub(m), regime=="Critical")
         low=low+1 if (score is not None and score<=rules.RESILIENT_MAX) else 0
-        emerg=f"emergency_resilient_{score}" if (want=="Resilient" and low>=rules.CONSECUTIVE_WEEKS) else None
+        emerg=f"emergency_resilient_{score}" if low>=rules.CONSECUTIVE_WEEKS else None
+        want=rules.confirm_regime(want, regime, emerg)
+        if want!="Critical": want_sub=None
         reason=rules.decide_rebalance(want, regime, want_sub, subregime, fb.is_semestral(m), emerg)
         if reason:
             regime=want; subregime=want_sub if want=="Critical" else None

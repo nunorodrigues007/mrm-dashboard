@@ -1123,7 +1123,7 @@
 
           <p>The distinction matters more than it sounds. Until September 2026 the E/P itself was held constant, which meant this pillar moved only with the 10-Year: a 20% market decline would have raised the true earnings yield by a quarter, opening the risk premium, and the reading would not have moved at all. That is a poor property in any pillar, and a serious one here — Premium is among the three that are supposed to improve in a downturn.</p>
 
-          <p>The remaining limitation is the mirror image, and is stated rather than hidden: between quarterly updates earnings are frozen, so in a recession where profits are falling the earnings yield is overstated. The reference carries an expiry — past 100 days the data declares itself stale, and past 180 the build fails rather than publishing a number nobody has checked.</p>
+          <p>The remaining limitation is the mirror image, and is stated rather than hidden: between quarterly updates earnings are frozen, so in a recession where profits are falling the earnings yield is overstated. The reference carries an expiry — past <span data-mrm-ep-stale-days>100</span> days the data declares itself stale and the newsletter says so, and past <span data-mrm-ep-nd-days>180</span> days the reading stops counting as a reading: the pillar goes to n/d, leaves the composite, and the remaining weights renormalise. The pipeline is not stopped — a gate that closes the week is worse than the problem it reports — but no number nobody has checked is published as a measurement.</p>
         </div>
         <div class="chapter-footer">
           <button class="chapter-nav-btn" onclick="navChapter(2)">← Chapter 3</button>
@@ -1368,8 +1368,8 @@
             <tbody>
               <tr>
                 <td><strong>Trigger</strong></td>
-                <td class="mono green">10Y down (last 4 weeks)</td>
-                <td class="mono red">10Y flat or rising (last 4 weeks)</td>
+                <td class="mono green">10Y down over the trailing 3 months</td>
+                <td class="mono red">10Y flat or rising over the trailing 3 months</td>
               </tr>
               <tr>
                 <td><strong>Historical example</strong></td>
@@ -1400,15 +1400,15 @@
           </table>
 
           <h2>Calibration: The Asymmetric Threshold</h2>
-          <p>Two thresholds were considered for classifying the 10Y trend as "stable": a symmetric band (any move within ±15bp over 4 weeks counts as stable) or an asymmetric gate (only a clear decline of at least -10bp counts as flight-to-quality; anything else — flat or rising — stays on the defensive path).</p>
+          <p>Two thresholds were considered for classifying the 10Y trend as "stable": a symmetric band (any move within ±15bp counts as stable) or an asymmetric gate (only a clear decline of at least -10bp counts as flight-to-quality; anything else — flat or rising — stays on the defensive path).</p>
 
           <div class="callout green" id="callout-subregime-threshold">
             <div class="callout-label">✓ Decision — Asymmetric, Conservative Gate</div>
-            <p>The framework uses the <strong>asymmetric threshold</strong>: TLT is only "re-earned" on a confirmed 10Y decline of <span class="inline-metric">-10bp or more</span> over the trailing <span class="inline-metric">4 weeks</span>. Anything else — including a fresh entry into Critical from another regime, or a failed data fetch — defaults to the defensive Stress-without-relief path. The two real flight-to-quality episodes (2008, 2020) both saw fast, unambiguous declines well past this threshold within weeks of onset, so the conservative gate costs little upside while fully avoiding a repeat of 2022.</p>
+            <p>The framework uses the <strong>asymmetric threshold</strong>: TLT is only "re-earned" on a confirmed 10Y decline of <span class="inline-metric">-10bp or more</span> over the trailing <span class="inline-metric">3 months</span>. Anything else — including a fresh entry into Critical from another regime, or a failed data fetch — defaults to the defensive Stress-without-relief path. The two real flight-to-quality episodes (2008, 2020) both saw fast, unambiguous declines well past this threshold within weeks of onset, so the conservative gate costs little upside while fully avoiding a repeat of 2022.</p>
           </div>
 
           <h2>FRED Series</h2>
-          <p>The trend uses the 10-Year Treasury Constant Maturity yield, series <span class="fred-tag">DGS10</span> — the same series that feeds the Premium Pillar's Equity Risk Premium calculation. The automated portfolio updater reads it via its market-quoted equivalent (<span class="fred-tag">^TNX</span>) to compute the trailing 4-week change in basis points each time the regime reads Critical.</p>
+          <p>The trend uses the 10-Year Treasury Constant Maturity yield, series <span class="fred-tag">DGS10</span>, read directly from FRED — the same series that feeds the Premium Pillar's Equity Risk Premium calculation. The window is the trailing three months, not four weeks, and the source is FRED rather than a market-quoted proxy. Both were changed in September 2026: four weeks was short enough that ordinary yield noise flipped the sub-regime, and a proxy quote is a second source for a number the framework already had.</p>
         </div>
         <div class="chapter-footer">
           <button class="chapter-nav-btn" onclick="navChapter(5)">← Chapter 6</button>
@@ -1488,6 +1488,10 @@
 
           <h2>What This Costs</h2>
           <p>Over 2007–2026, running the portfolio on Gauge B changed the maximum drawdown from −23.9% to −16.4%, and turned 2008 from −13.8% into +1.5%. It also cost 0.36 percentage points of compound annual return over the whole period — almost all of it paid back in the recoveries, where 2009 returned +2.2% against +13.5%. That is the price of the insurance, and it is stated here rather than buried: a system that protects the downside and claims no cost anywhere is a system that has not been measured honestly.</p>
+
+          <p>Those figures now include brokerage. On $100,000 compounded from February 2007, at $10 to open and $10 to close a position, the current system pays <strong>$400 in commissions across nineteen and a half years</strong> — 54 rebalances, of which the nine sub-regime switches cost $10 each — six of them between 2008 and 2010 — because only the duration sleeve changes instrument. The previous system pays $200. Commission takes 0.01 percentage points off the annual return, which is to say almost nothing at this size.</p>
+
+          <p>That result deserves a warning rather than a victory lap. A flat commission is the most visible trading cost and the least important one. What actually matters is the proportional cost — the bid-ask spread and the slippage between decision and execution — and it is not free: at 5 basis points of traded value the annual return falls another 0.04 points, at 20 basis points another 0.18, and because the current system trades more than the previous one, the price of the insurance widens from 0.36 to 0.49 percentage points. The commission is solved. The spread is modelled as a sensitivity, not measured, and no tax of any jurisdiction is modelled at all.</p>
 
           <p>One more number belongs here, because it is the uncomfortable one. The worst drawdown of the current system is no longer a recession — it is −16.4% in September 2022, a year in which Gauge B stayed deliberately silent. That is not a failure of the gauge: 2022 was a bear market without a recession, and separating those two things is precisely what the gauge is for. But it is the honest consequence of the choice. This system does not protect against market declines that arrive without deterioration in employment and credit.</p>
 
@@ -1632,6 +1636,55 @@ function showDataUnavailable(err) {
 // Le data.stressGauge (escrito por fetch_data.py via mrm_gauge_b.py).
 // Nao altera o Gauge A; e publicado ao lado dele.
 // ──────────────────────────────────────────
+// Onde a carteira ESTÁ, segundo o portfolio.json — não onde o medidor sugere
+// que ela devia estar. As duas coisas divergem legitimamente: com o medidor em
+// n/d a carteira mantém o regime anterior; numa semana em que a valorização
+// falhou o rebalanceamento é cancelado; e a entrada em Resilient exige duas
+// leituras seguidas. O site afirmava a posição a partir do medidor — "Portfolio
+// on the Critical map" — e nessas semanas dizia ao leitor que a carteira estava
+// onde não estava. A frase passa a vir da fonte que sabe: o portfolio.json.
+function portfolioMapLine(current) {
+  const regime = current && current.regime;
+  if (!regime) return 'Portfolio position not available — portfolio.json could not be read.';
+  if (regime === 'Critical') {
+    const sub = current.critical_subregime;
+    return `Portfolio on the ${sub || 'Critical'} map.`;
+  }
+  return `Portfolio on the ${regime} map.`;
+}
+
+// Um único pedido do portfolio.json por carregamento de página: eram três, em
+// três sítios diferentes, e nada garantia que respondessem o mesmo.
+let _portfolioPromise = null;
+function loadPortfolio() {
+  if (!_portfolioPromise) {
+    _portfolioPromise = fetch('portfolio.json?v=' + Date.now())
+      .then(r => r.json())
+      // Guardar tambem a promessa REJEITADA fazia com que uma falha transitoria
+      // de rede degradasse as tres seccoes da carteira para todo o carregamento
+      // da pagina, onde antes cada uma tentava por si. Uma falha limpa a cache
+      // e a chamada seguinte volta a tentar.
+      .catch(e => { _portfolioPromise = null; throw e; });
+  }
+  return _portfolioPromise;
+}
+
+// Preenche, onde quer que estejam na página, as frases que dizem em que mapa a
+// carteira está. Chamada quando o portfolio.json chega.
+function fillPortfolioMapLines() {
+  return loadPortfolio()
+    .then(pf => {
+      const linha = portfolioMapLine(pf && pf.current);
+      document.querySelectorAll('.js-portfolio-map-line').forEach(el => { el.textContent = linha; });
+      return pf;
+    })
+    .catch(() => {
+      document.querySelectorAll('.js-portfolio-map-line').forEach(el => {
+        el.textContent = portfolioMapLine(null);
+      });
+    });
+}
+
 function renderStressGauge(data) {
   const main = document.getElementById('terminal-main');
   if (!main) return;
@@ -1640,15 +1693,48 @@ function renderStressGauge(data) {
 
   const active = sg.active;
   const state  = active === null ? 'n/d' : (active ? (sg.label || 'Stress ON') : 'Stress OFF');
+  // "Both triggers unavailable" era só UM dos dois casos de `active === null`.
+  // O outro — um gatilho em falta ao lado de um gatilho quieto, porque a
+  // ausência ao lado do silêncio não é calma — publicava "os dois
+  // indisponíveis" três linhas acima do gatilho que traz valor e `stale:false`.
+  // O `basis` do medidor já diz qual é qual.
   const lede   = active === null
-      ? 'Both triggers unavailable this run. Previous state retained — no assumption made.'
+      ? `Gauge B has no usable reading this run: ${sg.basis || 'no basis declared'}. Previous state retained — no assumption made.`
       : active
         ? (sg.subregime === 'FTQ'
-            ? 'Stress confirmed with the 10Y falling: duration is paying as a hedge. Portfolio on the Critical_FTQ map.'
-            : 'Stress confirmed with the 10Y flat or rising: duration carries risk with no rate-cut tailwind. Portfolio on the Critical_Stress map.')
-        : 'No concurrent stress. Portfolio on the Turbulence map.';
+            ? 'Stress confirmed with the 10Y falling: duration is paying as a hedge.'
+            : sg.subregime === 'STRESS'
+              ? 'Stress confirmed with the 10Y flat or rising: duration carries risk with no rate-cut tailwind.'
+              // Terceiro caso: a janela de 3 meses do 10Y não pôde ser medida.
+              // Escrever "flat or rising" sobre uma medição que não houve era
+              // afirmar o resultado de um filtro que não correu — e é esse
+              // filtro que separa 35% em TLT de 20% em SHY. E não se afirma
+              // aqui o que a carteira FEZ: numa entrada fresca em Critical não
+              // há sub-regime nenhum para reter. O que a carteira detém está na
+              // linha ao lado, lida do portfolio.json.
+              : 'Stress confirmed, but the 3-month 10Y window could not be measured this run: the sub-regime was not decided by it.')
+        : 'No concurrent stress.';
 
   const t = sg.triggers || {};
+  // O limiar sai do `data.json`, que é onde o produtor o escreve — não de uma
+  // segunda cópia à mão. Vinte linhas abaixo, `initGaugeBStatus` já o lia do
+  // ficheiro: eram dois leitores do mesmo número na mesma página, e a
+  // divergência só podia entrar pelo lado da cópia. É a mesma armadilha que
+  // fez o site anunciar durante meses um controlo que não existia.
+  //
+  // O sinal do limiar diz o sentido: negativo dispara para BAIXO (a janela do
+  // 10Y), positivo dispara para CIMA (Sahm, delinquência).
+  const limiarDe = (o, unidade, casas) => {
+    const v = o && o.threshold;
+    if (v === null || v === undefined || !Number.isFinite(Number(v))) return 'n/d';
+    const n = Number(v);
+    // O sinal explícito só onde ele já estava: numa variação, "+0.81 pp" diz
+    // que o gatilho é uma SUBIDA. Num nível ("0.50"), o "+" não acrescenta nada.
+    const maisMais = unidade === ' pp';
+    return n < 0
+      ? `&le; &minus;${Math.abs(n).toFixed(casas)}${unidade}`
+      : `&ge; ${maisMais ? '+' : ''}${n.toFixed(casas)}${unidade}`;
+  };
   const trig = (label, o, fmt, thr) => {
     const has = o && o.value !== null && o.value !== undefined;
     const tip = o && o.asOf ? ` title="as of ${o.asOf}${o.note ? ' — ' + o.note : ''}"` : '';
@@ -1668,11 +1754,20 @@ function renderStressGauge(data) {
       <span class="mrm-sg__eyebrow">Gauge B — Concurrent Stress</span>
       <span class="mrm-sg__state">${state}</span>
     </div>
-    <p class="mrm-sg__lede">${lede}</p>
+    <p class="mrm-sg__lede">${lede} <span class="js-portfolio-map-line">Reading portfolio position…</span></p>
     <div class="mrm-sg__triggers">
-      ${trig('Sahm Rule <em>real-time</em>', t.sahmRealtime, v => Number(v).toFixed(2), '&ge; 0.50')}
+      ${trig('Sahm Rule <em>real-time</em>', t.sahmRealtime, v => Number(v).toFixed(2), limiarDe(t.sahmRealtime, '', 2))}
       ${trig('Delinquency, 4-qtr change', t.delinquencyAccel,
-             v => (Number(v) >= 0 ? '+' : '') + Number(v).toFixed(2) + ' pp', '&ge; +0.81 pp')}
+             v => (Number(v) >= 0 ? '+' : '') + Number(v).toFixed(2) + ' pp', limiarDe(t.delinquencyAccel, ' pp', 2))}
+      ${t.tenY3m ? trig('10Y, 3-month change', t.tenY3m,
+             // À MESMA resolução com que o produtor o publica e com que a
+             // decisão o usa (uma casa). Com `toFixed(0)`, um valor de -9,9 bp
+             // desenhava-se "-10 bp" ao lado de "fires at ≤ -10 bp" e de um
+             // `fired: false` — a contradição dentro do mesmo cartão que o
+             // motor deixou de ter. Os outros dois gatilhos já desenham à
+             // resolução com que são publicados.
+             v => (Number(v) >= 0 ? '+' : '') + Number(v).toFixed(1) + ' bp',
+             limiarDe(t.tenY3m, ' bp', 1) + ' &rarr; FTQ') : ''}
     </div>
     <p class="mrm-sg__note">
       The Resilience Score above is a <strong>leading fragility</strong> measure with a 6&ndash;18 month
@@ -1684,6 +1779,7 @@ function renderStressGauge(data) {
       known false positive of the Sahm rule.
     </p>`;
   main.appendChild(el);
+  fillPortfolioMapLines();
 }
 
 function renderTerminal(data) {
@@ -1727,8 +1823,15 @@ function bandRangeText(spec, band) {
 }
 
 function bandTone(score) {
-  if (score <= 4.0) return 'green';
-  if (score <= 7.5) return 'orange';
+  // Os limiares de cor dos pilares vem do data.json (rules.pillarStatusBands),
+  // que e o mesmo PILLAR_STATUS_BANDS que o fetch_data usa para classificar.
+  // Estavam escritos aqui a mao, que e exactamente o que este trabalho veio
+  // eliminar do resto da Academia.
+  const bands = (RULES && RULES.pillarStatusBands) || [[4.0, 'stable'], [6.0, 'caution'], [7.5, 'warning']];
+  const tone = { stable: 'green', caution: 'orange', warning: 'orange', critical: 'red' };
+  for (const [limit, label] of bands) {
+    if (score <= limit) return tone[label] || 'orange';
+  }
   return 'red';
 }
 
@@ -1750,6 +1853,18 @@ function riskEdge(spec, band) {
 // A tabela-resumo do Capítulo 1 e a lista de séries no rodapé técnico: as duas
 // eram listas escritas à mão que envelheceram em silêncio — a primeira ainda
 // dizia "Market Cap / M2, M2SL, WILL5000", séries que o sistema deixou de usar.
+// A nota por baixo do grafico de historico rotulava o eixo com "Regime
+// thresholds: Critical >= 8.0", que e a regra que o sistema abandonou: o score
+// rotula o medidor A, nao o regime da carteira.
+function renderHistoryScaleNote() {
+  const el = document.getElementById('history-scale-note');
+  if (!el || !RULES || RULES.resilientMax === undefined) return;
+  el.textContent = `Vertical axis framed to the series. Score bands (Gauge A only, ` +
+    `not the portfolio regime): Critical ≥ ${RULES.criticalMin.toFixed(1)} · ` +
+    `Resilient ≤ ${RULES.resilientMax.toFixed(1)}. The Critical regime itself is ` +
+    `decided by Gauge B, not by this number.`;
+}
+
 function renderPillarOverview(data) {
   const scoring = (RULES && RULES.pillarScoring) || {};
   const order = (RULES && RULES.pillarOrder) || Object.keys(scoring);
@@ -1854,9 +1969,29 @@ function renderPillarScoring(data) {
 
     if (!p || p.score === null || p.score === undefined) {
       if (labelEl) labelEl.textContent = '◎ Current Reading — no data';
-      textEl.textContent = `The ${spec.name} Pillar is n/d this week: the underlying series did not ` +
-        `publish in time. The pillar is excluded from the composite and its weight redistributed ` +
-        `across the remaining pillars, rather than being filled with an assumed value.`;
+      // A CAUSA sai do data.json, não é adivinhada. Enquanto esta frase
+      // imputou sempre o n/d à FRED, bastou existir um segundo motivo — a
+      // referência dos earnings passada do prazo, posta à mão — para o site
+      // acusar um fornecedor de dados de uma falha que é interna, numa semana
+      // em que ele publicou tudo a horas. Qualquer motivo novo produzia uma
+      // falsidade nova.
+      const razao = ((data.ndReasons || {})[id]) || 'series';
+      const porque = razao === 'stale-anchor'
+        ? 'the hand-set earnings reference is past its expiry, so the reading no longer counts as a measurement'
+        : 'the underlying series did not publish in time';
+      // E a CONSEQUÊNCIA sai do mesmo predicado que o gerador usa: quando
+      // falta composição a mais, o `global_score` ABANDONA o composto e devolve
+      // null — não há redistribuição nenhuma. Três pilares em n/d chegam, e o
+      // comentário do `mrm_rules.py` declara que não é um cenário exótico: três
+      // dos cinco vivem de séries trimestrais. A newsletter da mesma semana já
+      // dizia a verdade; esta era a cópia que faltava.
+      const semComposto = data.globalResilienceScore === null
+        || data.globalResilienceScore === undefined;
+      const consequencia = semComposto
+        ? `There is no Resilience Score this week: too much of the composite is missing to renormalise over what remains.`
+        : `The pillar is excluded from the composite and its weight redistributed across the remaining pillars, rather than being filled with an assumed value.`;
+      textEl.textContent = `The ${spec.name} Pillar is n/d this week: ${porque}. `
+        + consequencia;
       if (boxEl) { boxEl.classList.remove('green', 'orange', 'red'); }
       return;
     }
@@ -1908,6 +2043,7 @@ function renderPillarScoring(data) {
 function renderChapters(data) {
   renderPillarScoring(data);
   renderPillarOverview(data);
+  renderHistoryScaleNote();
 
   const pillars = {};
   (data.pillars || []).forEach(p => { pillars[p.id] = p; });
@@ -1937,34 +2073,59 @@ function renderChapters(data) {
 // to show, in plain terms, which of the two Critical sub-portfolios is currently
 // active — or that the rule isn't in play because the regime isn't Critical.
 // ──────────────────────────────────────────
+// O desenho do painel do capitulo, separado da BUSCA do ficheiro: com o
+// `fetch` pelo meio, este renderer nao era chamado por teste nenhum, e era o
+// segundo leitor dos mesmos tres gatilhos na mesma pagina. Aqui e uma funcao
+// pura sobre o `stressGauge`, e a suite corre-a.
+function renderGaugeBStatusHTML(sg) {
+  if (!sg) return '';
+  const t = sg.triggers || {};
+  // O SENTIDO e a unidade saem do ficheiro, como no painel do terminal.
+  // Este era o segundo leitor dos mesmos tres gatilhos na MESMA pagina, e
+  // escrevia-os a mao: `fires at >=` para todos, e o limiar do 10Y cravado.
+  // Com o sinal errado, o capitulo que EXPLICA a regra anunciava que o
+  // gatilho da fuga para a qualidade dispara com o 10Y a SUBIR — o oposto
+  // do filtro que separa 35% em TLT de 20% em SHY, e o oposto do que a
+  // Academia diz tres ecras acima.
+  const limiarTxt = (o, unit, casas) => {
+    const v = o && o.threshold;
+    if (v === null || v === undefined || !Number.isFinite(Number(v))) return 'n/d';
+    const n = Number(v);
+    return n < 0
+      ? `\u2264 \u2212${Math.abs(n).toFixed(casas)}${unit}`
+      : `\u2265 ${unit === ' pp' ? '+' : ''}${n.toFixed(casas)}${unit}`;
+  };
+  const fmt = (o, unit, casas) => (o && o.value !== null && o.value !== undefined)
+    ? `${o.value > 0 ? '+' : ''}${Number(o.value).toFixed(casas === undefined ? 2 : casas)}${unit} (fires at ${limiarTxt(o, unit, casas === undefined ? 2 : casas)})`
+    : 'n/d';
+  const on = sg.active === true, nd = sg.active === null || sg.active === undefined;
+  const cls = nd ? '' : (on ? 'red' : 'green');
+  const label = nd ? '\u25ce Live Status — Gauge B n/d'
+           : (on ? `\u26a1 Live Status — ${sg.label || 'Stress ON'}` : '\u2713 Live Status — Stress OFF');
+  const lede = nd
+    ? `Gauge B had no usable reading on the last run: ${sg.basis || 'no basis declared'}. The previous state is retained — no assumption of calm is made.`
+    : (on ? 'Concurrent stress is confirmed.'
+      : 'Neither trigger is active.');
+  return `
+    <div class="callout ${cls}">
+      <div class="callout-label">${label}</div>
+      <p>${lede} <span class="js-portfolio-map-line">Reading portfolio position…</span></p>
+      <p style="font-family:var(--mono); font-size:11px; color:var(--text-secondary); margin-top:8px;">
+        Sahm rule (real-time): ${fmt(t.sahmRealtime, '', 2)}<br>
+        Delinquency, 4-qtr change: ${fmt(t.delinquencyAccel, ' pp', 2)}
+        ${t.tenY3m ? `<br>10Y, 3-month change: ${fmt(t.tenY3m, ' bp', 1)}` : ''}
+      </p>
+    </div>`;
+}
+
 function initGaugeBStatus() {
   const el = document.getElementById('gauge-b-live-status');
   if (!el) return;
   fetch('data.json?v=' + Date.now())
     .then(r => r.json())
     .then(d => {
-      const sg = d.stressGauge;
-      if (!sg) { el.innerHTML = ''; return; }
-      const t = sg.triggers || {};
-      const fmt = (o, unit) => (o && o.value !== null && o.value !== undefined)
-        ? `${o.value > 0 ? '+' : ''}${o.value}${unit} (fires at \u2265 ${o.threshold}${unit})` : 'n/d';
-      const on = sg.active === true, nd = sg.active === null || sg.active === undefined;
-      const cls = nd ? '' : (on ? 'red' : 'green');
-      const label = nd ? '\u25ce Live Status — Gauge B n/d'
-                       : (on ? `\u26a1 Live Status — ${sg.label || 'Stress ON'}` : '\u2713 Live Status — Stress OFF');
-      const lede = nd
-        ? 'Both triggers were unavailable on the last run. The previous state is retained — no assumption of calm is made.'
-        : (on ? 'Concurrent stress is confirmed. The portfolio is on the Critical map.'
-              : 'Neither trigger is active. The portfolio is on the Turbulence map.');
-      el.innerHTML = `
-        <div class="callout ${cls}">
-          <div class="callout-label">${label}</div>
-          <p>${lede}</p>
-          <p style="font-family:var(--mono); font-size:11px; color:var(--text-secondary); margin-top:8px;">
-            Sahm rule (real-time): ${fmt(t.sahmRealtime, '')}<br>
-            Delinquency, 4-qtr change: ${fmt(t.delinquencyAccel, ' pp')}
-          </p>
-        </div>`;
+      el.innerHTML = renderGaugeBStatusHTML(d.stressGauge);
+      fillPortfolioMapLines();
     })
     .catch(() => { el.innerHTML = ''; });
 }
@@ -1972,8 +2133,7 @@ function initGaugeBStatus() {
 function initSubregimeStatus() {
   const el = document.getElementById('subregime-live-status');
   if (!el) return;
-  fetch('portfolio.json?v=' + Date.now())
-    .then(r => r.json())
+  loadPortfolio()
     .then(data => renderSubregimeStatus(data))
     .catch(() => {
       el.innerHTML = '';
@@ -2011,24 +2171,29 @@ function renderSubregimeStatus(data) {
 
 // ──────────────────────────────────────────
 // BDC SECTION — LIVE REGIME BAND + UNRATE STATUS
-// Keeps the BDC allocation guide's active zone and crisis trigger in sync with
-// data.json instead of a hand-written "(Current State)" label. Boundaries match
-// classify_regime() in update_portfolio.py exactly: <=4.0 Resilient, >=8.0
-// Critical, otherwise Turbulence.
+// Mantem a zona activa do guia de alocacao dos BDC em sincronia com o data.json.
+//
+// Os limiares sao os de score_band() — o rotulo do medidor A — e vem do bloco
+// `rules`, nao escritos aqui. Nao sao o regime da carteira: quem decide Critical
+// e o medidor B. O comentario que aqui estava dizia que estas fronteiras
+// "correspondem exactamente a classify_regime()", o que deixou de ser verdade
+// quando o regime passou a ser decidido pelo medidor B.
 // ──────────────────────────────────────────
 function renderBDCRiskStatus(data) {
   const score = data.globalResilienceScore;
   const statusEl = document.getElementById('bdc-risk-status');
   const boxes = {
-    low:  { box: document.getElementById('callout-bdc-low'),  label: document.getElementById('label-bdc-low'),  base: '✓ Score ≤ 4.0 — Resilient — Safe Expansion' },
-    mid:  { box: document.getElementById('callout-bdc-mid'),  label: document.getElementById('label-bdc-mid'),  base: '⚡ Score 4.0 – 8.0 — Turbulence — Top Alert' },
-    high: { box: document.getElementById('callout-bdc-high'), label: document.getElementById('label-bdc-high'), base: '✕ Score ≥ 8.0 — Critical — Danger Zone' },
+    low:  { box: document.getElementById('callout-bdc-low'),  label: document.getElementById('label-bdc-low'),  base: `✓ Score ≤ ${((RULES && RULES.resilientMax) || 4).toFixed(1)} — Resilient — Safe Expansion` },
+    mid:  { box: document.getElementById('callout-bdc-mid'),  label: document.getElementById('label-bdc-mid'),  base: `⚡ Score ${((RULES && RULES.resilientMax) || 4).toFixed(1)} – ${((RULES && RULES.criticalMin) || 8).toFixed(1)} — Turbulence — Top Alert` },
+    high: { box: document.getElementById('callout-bdc-high'), label: document.getElementById('label-bdc-high'), base: `✕ Score ≥ ${((RULES && RULES.criticalMin) || 8).toFixed(1)} — Critical — Danger Zone` },
   };
   if (!boxes.low.box || score === undefined || score === null) return;
 
+  const lo = (RULES && RULES.resilientMax) || 4.0;
+  const hi = (RULES && RULES.criticalMin) || 8.0;
   let active;
-  if (score <= 4.0) active = 'low';
-  else if (score >= 8.0) active = 'high';
+  if (score <= lo) active = 'low';
+  else if (score >= hi) active = 'high';
   else active = 'mid';
 
   Object.keys(boxes).forEach(key => {
@@ -2048,9 +2213,21 @@ function renderBDCUnrateStatus(data) {
   if (!el) return;
   const sentinel = (data.sentinels || []).find(s => s.id === 'unemployment');
   if (!sentinel) { el.innerHTML = ''; return; }
-  const colorClass = sentinel.alert ? 'red' : (sentinel.status === 'caution' ? 'orange' : 'green');
-  const icon = sentinel.alert ? '✕' : (sentinel.status === 'caution' ? '⚡' : '✓');
-  el.innerHTML = `
+  // Sem leitura não há veredicto. Este parágrafo dizia, a verde e sem hesitar,
+  // "Below the 5.2% Stagflation Scenario trigger" numa semana em que a UNRATE
+  // não chegou — a afirmação mais forte da página sobre o gatilho, feita sobre
+  // um número que não existe. O quarto estado é o mesmo das sentinelas.
+  const semLeituraU = sentinel.value === null || sentinel.value === undefined
+    || sentinel.status === 'nd';
+  const colorClass = semLeituraU ? '' : (sentinel.alert ? 'red' : (sentinel.status === 'caution' ? 'orange' : 'green'));
+  const icon = semLeituraU ? '◎' : (sentinel.alert ? '✕' : (sentinel.status === 'caution' ? '⚡' : '✓'));
+  el.innerHTML = semLeituraU
+    ? `
+    <div class="callout">
+      <div class="callout-label">${icon} No Reading — Unemployment Rate</div>
+      <p>UNRATE is <span class="inline-metric">n/d</span> this run: FRED returned no usable observation, so there is no rate to compare with the ${sentinel.thresholdDisplay} Stagflation Scenario trigger. The previous reading stands until a new one arrives — absence of a signal is not a signal.</p>
+    </div>`
+    : `
     <div class="callout ${colorClass}">
       <div class="callout-label">${icon} Live Reading — Unemployment Rate</div>
       <p>UNRATE currently stands at <span class="inline-metric">${sentinel.displayValue}</span> (${sentinel.trend}, ${sentinel.delta} vs. prior reading). ${sentinel.alert ? `The Stagflation Scenario trigger is ACTIVE — the threshold of ${sentinel.thresholdDisplay} has been breached.` : `Below the ${sentinel.thresholdDisplay} Stagflation Scenario trigger.`}</p>
@@ -2092,13 +2269,25 @@ function renderBDCSignal(data) {
   const allocEl = document.getElementById('signal-allocation');
   const subEl = document.getElementById('signal-sub');
 
-  scoreEl.textContent = (score !== undefined && score !== null) ? score.toFixed(1) : '—';
-  const statusColor = score <= 4.0 ? 'var(--green)' : (score >= 8.0 ? 'var(--red)' : 'var(--orange)');
+  // Em JavaScript, `null <= 4.0` é TRUE. Numa semana sem composto — que é
+  // alcançável: bastam pilares em n/d que cheguem para o peso restante ficar
+  // abaixo do mínimo — este painel pintava-se de VERDE e publicava "Maximum
+  // Exposure", a recomendação mais agressiva da página, sobre um score que não
+  // existe. O `renderMain`, o `scoreColor` e o `renderBDCRiskStatus` já tinham
+  // todos a guarda; era a quarta cópia da mesma comparação, e a única sem ela.
+  const semScoreSinal = _ausente(score) || !Number.isFinite(Number(score));
+  scoreEl.textContent = semScoreSinal ? '—' : Number(score).toFixed(1);
+  const statusColor = semScoreSinal ? 'var(--text-muted)'
+    : (score <= 4.0 ? 'var(--green)' : (score >= 8.0 ? 'var(--red)' : 'var(--orange)'));
   scoreEl.style.color = statusColor;
   if (statusEl) { statusEl.textContent = (data.status || '').toUpperCase(); statusEl.style.color = statusColor; }
 
   let allocLabel, allocSub;
-  if (score <= 4.0) { allocLabel = 'Maximum Exposure'; allocSub = 'Full dividend yield capture — second-tier BDCs eligible.'; }
+  if (semScoreSinal) {
+    allocLabel = 'No Reading';
+    allocSub = 'No composite score this week — the score-based guidance is not computed. Positions stand.';
+  }
+  else if (score <= 4.0) { allocLabel = 'Maximum Exposure'; allocSub = 'Full dividend yield capture — second-tier BDCs eligible.'; }
   else if (score >= 8.0) { allocLabel = 'Minimum / Zero Allocation'; allocSub = 'Liquidate gradually — capital preservation priority.'; }
   else { allocLabel = 'Tactical Reduction'; allocSub = 'Tier 1 BDCs only with First Lien >70%'; }
   if (allocEl) { allocEl.textContent = allocLabel; allocEl.style.color = statusColor; }
@@ -2120,7 +2309,13 @@ function renderBDCSignal(data) {
 
   // ── Filter 2: Initial Jobless Claims (reuse the sentinel's own status) ──
   const jobless = (data.sentinels || []).find(s => s.id === 'jobless');
-  const joblessLevel = jobless ? (jobless.alert ? 'negative' : (jobless.status === 'caution' ? 'caution' : 'ok')) : 'unknown';
+  // `status === 'nd'` caía no `'ok'`: um filtro SEM LEITURA contava como
+  // filtro alinhado, e o veredicto abaixo — que conta só o que é mau — passava
+  // a verde com zero filtros medidos.
+  const joblessSemLeitura = !jobless || jobless.value === null
+    || jobless.value === undefined || jobless.status === 'nd';
+  const joblessLevel = joblessSemLeitura ? 'unknown'
+    : (jobless.alert ? 'negative' : (jobless.status === 'caution' ? 'caution' : 'ok'));
   bdcFilterBadge(
     document.getElementById('filter-jobless-value'),
     document.getElementById('filter-jobless-badge'),
@@ -2149,6 +2344,10 @@ function renderBDCSignal(data) {
   const names = { yield: 'Yield Curve', jobless: 'Jobless Claims', m2: 'M2 Growth' };
   const negative = Object.keys(levels).filter(k => levels[k] === 'negative');
   const caution = Object.keys(levels).filter(k => levels[k] === 'caution');
+  // Um filtro por AVALIAR não é um filtro alinhado. O veredicto contava o que
+  // era mau e assumia que o resto estava bem: com os três em n/d, `nonOk` era
+  // zero e a página publicava, a verde, "All 3 entry filters are aligned".
+  const porAvaliar = Object.keys(levels).filter(k => levels[k] === 'unknown');
   const nonOk = negative.length + caution.length;
 
   const verdictBox = document.getElementById('bdc-signal-verdict');
@@ -2156,7 +2355,10 @@ function renderBDCSignal(data) {
   const verdictText = document.getElementById('signal-verdict-text');
   if (verdictBox && verdictLabel && verdictText) {
     let icon, cls, verdictLine;
-    if (nonOk >= 2) {
+    if (porAvaliar.length) {
+      icon = '◎'; cls = '';
+      verdictLine = `${porAvaliar.length} of the 3 entry filters could not be evaluated this week (${porAvaliar.map(k => names[k]).join(', ')}), so no Golden Rule verdict is issued. Absence of a reading is not an all-clear.`;
+    } else if (nonOk >= 2) {
       icon = '⚡'; cls = 'orange';
       const parts = [];
       if (negative.length) parts.push(`${negative.length} negative filter${negative.length > 1 ? 's' : ''} (${negative.map(k => names[k]).join(', ')})`);
@@ -2173,9 +2375,33 @@ function renderBDCSignal(data) {
 }
 
 function renderMain(data) {
+  // Os pilares vivos SAEM do data.json. "5 / 5" estava escrito a mao no
+  // template: com um pilar em n/d o cabecalho dizia "5 / 5" enquanto o cartao
+  // logo a seguir dizia "n/d", na mesma renderizacao — e a newsletter da mesma
+  // semana dizia "4/5 Pillars Active". O `send_newsletter` ja derivava o numero
+  // do `ndPillars`; esta era a copia que faltava.
+  //
+  // O valor e INTERPOLADO no template, nao escrito antes dele: o
+  // `terminal-main.innerHTML` mais abaixo recria a subarvore inteira e apagava
+  // qualquer escrita anterior — o site mostrava "— / —" todas as semanas,
+  // incluindo as saudaveis.
+  const _totalPil = ((RULES && RULES.pillarOrder) || []).length
+    || (data.pillars || []).length || 5;
+  const _pilaresTexto =
+    `${Math.max(_totalPil - ((data.ndPillars || []).length), 0)} / ${_totalPil}`;
   const score = data.globalResilienceScore;
-  const color = scoreCSSVar(score);
-  const pct = (score / 10) * 100;
+  // Com os cinco pilares em n/d o motor escreve `globalResilienceScore: null` —
+  // e correcto: nao ha score. `null.toFixed(1)` lancava um TypeError que
+  // rebentava o render inteiro, e o utilizador via a faixa de "não foi possível
+  // carregar o data.json" numa semana em que o ficheiro estava perfeitamente
+  // bem. O anel fica vazio e o numero diz n/d, que e a verdade.
+  // `Number(null)` é 0 e 0 é finito: testar só `Number.isFinite` deixava passar
+  // um score ausente como uma leitura de 0.0 — a leitura mais optimista da
+  // escala, publicada como se fosse real.
+  const semScore = _ausente(score) || !Number.isFinite(Number(score));
+  const scoreTxt = semScore ? 'n/d' : Number(score).toFixed(1);
+  const color = scoreCSSVar(score);   // já devolve var(--text-muted) quando não há score
+  const pct = semScore ? 0 : (score / 10) * 100;
   const circumference = 2 * Math.PI * 32;
   const offset = circumference - (pct / 100) * circumference;
   // O limiar aqui era 7, mas o motor (fetch_data.status_label e
@@ -2232,7 +2458,7 @@ function renderMain(data) {
             />
           </svg>
           <div class="score-label">
-            <div class="score-number" style="color:${color}">${score.toFixed(1)}</div>
+            <div class="score-number" style="color:${color}">${scoreTxt}</div>
             <div class="score-denom">/10</div>
           </div>
         </div>
@@ -2246,10 +2472,10 @@ function renderMain(data) {
         <div class="score-meta-row">
           <div class="score-meta-item">Source: <span>FRED API / ${data.meta.source}</span></div>
           <div class="score-meta-item">Updated: <span id="last-updated">—</span></div>
-          <div class="score-meta-item">Pillars Active: <span>5 / 5</span></div>
+          <div class="score-meta-item">Pillars Active: <span id="pillars-active">${_pilaresTexto}</span></div>
         </div>
         <div class="sparkline-container">
-          <div class="sparkline-label">6-MONTH TREND</div>
+          <div class="sparkline-label" id="sparkline-label">SCORE TREND</div>
           <canvas id="sparklineCanvas" width="160" height="40"></canvas>
         </div>
       </div>
@@ -2268,11 +2494,11 @@ function renderMain(data) {
     </div>
     <div class="history-section">
       <div class="history-header">
-        <div class="history-title">Global Resilience Score — 24-Month History</div>
+        <div class="history-title" id="history-title">Global Resilience Score</div>
         <div class="fred-tag">Composite</div>
       </div>
       <canvas id="historyCanvas" height="130"></canvas>
-      <div class="history-scale-note">Vertical axis framed to the series. Regime thresholds: Critical ≥ 8.0 · Resilient ≤ 4.0.</div>
+      <div class="history-scale-note" id="history-scale-note">Vertical axis framed to the series.</div>
     </div>
   `;
 
@@ -2285,6 +2511,19 @@ function renderMain(data) {
 
   // Draw charts
   setTimeout(() => {
+    // O rotulo sai do que esta DESENHADO. Um intervalo escrito a mao no HTML
+    // passou a ser falso no dia em que o score_history.json ficou para tras: os
+    // pontos cobriam trinta meses e o titulo dizia vinte e quatro. E se houver
+    // meses em falta, o grafico — que desenha os pontos equidistantes — diz-lo
+    // em vez de os aproximar.
+    const _tituloHist = document.getElementById('history-title');
+    if (_tituloHist) {
+      const _span = data.historicalScoresSpan;
+      const _lacuna = data.historicalScoresContiguo === false
+        ? ' · gaps in the series' : '';
+      _tituloHist.textContent = 'Global Resilience Score' +
+        (_span && _span !== 'n/d' ? ' — ' + _span : '') + _lacuna;
+    }
     drawSparkline('sparklineCanvas', data.historicalScores);
     drawHistory('historyCanvas', data.historicalScores);
   }, 100);
@@ -2296,10 +2535,19 @@ function renderSidebar(data) {
     const fillPct = isJobless
       ? Math.min((s.value / s.threshold) * 100, 100)
       : Math.max(0, Math.min(((s.threshold - s.value) / s.threshold * -1 + 1) * 100, 100));
-    const pctActual = isJobless
-      ? Math.min((s.value / s.threshold) * 100, 100)
-      : Math.min((s.value / (s.threshold * 3)) * 100, 100);
-    const fillClass = s.alert ? 'alert' : s.status === 'caution' ? 'caution' : 'normal';
+    const pctActual = (s.value === null || s.value === undefined) ? 0
+      : isJobless
+        ? Math.min((s.value / s.threshold) * 100, 100)
+        : Math.min((s.value / (s.threshold * 3)) * 100, 100);
+    // Um quarto estado: SEM LEITURA. Havia três (alert / caution / o resto), e
+    // uma sentinela em n/d caía no "resto": a página publicava, a verde, "✓
+    // Within Normal Range" sobre uma sentinela que não tem número — e a barra a
+    // 0,0% sugeria distância máxima ao gatilho quando não há distância nenhuma.
+    // A mesma página diz, à letra, que não se publica como medição um número que
+    // ninguém verificou; não pode publicar um veredicto sobre a ausência dele.
+    const semLeitura = s.value === null || s.value === undefined || s.status === 'nd';
+    const fillClass = semLeitura ? 'nd'
+      : s.alert ? 'alert' : s.status === 'caution' ? 'caution' : 'normal';
     const valClass = s.alert ? 'alert' : s.status === 'caution' ? 'caution' : '';
     const deltaDir = s.delta && s.delta.startsWith('+') ? '▲' : '▼';
     const deltaColor = isJobless
@@ -2310,35 +2558,45 @@ function renderSidebar(data) {
     <div class="sentinel-card${s.alert ? ' alert-active' : ''}">
       <div class="sentinel-name">${s.name} <span class="fred-tag">${s.fredSeries}</span></div>
       <div class="sentinel-value ${valClass}">${s.displayValue}</div>
-      <div class="sentinel-delta" style="color:${deltaColor}">${deltaDir} ${s.delta} <span style="color:var(--text-muted);font-size:9px">vs. prev.</span></div>
+      ${semLeitura ? '' : `<div class="sentinel-delta" style="color:${deltaColor}">${deltaDir} ${s.delta} <span style="color:var(--text-muted);font-size:9px">vs. prev.</span></div>`}
       <div class="sentinel-threshold-bar">
         <div class="threshold-labels">
           <span>0</span>
           <span style="color:var(--red)">⚑ ${s.thresholdDisplay}</span>
         </div>
         <div class="threshold-track">
-          <div class="threshold-fill ${fillClass}" style="width:${pctActual.toFixed(1)}%"></div>
+          ${semLeitura ? '' : `<div class="threshold-fill ${fillClass}" style="width:${pctActual.toFixed(1)}%"></div>`}
         </div>
       </div>
       <div class="sentinel-status-row">
-        <span class="sentinel-status-text" style="color:${fillClass === 'normal' ? 'var(--green)' : fillClass === 'caution' ? 'var(--orange)' : 'var(--red)'}">
-          ${s.alert ? '⚑ ALERT ACTIVE' : s.status === 'caution' ? '⚡ Approaching Threshold' : '✓ Within Normal Range'}
+        <span class="sentinel-status-text" style="color:${semLeitura ? 'var(--text-muted)' : fillClass === 'normal' ? 'var(--green)' : fillClass === 'caution' ? 'var(--orange)' : 'var(--red)'}">
+          ${semLeitura ? '◎ No reading this week' : s.alert ? '⚑ ALERT ACTIVE' : s.status === 'caution' ? '⚡ Approaching Threshold' : '✓ Within Normal Range'}
         </span>
       </div>
       <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.5">${s.description}</div>
     </div>`;
   }).join('');
 
+  // O quarto estado tinha de chegar aqui também. A caixa olhava só para o que
+  // é MAU e, não encontrando nada, publicava "All sentinels and pillars are
+  // within normal range this week" — uma afirmação sobre TODAS as sentinelas e
+  // todos os pilares, feita numa semana em que nenhum deles tem leitura, vinte
+  // linhas abaixo do cartão que já sabia calar-se.
   const dynamicAlerts = [];
+  const semLeituraSent = s => s.value === null || s.value === undefined || s.status === 'nd';
   (data.sentinels || []).forEach(s => {
-    if (s.alert) {
+    if (semLeituraSent(s)) {
+      dynamicAlerts.push({ cls: '', icon: '◎', title: `${s.name} — No Reading`, text: s.description });
+    } else if (s.alert) {
       dynamicAlerts.push({ cls: 'danger', icon: '⚑', title: `${s.name} — Alert Active`, text: s.description });
     } else if (s.status === 'caution') {
       dynamicAlerts.push({ cls: 'warning', icon: '⚡', title: `${s.name} — Approaching Threshold`, text: s.description });
     }
   });
   (data.pillars || []).forEach(p => {
-    if (p.status === 'warning' || p.status === 'critical') {
+    if (p.score === null || p.score === undefined || p.status === 'nd') {
+      dynamicAlerts.push({ cls: '', icon: '◎', title: `${p.name} Pillar — No Reading`, text: p.description });
+    } else if (p.status === 'warning' || p.status === 'critical') {
       dynamicAlerts.push({ cls: p.status === 'critical' ? 'danger' : 'warning', icon: p.status === 'critical' ? '⚑' : '◉', title: `${p.name} Pillar`, text: p.description });
     }
   });
@@ -2748,18 +3006,51 @@ setTimeout(() => renderWatchlist('all'), 200);
 // ──────────────────────────────────────────
 // PORTFOLIO
 // ──────────────────────────────────────────
+// Nome legível e cor por instrumento. Cobre TODOS os mapas, não só o de
+// Turbulence: em Critical a carteira detém USMV/SHY/SGOV/GLD/TLT e em Resilient
+// QQQ/HYG/IWO, e nenhum deles existia aqui.
 const ETF_META = {
-  SPY:  { name: 'US Equities (Broad)',        color: 'var(--blue)' },
-  IEF:  { name: 'US Treasuries 7-10Y',        color: 'var(--green)' },
-  LQD:  { name: 'IG Credit',                  color: 'var(--orange)' },
+  SPY:  { name: 'US Equities (Broad)',        color: '#388BFD' },
+  IEF:  { name: 'US Treasuries 7-10Y',        color: '#34D058' },
+  LQD:  { name: 'IG Credit',                  color: '#F98C4F' },
   PDBC: { name: 'Commodities',                color: '#f97316' },
-  BIL:  { name: 'Cash & T-Bills',             color: 'var(--text-muted)' },
+  BIL:  { name: 'Cash & T-Bills',             color: '#586068' },
   VNQ:  { name: 'Alternatives / Real Assets', color: '#a855f7' },
+  USMV: { name: 'US Equities, Min-Volatility', color: '#5B8DD6' },
+  SHY:  { name: 'US Treasuries 1-3Y',         color: '#2E9E52' },
+  TLT:  { name: 'US Treasuries 20Y+',         color: '#1F7A3D' },
+  SGOV: { name: 'T-Bills 0-3M (credit sleeve)', color: '#C97C4A' },
+  GLD:  { name: 'Gold',                       color: '#D4A017' },
+  QQQ:  { name: 'US Equities, Growth',        color: '#4DA3FF' },
+  HYG:  { name: 'High-Yield Credit',          color: '#E8A05C' },
+  IWO:  { name: 'Small-Cap Growth',           color: '#B87BE0' },
 };
+const ETF_META_FALLBACK = { name: '—', color: '#586068' };
+
+// Os instrumentos desenhados são os que a carteira DETÉM, lidos do
+// portfolio.json — não uma lista escrita à mão.
+//
+// Estavam escritos aqui: ['SPY','IEF','LQD','PDBC','BIL','VNQ'], o mapa de
+// Turbulence. Numa semana em Critical o site mostrava $2.968 em posições ao
+// lado de um KPI de $9.895, e um donut de 30% — na semana que o sistema inteiro
+// existe para acertar. Foi a quarta cópia do mapa de ETF, e a que a unificação
+// não apanhou porque nenhuma semana real saiu ainda de Turbulence.
+function heldTickers(c) {
+  const shares = c.shares || {};
+  const alloc  = c.allocation_pct || {};
+  const mapa   = Object.values(c.active_etf_map || {});
+  const vistos = new Set([
+    ...Object.keys(shares).filter(t => shares[t]),
+    ...Object.keys(alloc).filter(t => alloc[t]),
+    ...mapa,
+  ]);
+  // ordem estável: pela alocação, do maior para o menor, e depois alfabética
+  return [...vistos].sort((a, b) =>
+    (alloc[b] || 0) - (alloc[a] || 0) || a.localeCompare(b));
+}
 
 function initPortfolio() {
-  fetch('portfolio.json?v=' + Date.now())
-    .then(r => r.json())
+  loadPortfolio()
     .then(data => {
       renderPortfolioKPIs(data);
       renderPortfolioHoldings(data);
@@ -2773,9 +3064,20 @@ function initPortfolio() {
     });
 }
 
-function fmtUSD(v) { return '$' + parseFloat(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtPct(v) { const n=parseFloat(v); return (n>=0?'+':'')+n.toFixed(2)+'%'; }
-function portColor(v) { return parseFloat(v)>=0 ? 'var(--green)' : 'var(--red)'; }
+// Um valor ausente é "n/d", não "NaN".
+//
+// O motor suprime o P&L e o alpha (grava `null`) quando não consegue valorizar
+// toda a carteira — precisamente para não publicar um número falso. E o site
+// pegava nesse `null`, fazia `parseFloat(null).toFixed(2)` e publicava
+// **"NaN%", a vermelho**, ao lado do valor da carteira. Todo o cuidado do motor
+// desfeito por um formatador.
+function _ausente(v) { return v === null || v === undefined || v === '' || Number.isNaN(parseFloat(v)); }
+function fmtUSD(v) { return _ausente(v) ? 'n/d'
+  : '$' + parseFloat(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtPct(v) { if (_ausente(v)) return 'n/d';
+  const n = parseFloat(v); return (n>=0?'+':'')+n.toFixed(2)+'%'; }
+function portColor(v) { return _ausente(v) ? 'var(--text-muted)'
+  : (parseFloat(v)>=0 ? 'var(--green)' : 'var(--red)'); }
 
 function renderPortfolioKPIs(data) {
   const c = data.current;
@@ -2791,36 +3093,154 @@ function renderPortfolioKPIs(data) {
   const aEl = document.getElementById('port-kpi-alpha');
   aEl.textContent = fmtPct(c.alpha_vs_benchmark_pct);
   aEl.style.color = portColor(c.alpha_vs_benchmark_pct);
-  document.getElementById('port-kpi-regime').textContent = (latest ? latest.regime : '—') + ' regime';
-  document.getElementById('port-kpi-score').textContent = latest && latest.mrm_score ? latest.mrm_score.toFixed(1)+'/10' : '—';
-  function fmtTrigger(reason) {
-    if (!reason || reason === 'no_rebalance') return 'Hold — no rebalance';
-    if (reason === 'inception') return 'Inception — initial allocation';
-    if (reason === 'quarterly_rebalance') return '⟳ Quarterly rebalance';
-    if (reason.startsWith('emergency')) return '⚠ Emergency — score ≥ 7.0';
-    if (reason.startsWith('tactical') || reason.startsWith('wow')) {
-      // Parse WoW deltas from reason string e.g. "wow_delta_spy_minus2_ief_plus2"
-      // or generic "tactical_wow_delta"
-      return '⟳ Tactical — newsletter WoW delta';
+  // `regime`, nunca `regime_signalled`: o motor grava os dois, e são coisas
+  // diferentes. O sinalizado é o que os medidores pediram esta semana; o outro é
+  // aquele em que a carteira está mesmo — que só muda depois da confirmação, e
+  // que fica onde estava quando o rebalanceamento é cancelado. O KPI descreve a
+  // carteira, por isso é o segundo.
+  const regimeDetido = (c && c.regime) || (latest && latest.regime) || null;
+  document.getElementById('port-kpi-regime').textContent = (regimeDetido || '—') + ' regime';
+  // `latest.mrm_score ?` tratava um score de 0.0 como ausente.
+  const scoreSemana = latest ? latest.mrm_score : null;
+  document.getElementById('port-kpi-score').textContent =
+    _ausente(scoreSemana) ? '—' : Number(scoreSemana).toFixed(1) + '/10';
+  document.getElementById('port-kpi-rebalance').textContent =
+    fmtTrigger(latest && latest.rebalance_reason);
+  // A QUALIDADE da valorização vai ao lado do número. O motor declara — e a
+  // newsletter da mesma semana publica por escrito — que a valorização de um
+  // instrumento com o preço congelado além do limite já não é credível; esta
+  // página desenhava o mesmo valor, o mesmo P&L e o mesmo alpha como números
+  // sãos, e por baixo "Updated: <data da corrida>". Um número publicado sem a
+  // sua qualidade é uma afirmação que o estado não sustenta.
+  const semCredito = (c.valuation_not_credible || []);
+  const congelados = (c.valuation_frozen || []);
+  const emFalta = (c.valuation_missing || []);
+  const idades = c.valuation_frozen_days || {};
+  const notaEl = document.getElementById('port-valuation-note');
+  if (notaEl) {
+    let nota = '', cor = '';
+    if (semCredito.length) {
+      const det = semCredito.map(t =>
+        _ausente(idades[t]) ? t : `${t} (${idades[t]}d)`).join(', ');
+      const lim = _ausente(c.price_frozen_after_days) ? '' :
+        ` past the ${c.price_frozen_after_days}-day limit`;
+      nota = `⚠ Valuation not credible: the price for ${det} has been frozen` +
+             `${lim}. The value, P&L and alpha above are not reliable.`;
+      cor = 'var(--orange)';
+    } else if (emFalta.length) {
+      nota = `⚠ Valuation incomplete: ${emFalta.join(', ')} could not be priced ` +
+             `at all, so the value above excludes those positions.`;
+      cor = 'var(--orange)';
+    } else if (congelados.length) {
+      nota = `⚠ The value above uses the last known price for ` +
+             `${congelados.join(', ')}: the fresh quote failed.`;
+      cor = 'var(--orange)';
     }
-    return '⟳ ' + reason.replace(/_/g,' ');
+    notaEl.textContent = nota;
+    notaEl.style.color = cor;
+    notaEl.hidden = !nota;
   }
-  document.getElementById('port-kpi-rebalance').textContent = latest && latest.rebalance_triggered
-    ? fmtTrigger(latest.rebalance_reason) : 'Hold — no rebalance';
+  // E os KPIs deixam de se apresentar como números sãos quando a valorização
+  // que os produziu não é credível.
+  if (semCredito.length || emFalta.length) {
+    for (const id of ['port-kpi-value', 'port-kpi-pnl', 'port-kpi-alpha']) {
+      const el = document.getElementById(id);
+      if (el) { el.style.opacity = '0.55'; el.title = 'valuation not reliable'; }
+    }
+  }
   document.getElementById('port-updated').textContent = 'Updated: ' + c.date;
+}
+
+// NOTA: esta função tem de ficar ao nível de TOPO. Estava definida dentro de
+// renderPortfolioKPIs, e o logReason — que a chama — vive fora dela: o
+// histórico de rebalanceamentos rebentava com ReferenceError. Apanhado pelo
+// runner de JavaScript em tests/test_frontend.js.
+// Rótulo curto para um motivo de rebalanceamento.
+//
+// Dizia "Emergency — score ≥ 7.0" (a regra é ≤ 4,0) e conhecia
+// 'quarterly_rebalance', 'tactical' e 'wow' — vocabulário que o motor deixou
+// de emitir. Os motivos que existem hoje estão declarados no mrm_rules.py e
+// publicados no data.json; os limiares vêm de lá.
+function fmtTrigger(reason) {
+  if (!reason || reason === 'hold' || reason === 'no_rebalance') return 'Hold — no rebalance';
+  if (reason === 'inception') return 'Inception — initial allocation';
+  const lo = (RULES && RULES.resilientMax !== undefined) ? RULES.resilientMax.toFixed(1) : '4.0';
+  if (reason.startsWith('emergency_resilient')) return `⚠ Confirmed entry to Resilient — score ≤ ${lo}`;
+  if (reason === 'stress_on')  return '⚠ Gauge B fired — rotated to the Critical map';
+  if (reason === 'stress_off') return '⟲ Gauge B stood down — back to Turbulence';
+  if (reason === 'stress_off_to_resilient') return '⟲ Gauge B stood down — straight to Resilient';
+  if (reason === 'resilient_off') return '⟲ Left Resilient';
+  if (reason === 'semestral_rebalance') return '⟳ Scheduled semi-annual rebalance';
+  if (reason.startsWith('critical_subregime_switch')) return '⟳ Sub-regime switch — duration sleeve';
+  if (reason === 'missing_prices_held') return '⚠ Held — a price was missing';
+  if (reason === 'no_allocation_available') return '⚠ Held — allocation not readable';
+  if (reason === 'aborted_invalid_shares') return '⚠ Held — rebalance failed its value check';
+  if (reason === 'valuation_incomplete_held') return '⚠ Held — portfolio value incomplete';
+  if (reason === 'valuation_not_credible_held') return '⚠ Held — a held price is frozen past the limit';
+  if (reason === 'stale_allocation_held') return '⚠ Held — this week\'s allocation was not readable';
+  // Um motivo que este vocabulário não conhece é desenhado com o ícone de aviso,
+  // não com o ⟳ de rebalanceamento executado: uma semana em que o motor recusou
+  // rebalancar não pode aparecer como uma em que rebalanceou.
+  return '⚠ ' + reason.replace(/_/g,' ');
+}
+
+// Rótulo para a tabela de histórico. Era uma SEGUNDA cópia do vocabulário de
+// motivos, com 'quarterly_rebalance', 'tactical' e 'wow' — que o motor não emite
+// — e sem 'stress_on', 'stress_off' ou 'resilient_off', que emite. Delega no
+// fmtTrigger e só acrescenta o que é próprio desta tabela: o link para o
+// capítulo do sub-regime, e o facto de uma semana sem transacções o dizer.
+function logReason(s) {
+  const r = s.rebalance_reason;
+  // O custo de transacção da semana, quando houve. O backtest publicado no
+  // mesmo site cobra $10 a abrir e $10 a fechar por posição; enquanto a
+  // carteira real não os mostrava, os dois números conviviam como se fossem
+  // comparáveis.
+  const custo = Number(s.transaction_cost_usd);
+  const nota = Number.isFinite(custo) && custo > 0
+    ? ` <span style="color:var(--text-muted);font-family:var(--mono);font-size:10px;">· $${custo.toFixed(2)} custos</span>`
+    : '';
+  if (!s.rebalance_triggered) {
+    return (r && r !== 'hold' ? `— ${fmtTrigger(r)}` : '— hold') + nota;
+  }
+  if (r && r.startsWith('critical_subregime_switch')) {
+    const to = (r.split(':')[1] || '').split('->')[1];
+    const label = to === 'Critical_FTQ' ? 'Flight to Quality' : 'Stress without Relief';
+    return `⟳ Sub-regime → ${label} <a href="#" onclick="switchView('academy', document.querySelector('.nav-tab')); navChapter(6); return false;" style="color:var(--blue); text-decoration:none; margin-left:4px;">why?</a>` + nota;
+  }
+  return fmtTrigger(r) + nota;
+}
+
+// A marca do preço congelado, na própria linha. Sem ela a tabela desenhava o
+// preço morto exactamente como um preço de hoje.
+function _marcaPreco(c, t) {
+  const idade = (c.valuation_frozen_days || {})[t];
+  if ((c.valuation_not_credible || []).includes(t)) {
+    return ` <span title="frozen past the declared limit" style="color:var(--orange);">` +
+           `⚠${_ausente(idade) ? '' : ' ' + idade + 'd'}</span>`;
+  }
+  if ((c.valuation_frozen || []).includes(t)) {
+    return ` <span title="last known price" style="color:var(--text-muted);">` +
+           `↺${_ausente(idade) ? '' : ' ' + idade + 'd'}</span>`;
+  }
+  return '';
 }
 
 function renderPortfolioHoldings(data) {
   const c = data.current;
-  const tickers = ['SPY','IEF','LQD','PDBC','BIL','VNQ'];
+  const tickers = heldTickers(c);
   const tbody = document.getElementById('port-holdings-body');
-  const colors = { SPY:'#388BFD', IEF:'#34D058', LQD:'#F98C4F', PDBC:'#f97316', BIL:'#586068', VNQ:'#a855f7' };
   tbody.innerHTML = tickers.map(t => {
-    const shares = c.shares[t]||0;
-    const price  = c.last_prices[t]||0;
-    const alloc  = c.allocation_pct[t]||0;
-    const value  = shares * price;
-    const meta   = ETF_META[t];
+    const shares = (c.shares||{})[t]||0;
+    const alloc  = (c.allocation_pct||{})[t]||0;
+    // Um instrumento sem preco NAO vale zero: nao se sabe quanto vale. O `||0`
+    // desenhava "$0.00" ao lado de uma barra de alocacao de 15%, que e a leitura
+    // mais errada possivel — parece uma posicao que se evaporou. n/d e a verdade.
+    const rawPrice = (c.last_prices||{})[t];
+    const semPreco = !Number.isFinite(Number(rawPrice)) || Number(rawPrice) <= 0;
+    const price  = semPreco ? null : Number(rawPrice);
+    const value  = semPreco ? null : shares * price;
+    const meta   = ETF_META[t] || ETF_META_FALLBACK;
+    const colors = { [t]: meta.color };
     return `<tr>
       <td style="font-family:var(--mono);font-weight:600;color:var(--text-primary);padding:8px 8px 8px 0;">${t}</td>
       <td style="font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${meta.name}</td>
@@ -2833,7 +3253,7 @@ function renderPortfolioHoldings(data) {
         </div>
       </td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${shares.toFixed(4)}</td>
-      <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${fmtUSD(price)}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${fmtUSD(price)}${_marcaPreco(c, t)}</td>
       <td style="font-family:var(--mono);font-weight:600;color:var(--text-primary);padding:8px 0 8px 0;">${fmtUSD(value)}</td>
     </tr>`;
   }).join('');
@@ -2841,7 +3261,7 @@ function renderPortfolioHoldings(data) {
 
 function renderPortfolioDonut(data) {
   const c = data.current;
-  const tickers = ['SPY','IEF','LQD','PDBC','BIL','VNQ'];
+  const tickers = heldTickers(c);
   const canvas = document.getElementById('port-donut');
   if (!canvas || !window.Chart) return;
   if (canvas._chartInstance) canvas._chartInstance.destroy();
@@ -2849,8 +3269,8 @@ function renderPortfolioDonut(data) {
     type: 'doughnut',
     data: {
       labels: tickers,
-      datasets: [{ data: tickers.map(t=>c.allocation_pct[t]||0),
-        backgroundColor: ['#388BFD','#34D058','#F98C4F','#f97316','#586068','#a855f7'],
+      datasets: [{ data: tickers.map(t=>(c.allocation_pct||{})[t]||0),
+        backgroundColor: tickers.map(t=>(ETF_META[t]||ETF_META_FALLBACK).color),
         borderWidth: 0, hoverOffset: 4 }]
     },
     options: {
@@ -2864,12 +3284,16 @@ function renderPortfolioDonut(data) {
     }
   });
   const legend = document.getElementById('port-donut-legend');
-  const colors = ['#388BFD','#34D058','#F98C4F','#f97316','#586068','#a855f7'];
-  legend.innerHTML = tickers.map((t,i) => {
-    const pct = c.allocation_pct[t]||0;
+  // A cor vem do MESMO sítio que a fatia: ETF_META. Estava aqui um array
+  // posicional de seis cores, e desde que o donut passou a ler o ETF_META a
+  // legenda deixou de bater certo — o chip do BIL tinha a cor da fatia do SPY.
+  // Duas fontes para a mesma cor davam sempre nisto.
+  legend.innerHTML = tickers.map(t => {
+    const pct = (c.allocation_pct||{})[t]||0;
     if (!pct) return '';
+    const cor = (ETF_META[t]||ETF_META_FALLBACK).color;
     return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
-      <div style="width:8px;height:8px;border-radius:2px;background:${colors[i]};flex-shrink:0;"></div>
+      <div style="width:8px;height:8px;border-radius:2px;background:${cor};flex-shrink:0;"></div>
       <span style="font-family:var(--mono);font-size:10px;color:var(--text-secondary);">${t}</span>
       <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-left:auto;">${pct}%</span>
     </div>`;
@@ -2914,31 +3338,35 @@ function renderEquityCurve(data) {
   });
 }
 
+// Um regime -> a sua cor. Uma fonte só para a badge do histórico.
+function regimeTone(regime) {
+  if (regime === 'Turbulence') return { color: 'var(--orange)', bg: 'var(--orange-dim)' };
+  if (regime === 'Critical')   return { color: 'var(--red)',    bg: 'var(--red-dim)' };
+  if (regime === 'Resilient')  return { color: 'var(--green)',  bg: 'var(--green-dim)' };
+  // Regime desconhecido ou ausente: neutro. Verde era a leitura mais optimista
+  // possível para uma semana sobre a qual não se sabe nada.
+  return { color: 'var(--text-muted)', bg: 'var(--bg-card)' };
+}
+
 function renderRebalanceLog(data) {
   const tbody = document.getElementById('port-log-body');
   tbody.innerHTML = [...data.history].reverse().map(s => {
-    const regimeColor = s.regime==='Turbulence' ? 'var(--orange)' : s.regime==='Critical' ? 'var(--red)' : 'var(--green)';
-    const regimeBg   = s.regime==='Turbulence' ? 'var(--orange-dim)' : s.regime==='Critical' ? 'var(--red-dim)' : 'var(--green-dim)';
-    const pnlColor   = parseFloat(s.portfolio_pnl_pct)>=0 ? 'var(--green)' : 'var(--red)';
+    // Cor e texto do mesmo valor, numa expressão só: enquanto foram duas, uma
+    // podia passar a ler `regime_signalled` — o que os medidores pediram — e a
+    // outra continuar no `regime` que a carteira teve. A badge ficava verde
+    // numa semana de Turbulence sem que nada no ecrã denunciasse a troca.
+    const tom = regimeTone(s.regime);
+    const regimeColor = tom.color, regimeBg = tom.bg;
+    // portColor, nao parseFloat: uma semana em que o motor SUPRIMIU o P&L
+    // (carteira por valorizar) escreve null, e `parseFloat(null) >= 0` e falso —
+    // o "n/d" saia pintado de vermelho, a dizer perda onde nao havia leitura.
+    const pnlColor   = portColor(s.portfolio_pnl_pct);
     return `<tr>
       <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${s.date}</td>
       <td style="font-family:var(--mono);font-weight:600;color:var(--text-primary);padding:8px 8px 8px 0;">#${s.issue}</td>
-      <td style="font-family:var(--mono);color:var(--text-primary);padding:8px 8px 8px 0;">${s.mrm_score ? s.mrm_score.toFixed(1) : '—'}</td>
+      <td style="font-family:var(--mono);color:var(--text-primary);padding:8px 8px 8px 0;">${_ausente(s.mrm_score) ? '—' : Number(s.mrm_score).toFixed(1)}</td>
       <td style="padding:8px 8px 8px 0;"><span style="padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;background:${regimeBg};color:${regimeColor};">${s.regime||'—'}</span></td>
-      <td style="font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${s.rebalance_triggered ? (()=>{
-        const r=s.rebalance_reason;
-        if(r==='inception') return '⟳ Inception';
-        if(r==='quarterly_rebalance'||r==='semestral_rebalance') return '⟳ Semestral rebalance';
-        if(r&&r.startsWith('emergency')) return '⚠ Emergency score';
-        if(r&&(r.startsWith('tactical')||r.startsWith('wow'))) return '⟳ Tactical WoW delta';
-        if(r&&r.startsWith('critical_subregime_switch')) {
-          const parts = r.split(':')[1] || '';
-          const [from, to] = parts.split('->');
-          const label = to === 'Critical_FTQ' ? 'Flight to Quality' : 'Stress without Relief';
-          return `⟳ Sub-regime → ${label} <a href="#" onclick="switchView('academy', document.querySelector('.nav-tab')); navChapter(6); return false;" style="color:var(--blue); text-decoration:none; margin-left:4px;">why?</a>`;
-        }
-        return '⟳ '+r.replace(/_/g,' ');
-      })() : '— hold'}</td>
+      <td style="font-size:11px;color:var(--text-muted);padding:8px 8px 8px 0;">${logReason(s)}</td>
       <td style="font-family:var(--mono);color:var(--text-primary);padding:8px 8px 8px 0;">${fmtUSD(s.portfolio_value)}</td>
       <td style="font-family:var(--mono);color:${pnlColor};padding:8px 0 8px 0;">${fmtPct(s.portfolio_pnl_pct)}</td>
     </tr>`;
@@ -4377,6 +4805,7 @@ function renderRebalanceLog(data) {
           <a href="https://twitter.com/intent/tweet?text=🧊+MRM+Weekly+Signal+—+Issue+%231+%7C+Inaugural%0A%0AScore+6.5%2F10+🔴+%7C+ERP+0.28%25+Red+Alert%0A%0Ausmrm.net%2FMRM_Newsletter_14Mar2026.html%0A%0A%23MacroInvesting+%23ERP+%23Finance+%23WeekendReading" target="_blank" style="padding:8px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:12px;text-decoration:none;">𝕏 Share</a>
         </div>
       </div>
+      <!-- NEWSLETTER_ARCHIVE_END -->
 
     </div>
   </div>
@@ -4397,6 +4826,10 @@ function renderRebalanceLog(data) {
       <div style="text-align:right;">
         <div style="font-family:var(--mono);font-size:10px;font-weight:600;color:var(--green);margin-bottom:4px;">&#9679; LIVE</div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);" id="port-updated">—</div>
+        <!-- A qualidade da valorizacao, ao lado do numero e nao escondida no
+             historico: a newsletter da mesma semana pode estar a dizer por
+             escrito que aquele valor nao e credivel. -->
+        <div style="font-size:11px;line-height:1.5;margin-top:6px;" id="port-valuation-note" hidden></div>
       </div>
     </div>
 

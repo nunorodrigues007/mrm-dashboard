@@ -85,11 +85,21 @@ def old_debt(d):
     return 2.0
 
 def old_global(scores):
+    """A conta de referencia, escrita a mao, contra a qual global_score e comparada.
+
+    O chao de evidencia faz parte da regra e nao e um detalhe de implementacao:
+    com dois pilares vivos o composto e um numero construido sobre 45% da
+    evidencia, e duas leituras seguidas <= 4,0 desse composto rodavam a carteira
+    inteira para o mapa Resilient. Todo o resto do sistema mantem posicoes quando
+    os dados degradam; este era o unico sitio onde a degradacao produzia a accao
+    maxima, e na direccao risk-on."""
     weights = {"cycle":0.20,"liquidity":0.20,"premium":0.25,"solvency":0.15,"debt":0.20}
     nd = sorted(k for k in weights if scores.get(k) is None)
     ok = {k: w for k, w in weights.items() if scores.get(k) is not None}
     if not ok: return None, nd
     total = sum(ok.values())
+    if total < 0.50 - 1e-9:          # menos de metade do peso: nao ha composto
+        return None, nd
     return round(sum(scores[k]*w/total for k,w in ok.items()), 2), nd
 
 def old_status(score):
@@ -127,6 +137,23 @@ for pid, fn in OLD.items():
                     print(f"DIVERGE-LIMIAR {pid} x={x!r}: antigo={a} novo={b}")
     assert rules.score_pillar(pid, None) is None, f"{pid}: None tem de dar n/d"
     n += 1
+
+# ── o chao de evidencia do composto ─────────────────────────────────────────
+# A fronteira cai limpa entre dois e tres pilares: os dois mais pesados somam
+# 0,45 e os tres mais leves somam 0,55.
+import itertools as _it
+_CHEIO = {"cycle": 5.5, "liquidity": 9.5, "premium": 10.0, "solvency": 2.5, "debt": 5.5}
+for _k in range(6):
+    for _falta in _it.combinations(_CHEIO, _k):
+        _sc = {p: (None if p in _falta else v) for p, v in _CHEIO.items()}
+        _vivos = 5 - _k
+        _tem = rules.global_score(_sc)[0] is not None
+        assert _tem == (_vivos >= 3), (
+            f"com {_vivos} pilares vivos ({sorted(set(_CHEIO) - set(_falta))}) "
+            f"o composto {'devia' if _vivos >= 3 else 'nao devia'} existir")
+        n += 1
+assert rules.MIN_PILLAR_WEIGHT == 0.50, "o chao e metade do peso total"
+n += 1
 
 # ── global_score e pillar_status ────────────────────────────────────────────
 import random

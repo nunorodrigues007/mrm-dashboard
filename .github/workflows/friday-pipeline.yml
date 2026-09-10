@@ -2,81 +2,290 @@ name: 🗓️ MRM Friday Pipeline (Portfolio + Newsletter)
 
 on:
   schedule:
-    # Every Friday at 22:00 UTC — safely after the 4pm ET US market close
-    # in both EDT (20:00 UTC close) and EST (21:00 UTC close), and safely
-    # after the daily 18:00 UTC data.json refresh (update.yml).
+    # Sexta às 22:00 UTC — depois do fecho de 16:00 ET tanto em EDT (20:00 UTC)
+    # como em EST (21:00 UTC).
     - cron: "0 22 * * 5"
   workflow_dispatch:
-    # Allow manual trigger for testing, with an optional override to force a
-    # re-run even if this week's portfolio.json is already marked up to date
-    # (useful for correcting a week that was published with stale/bad data).
     inputs:
       force_rebalance:
-        description: "Force portfolio update to re-run even if already up to date this week"
+        description: "Forçar a re-corrida mesmo que a semana já esteja marcada como feita"
         type: boolean
         default: false
 
 permissions:
   contents: write
+  issues: write        # o job de alerta abre um issue quando a semana falha
+
+concurrency:
+  # Duas corridas em paralelo escreveriam o mesmo portfolio.json e uma perdia o
+  # push. Uma de cada vez, e a mais recente não cancela a que está a decidir.
+  group: mrm-friday-pipeline
+  cancel-in-progress: false
 
 jobs:
-  # ── JOB 1: Update the virtual ETF portfolio using Friday's closing prices ──
-  update-portfolio:
+  # ── JOB 0: dados frescos, gerados por esta corrida ────────────────────────
+  # O pipeline dependia do update diário das 18:00 para o data.json. Se esse
+  # falhasse, às 22:00 a carteira decidia sobre o ficheiro de ontem. Agora esta
+  # corrida gera os seus próprios dados, e o motor recusa-os se forem velhos.
+  refresh-data:
     runs-on: ubuntu-latest
+    # O pior caso declarado deste job: 1 portao + 1 fetch, mais 3 voltas do laco
+    # de recuperacao, cada uma com portao + fetch + 10 s de espera. Com a FRED
+    # degradada o fetch faz 3 tentativas por serie com backoff, e uma corrida
+    # dificil leva minutos. Com 15 minutos o GitHub matava o job a meio: sem
+    # data.json publicado, os jobs da carteira e da newsletter saltados, e a
+    # semana perdida. O prazo tem de caber no contrato que o proprio ficheiro
+    # declara — a mesma aritmetica que o job do envio ja faz, e que a suite
+    # verifica.
+    timeout-minutes: 40
+    # A chave ao nivel do JOB, nao do passo.
+    #
+    # Estava declarada so no passo "Fetch live FRED data". O passo do commit tem
+    # um laco de recuperacao que, em caso de conflito de rebase, faz
+    # `git reset --hard origin/main` e volta a correr o fetch_data.py para
+    # regenerar o ficheiro sobre a base nova — e nesse passo a chave nao existia.
+    # O fetch_data.py levanta RuntimeError no proprio import quando a FRED_API_KEY
+    # falta, portanto o laco de recuperacao NUNCA podia funcionar: bastava o
+    # update.yml das 18:00 derrapar para a hora do pipeline para o conflito
+    # acontecer, o passo morrer, e os jobs da carteira e da newsletter serem
+    # saltados. Sem carteira e sem newsletter nessa semana.
+    env:
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
     steps:
-      - name: Checkout repository
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+
+      # Este job PUBLICA o data.json para `main`, e a raiz de `main` E o site.
+      # Publicar com a suite vermelha e um acto sobre o mundo real tal como
+      # decidir a carteira: a regra e a mesma para todos os jobs que agem, e nao
+      # tem excepcoes por nome — uma lista de jobs isentos e a mesma lista
+      # escrita a mao que ja deixou o portao sem metade da suite. A suite inteira
+      # corre em ~17 s; o custo e nenhum e o que se compra e a propriedade.
+      - name: ✅ Toda a suite, antes de publicar dados
+        run: bash tests/portao.sh
+
+      - name: 📡 Fetch live FRED data
+        run: python fetch_data.py
+      - name: 📋 Commit data.json
+        run: |
+          git config user.name  "MRM Data Bot"
+          git config user.email "noreply@usmrm.net"
+          git add data.json
+          if [ -f score_history.json ]; then git add score_history.json; fi
+          if git diff --cached --quiet; then
+            echo "Sem alterações no data.json."
+          else
+            git commit -m "chore: data refresh before friday pipeline $(date -u +%Y-%m-%d)"
+            # O data.json e escrito por dois workflows (o diario das 18:00 e o
+            # pipeline de sexta). Um atraso do agendamento poe-nos em paralelo, e
+            # dois commits do mesmo JSON sobre a mesma base dao CONFLITO de
+            # rebase, nao merge — o `pull --rebase` falha e deixa o rebase a
+            # meio, pelo que as tentativas seguintes falhavam com "rebase in
+            # progress". Aborta-se o rebase, regenera-se sobre o que estiver no
+            # remoto, e so entao se tenta outra vez.
+            for i in 1 2 3; do
+              if git pull --rebase --autostash origin main; then
+                git push && exit 0
+              else
+                echo "conflito ou pull falhado (tentativa $i) — a abortar o rebase"
+                git rebase --abort 2>/dev/null || true
+                git reset --hard origin/main
+                # A partir daqui a arvore e o codigo que estiver em origin/main
+                # NESTE instante — que nao e o codigo sobre o qual a suite
+                # correu no passo do portao. A garantia "este job so publica com
+                # a suite verde" estava amarrada a ORDEM DOS PASSOS, e este
+                # caminho passa por baixo dela: e o caminho construido
+                # precisamente para o dia em que os dois workflows colidem. Se a
+                # base nova estiver vermelha, o `bash -e` mata o passo aqui e o
+                # alerta dispara — que e o que tem de acontecer, porque um
+                # `reset --hard` para uma base por testar e uma re-corrida
+                # disfarcada de retry.
+                bash tests/portao.sh
+                python fetch_data.py
+                git add data.json
+                if [ -f score_history.json ]; then git add score_history.json; fi
+                git diff --cached --quiet || git commit -m "chore: data refresh before friday pipeline $(date -u +%Y-%m-%d) (regenerado apos conflito)"
+              fi
+              sleep 10
+            done
+            echo "::error::nao foi possivel publicar data.json apos 3 tentativas"
+            exit 1
+          fi
+
+  # ── JOB 1: decidir a carteira com os preços de fecho de sexta ─────────────
+  update-portfolio:
+    needs: refresh-data
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout (main, já com o data.json desta corrida)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install yfinance requests
+      - run: pip install -r requirements.txt
+
+      # As regras que decidem a carteira têm de estar verdes ANTES de decidirem.
+      # O workflow de testes corre em `push`, ou seja, depois de o bot já ter
+      # feito commit — nunca foi um portão.
+      # A lista abaixo e TODA a suite, e nao uma seleccao: uma seleccao escrita
+      # a mao fica sempre para tras. O portao ficou sem o test_gauge_b.py e sem
+      # o test_build_data.py — os dois que cobrem o modulo que DECIDE o regime e
+      # a frescura das series — no proprio dia em que esses testes foram
+      # escritos, e o test_workflows.py fixava a lista antiga por nome.
+      - name: ✅ Toda a suite, antes de mexer na carteira
+        run: bash tests/portao.sh
 
       - name: Run portfolio updater
         env:
           FORCE_REBALANCE: ${{ github.event.inputs.force_rebalance }}
         run: python update_portfolio.py
 
-      - name: Commit updated portfolio.json
+      - name: Commit portfolio.json
         run: |
           git config user.name  "MRM Portfolio Bot"
           git config user.email "noreply@usmrm.net"
           git add portfolio.json
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "Sem alterações na carteira."
           else
             git commit -m "chore: portfolio update $(date -u +%Y-%m-%d)"
-            git push
+            # A decisao da semana nao se regenera: guarda-se o ficheiro, aceita-se
+            # o que estiver no remoto, e volta a pôr-se por cima. O portfolio.json
+            # só é escrito por este job, portanto não há decisão concorrente a
+            # perder — o conflito, quando acontece, é com um commit de outro
+            # ficheiro apanhado no mesmo rebase.
+            cp portfolio.json /tmp/portfolio-decidido.json
+            for i in 1 2 3; do
+              if git pull --rebase --autostash origin main; then
+                git push && exit 0
+              else
+                echo "conflito no rebase (tentativa $i) — a reaplicar a decisão desta semana"
+                git rebase --abort 2>/dev/null || true
+                git reset --hard origin/main
+                # O mesmo que o job dos dados faz, e pela mesma razao: a partir
+                # daqui a arvore e o codigo que estiver em origin/main NESTE
+                # instante. A decisao da semana foi tomada sobre codigo testado,
+                # mas o que se PUBLICA e a base nova mais este ficheiro — e a
+                # raiz de `main` e o site. O `git push` da volta seguinte do
+                # laco corre depois disto, portanto o portao tem de estar aqui.
+                bash tests/portao.sh
+                cp /tmp/portfolio-decidido.json portfolio.json
+                git add portfolio.json
+                git diff --cached --quiet || git commit -m "chore: portfolio update $(date -u +%Y-%m-%d) (reaplicado)"
+              fi
+              sleep 10
+            done
+            echo "::error::não foi possível publicar portfolio.json após 3 tentativas"
+            exit 1
           fi
 
-  # ── JOB 2: Generate & send the newsletter, using this week's own portfolio.json ──
-  # `needs: update-portfolio` guarantees this job only starts after Job 1 has
-  # fully finished (including its git push), so the checkout below always
-  # picks up this week's fresh portfolio.json — never last week's stale data.
+  # ── JOB 2: gerar e enviar a newsletter ───────────────────────────────────
   send-newsletter:
     needs: update-portfolio
     runs-on: ubuntu-latest
+    # 3 geracoes x (3 tentativas x 300 s + esperas) chega perto dos 46 minutos no
+    # pior caso. Com 30, o GitHub matava o job antes de a ultima tentativa
+    # acabar — e o que se perdia era precisamente a mensagem de diagnostico que
+    # diz porque e que a edicao foi recusada. O contrato declarado tem de caber
+    # no tempo dado, com margem para os testes e a instalacao.
+    timeout-minutes: 60
     steps:
-      - name: 🛸 Checkout Repository
+      # `ref: main` NÃO é decorativo. Sem ele, actions/checkout usa github.sha —
+      # que num trigger agendado é o SHA do momento do agendamento, ANTES do
+      # push do job 1. Este job lia o portfolio.json da semana anterior, e todas
+      # as edições publicadas desde a #5 reportaram o P&L da semana errada.
+      - name: 🛸 Checkout (main, já com o commit do job 1)
         uses: actions/checkout@v4
         with:
+          ref: main
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🐍 Set up Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: 📦 Install Dependencies
-        run: pip install requests
+      - run: pip install -r requirements.txt
+
+      # O job 3 nao corria teste nenhum — e e ele que gera e ENVIA. As
+      # validacoes que impedem uma edicao truncada de chegar aos subscritores
+      # vivem em testes que este job nunca corria.
+      - name: ✅ Toda a suite, antes de gerar e enviar
+        run: bash tests/portao.sh
 
       - name: 📧 Generate & Send Newsletter
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
         run: python send_newsletter.py
+
+  # ── Alerta: uma semana falhada não pode ser silenciosa ───────────────────
+  # Sem isto, se um job falhasse o seguinte era saltado, não havia newsletter e
+  # ninguém era avisado. O e-mail de briefing ao dono só sai no caminho de
+  # sucesso, portanto a ausência de notícias era indistinguível de "correu bem".
+  alert-on-failure:
+    needs: [refresh-data, update-portfolio, send-newsletter]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ALERT_WEBHOOK: ${{ secrets.ALERT_WEBHOOK }}
+    steps:
+      - name: 🚨 Abrir issue com a falha
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const hoje = new Date().toISOString().slice(0, 10);
+            const titulo = `🚨 Pipeline de sexta falhou — ${hoje}`;
+            const corpo = [
+              `A corrida de ${hoje} não completou. **A carteira desta semana pode não ter sido actualizada e a newsletter pode não ter saído.**`,
+              ``,
+              `Corrida: ${url}`,
+              ``,
+              `Estado dos jobs:`,
+              `- dados: \`${{ needs.refresh-data.result }}\``,
+              `- carteira: \`${{ needs.update-portfolio.result }}\``,
+              `- newsletter: \`${{ needs.send-newsletter.result }}\``,
+              ``,
+              ``,
+              `**Qual dos três casos é, e o que fazer — ver \`RUNBOOK.md\`:**`,
+              ``,
+              `1. **O job da newsletter falhou DEPOIS de enviar.** O log tem`,
+              `   \`A edicao foi enviada, mas:\`. Os subscritores já receberam.`,
+              `   NÃO voltar a correr sem ler o RUNBOOK: conforme o motivo, pode ser`,
+              `   preciso commitar o \`sent_issues.json\` à mão primeiro.`,
+              `2. **Entrega incompleta** (\`ficou INCOMPLETA\` no log). Voltar a correr`,
+              `   este workflow serve APENAS quem falta — a edição publicada é`,
+              `   reutilizada e ninguém recebe duas vezes.`,
+              `3. **Falhou antes de enviar.** Aí sim, re-correr normalmente: o motor é`,
+              `   idempotente e a marca de envio impede duplicados.`,
+            ].join("\n");
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title: titulo, body: corpo, labels: ["pipeline-failure"],
+            });
+
+      # O `env` do PROPRIO passo nao esta disponivel no `if` desse passo, e o
+      # contexto `secrets` nao e permitido num `if` de todo — o GitHub rejeita o
+      # ficheiro inteiro e a corrida agendada nem comeca. O env vai ao nivel do
+      # job (ver acima) e a condicao le-o de la.
+      - name: 📣 Notificar (se houver webhook configurado)
+        if: env.ALERT_WEBHOOK != ''
+        run: |
+          curl -fsS -X POST -H 'content-type: application/json' \
+            -d "{\"text\":\"🚨 MRM: o pipeline de sexta falhou. ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            "$ALERT_WEBHOOK" || echo "webhook falhou — o issue já foi aberto"

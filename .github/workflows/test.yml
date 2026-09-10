@@ -6,30 +6,44 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: mrm-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
-      - name: Regras canónicas (sem rede)
-        run: python tests/test_rules.py
-      - name: Teste de integração do fetch_data.py (sem rede)
-        run: python tests/test_build_data.py
-      - name: Testes do update_portfolio.py (sem rede)
-        run: python tests/test_update_portfolio.py
-      - name: Testes do send_newsletter.py (sem rede)
-        run: python tests/test_newsletter.py
-      - name: Corrida completa do gerador da newsletter (sem rede)
-        run: python tests/test_newsletter_main.py
-      - name: Cadeia completa, calma e sob stress (sem rede)
-        run: python tests/test_end_to_end.py
-      - name: Bandas de scoring dos pilares (sem rede)
-        run: python tests/test_pillars.py
-      - name: Academia coerente com o data.json (sem rede)
-        run: python tests/test_academy.py
-      - name: Backtest 2007-2026 — números publicados (sem rede)
-        run: python tests/test_backtest.py
+      # Toda a suite, em laço: uma lista escrita à mão fica sempre para trás.
+      # Foi assim que os portões do pipeline ficaram sem o test_gauge_b.py e sem
+      # o test_build_data.py no próprio dia em que esses testes foram escritos.
+      # O MESMO portão que o pipeline de sexta corre, e não uma segunda cópia
+      # do laço: duas cópias divergem sempre, e a que diverge é a que ninguém
+      # está a olhar. O script é versionado e a própria suite verifica que uma
+      # falha o faz sair vermelho.
+      - name: Suite completa (sem rede)
+        run: bash tests/portao.sh
+      # Depois do portao, nao antes: a regra e que so a INSTALACAO pode preceder
+      # a suite. Um passo antes do portao e um passo que corre com a suite por
+      # correr, e a excepcao "mas este e so o lint" e o primeiro degrau da lista
+      # de isentos escrita a mao que ja deixou o portao sem metade da suite.
+      - name: Lint (nada por definir nem imports mortos)
+        # `./*.py` e nao `*.py`: um glob nu no inicio de uma lista de argumentos
+        # expande para nomes que comecam por `-` se algum dia existir um ficheiro
+        # assim, e esses passam a opcoes em vez de argumentos. O shellcheck que o
+        # actionlint embute recusa a forma nua (SC2035), e o `./` e a correccao
+        # canonica. Foi isto que fez a corrida #22 sair vermelha.
+        run: pip install 'pyflakes~=3.2' && python -m pyflakes ./*.py tests/*.py backtest/*.py
+      - name: Workflows — sintaxe e contextos de expressão (actionlint)
+        # Um `if:` com um contexto não permitido faz o GitHub rejeitar o ficheiro
+        # inteiro, e a corrida agendada nem começa. `yaml.safe_load` não apanha
+        # isso: só uma ferramenta que conheça as regras das expressões apanha.
+        run: |
+          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint

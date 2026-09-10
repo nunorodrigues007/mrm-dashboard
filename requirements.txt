@@ -1,1 +1,16 @@
-requests>=2.31.0
+# Versões fixadas de propósito.
+#
+# O pipeline de sexta corria `pip install yfinance requests` sem versão. O
+# yfinance interpreta HTML e endpoints não documentados da Yahoo, e parte com
+# regularidade; uma versão nova a chegar às 22:00 de sexta-feira era o ponto de
+# falha mais provável de todo o sistema, e a única forma de dar por isso era a
+# newsletter não chegar.
+#
+# Um intervalo compatível dentro da mesma minor: apanha correcções sem apanhar
+# uma reescrita. Para subir de minor, corre-se a suite e sobe-se aqui de
+# propósito.
+requests~=2.32
+yfinance~=1.7.0
+
+# Só para os testes: o test_workflows.py lê os ficheiros YAML dos Actions.
+pyyaml~=6.0
