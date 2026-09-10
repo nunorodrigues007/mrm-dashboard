@@ -1412,9 +1412,17 @@ pf_saida = corre_com_gauge(tmp_macro, None, "Critical", "Critical_Stress",
 eq(pf_saida["current"]["regime"], "Turbulence",
    f"o medidor desligado tira a carteira de Critical "
    f"({pf_saida['current']['regime']})")
-eq(pf_saida["current"]["bucket_allocation_pct"], _MACRO_PRE,
-   "e o que a carteira EXECUTA a saida e a alocacao macro pre-crise, nao o "
-   "vector de crise que a edicao publicou — isto sao dolares")
+# Set 2026: a alocacao deixou de vir da newsletter e passou a vir do
+# `REGIME_WEIGHTS`. O que esta auditoria protegia — que o eco do vector de
+# crise publicado pela edicao NAO se torna o que a carteira executa a saida —
+# deixou de depender de a memoria macro estar intacta: passou a ser verdade
+# por construcao, porque o regime escolhe o vector e a edicao nao entra na
+# conta. O ensaio fica, com o alvo actualizado: e a mesma pergunta, e a
+# resposta continua a ter de ser dolares no sitio certo.
+eq(pf_saida["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "e o que a carteira EXECUTA a saida e o vector de Turbulence das regras, "
+   "nao o vector de crise que a edicao publicou — isto sao dolares")
 true(pf_saida["current"]["bucket_allocation_pct"]
      not in [dict(v) for v in rules.CRITICAL_WEIGHTS.values()],
      f"e nao e nenhum dos vectores de crise "
@@ -1453,8 +1461,17 @@ eq(pf_m2["current"]["bucket_allocation_pct"],
    "e a carteira continua a executar o vector de crise enquanto a crise durar")
 pf_m2_saida = corre_com_gauge(tmp_macro2, None, "Critical", "Critical_Stress",
                               active=False)
-eq(pf_m2_saida["current"]["bucket_allocation_pct"], _MACRO_NOVA,
-   "e a saida executa-se essa — o que a edicao publicou e o que a carteira faz")
+# O contrato inverteu-se em Set 2026, e e essa a mudanca toda: NAO e o que a
+# edicao publica que a carteira faz — e o que a carteira faz que a edicao tem
+# de publicar. O campo continua a registar a tabela (serve para comparar a
+# edicao com o motor, e o `rules.allocation_matches_rules` faz essa
+# comparacao), mas ja nao a executa. Uma tabela genuina e uma tabela absurda
+# produzem agora exactamente a mesma carteira.
+eq(pf_m2_saida["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "a saida executa o vector das regras, seja qual for a tabela publicada")
+true(pf_m2_saida["current"]["bucket_allocation_pct"] != _MACRO_NOVA,
+     "e a tabela publicada, por genuina que seja, nao e o que se executa")
 shutil.rmtree(tmp_macro2, ignore_errors=True)
 
 # E o motor sabe distinguir os dois casos sem olhar para o texto: a fronteira e

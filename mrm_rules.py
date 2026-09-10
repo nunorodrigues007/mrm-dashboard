@@ -64,12 +64,26 @@ ALL_TICKERS = sorted({t for m in REGIME_ETF_MAP.values() for t in m.values()})
 # ─────────────────────────────────────────────────────────────────────────────
 # Pesos
 # ─────────────────────────────────────────────────────────────────────────────
-# Fora de Critical as percentagens vêm da newsletter semanal. Em Critical passam
-# a vir daqui: decisão de Set 2026, depois do backtest 2007-2026 (ver
-# backtest/README.md), onde trocar só os instrumentos capturava menos de metade
-# da protecção — 2008 fechava a −9,8% com a troca de ETF apenas, contra +1,5% com
-# instrumentos e pesos, e a quebra máxima ficava em −20,8% em vez de −16,4%.
-# Custo declarado: ~0,30 pp de CAGR em 19 anos.
+# TODOS os pesos vivem aqui, um vector por regime. Até Set 2026 só os de Critical
+# viviam: fora de Critical as percentagens vinham da tabela da newsletter, escrita
+# semana a semana por um LLM e lida de volta pelo motor. Isso punha um modelo de
+# linguagem dentro da cadeia de decisão no único momento em que os pesos mudam, e
+# explica a maioria dos defeitos com dinheiro em risco que as auditorias 7-14
+# encontraram: a alocação a somar 95, a coluna escolhida por palavra-chave, o
+# "45% → 30%" lido como 45, a classe de activo não reconhecida. Nenhum era um
+# defeito de regime — eram todos falhas a ler aquela tabela.
+#
+# Os vectores de Resilient e Turbulence são os que o backtest 2007-2026 sempre
+# usou (ver backtest/final_backtest.py, que agora os importa daqui em vez de os
+# repetir). Estavam nos dois sítios com valores DIFERENTES: o backtest publicava
+# 6,56% de CAGR e −16,4% de quebra máxima sobre um vector que o sistema vivo
+# nunca executou. Uma constante em dois sítios diverge sempre, e esta divergia
+# em 22 pontos percentuais de acções.
+#
+# Os de Critical: decisão de Set 2026, depois do mesmo backtest, onde trocar só
+# os instrumentos capturava menos de metade da protecção — 2008 fechava a −9,8%
+# com a troca de ETF apenas, contra +1,5% com instrumentos e pesos, e a quebra
+# máxima ficava em −20,8% em vez de −16,4%. Custo declarado: ~0,30 pp de CAGR.
 
 CRITICAL_WEIGHTS = {
     "Critical_FTQ": {
@@ -80,6 +94,29 @@ CRITICAL_WEIGHTS = {
         "US_EQUITIES": 15.0, "US_TREASURIES": 20.0, "IG_CREDIT": 20.0,
         "COMMODITIES": 15.0, "CASH": 25.0, "ALTERNATIVES": 5.0,
     },
+}
+
+
+def _para_percentagem(bruto):
+    """Normaliza um vector de pesos a 100%. Os pesos de Turbulence estão escritos
+    como as proporções do backtest (somam 96,5), e é a normalização — e não uma
+    segunda cópia arredondada — que os torna percentagens. Arredondar aqui era
+    mudar os números que o backtest publica."""
+    total = sum(bruto.values())
+    return {b: v / total * 100 for b, v in bruto.items()}
+
+
+_RESILIENT_RAW  = {"US_EQUITIES": 55.0, "US_TREASURIES": 5.0, "IG_CREDIT": 15.0,
+                   "COMMODITIES": 5.0, "CASH": 5.0, "ALTERNATIVES": 15.0}
+_TURBULENCE_RAW = {"US_EQUITIES": 40.0, "US_TREASURIES": 19.0, "IG_CREDIT": 15.0,
+                   "COMMODITIES": 6.0, "CASH": 14.0, "ALTERNATIVES": 2.5}
+
+# A tabela única: regime (ou sub-regime de Critical) -> percentagens. As chaves
+# são as mesmas do REGIME_ETF_MAP, e o `resolve_etf_map_key` resolve as duas.
+REGIME_WEIGHTS = {
+    "Resilient":  _para_percentagem(_RESILIENT_RAW),
+    "Turbulence": _para_percentagem(_TURBULENCE_RAW),
+    **{k: dict(v) for k, v in CRITICAL_WEIGHTS.items()},
 }
 
 # Envelope de sanidade para as percentagens escritas pela newsletter. Quem
@@ -643,13 +680,44 @@ def rebalance_copy(reason):
     return reason
 
 
-def effective_bucket_alloc(regime, critical_subregime, newsletter_alloc):
-    """(alocação por bucket, origem). Em Critical o vector fixo passa à frente
-    das percentagens da newsletter; fora de Critical mandam as da newsletter."""
+def effective_bucket_alloc(regime, critical_subregime, newsletter_alloc=None):
+    """(alocação por bucket, origem). Sai sempre do `REGIME_WEIGHTS`: o regime
+    escolhe o vector, e nada mais o escolhe.
+
+    `newsletter_alloc` continua na assinatura e é DELIBERADAMENTE ignorado — o
+    parâmetro sobrevive para que um chamador antigo não rebente em silêncio, e
+    para que este comentário apanhe quem o for procurar. Uma tabela escrita por
+    um modelo pode ser publicada e verificada; não pode ser executada."""
     key = resolve_etf_map_key(regime, critical_subregime)
-    if key in CRITICAL_WEIGHTS:
-        return dict(CRITICAL_WEIGHTS[key]), f"critical override ({key})"
-    return dict(newsletter_alloc or {}), "newsletter"
+    return dict(REGIME_WEIGHTS[key]), f"rules ({key})"
+
+
+def allocation_matches_rules(publicada, regime, critical_subregime=None,
+                             tolerancia_pp=1.0):
+    """(bate certo, problemas). Compara uma tabela PUBLICADA com o vector que o
+    motor executou. Não decide nada: serve para a edição e a carteira dizerem o
+    mesmo, e para dar o alarme quando não dizem.
+
+    A tolerância é em pontos percentuais e existe porque a tabela é escrita para
+    ser lida por uma pessoa — 41,45% aparece como 41%, e arredondar ao inteiro
+    chega a desviar meio ponto."""
+    esperada = REGIME_WEIGHTS[resolve_etf_map_key(regime, critical_subregime)]
+    if not publicada:
+        return False, ["a edição não publicou uma tabela de alocação legível"]
+    problemas = []
+    for bucket in BUCKETS:
+        if bucket not in publicada:
+            problemas.append(f"{bucket} não aparece na tabela publicada")
+            continue
+        desvio = abs(publicada[bucket] - esperada[bucket])
+        if desvio > tolerancia_pp:
+            problemas.append(
+                f"{bucket}: a edição diz {publicada[bucket]:.1f}%, o motor "
+                f"executou {esperada[bucket]:.1f}% ({desvio:.1f} pp de desvio)")
+    for bucket in publicada:
+        if bucket not in BUCKETS:
+            problemas.append(f"a tabela publicada tem um bucket desconhecido: {bucket!r}")
+    return (not problemas), problemas
 
 
 def validate_allocation(alloc):
