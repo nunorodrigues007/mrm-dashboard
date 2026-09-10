@@ -426,6 +426,12 @@ def estado(tmp, regime="Turbulence", subregime=None, com_data=False, com_edicao=
               else dict(ALLOC_ORDINARIA))
     _p["current"]["bucket_allocation_pct"] = _alloc
     _p["current"]["newsletter_bucket_allocation_pct"] = dict(ALLOC_ORDINARIA)
+    # O estado construido e POS-migracao: a adopcao dos pesos do regime e uma
+    # transicao unica de Set 2026, e o que estes ensaios descrevem e o sistema
+    # em regime permanente. Sem esta marca, a adopcao disparava em todos eles e
+    # transformava cada semana calma num rebalanceamento. A migracao em si tem
+    # ensaios proprios, mais abaixo.
+    _p["current"]["regime_weights_adopted"] = True
     _p["history"] = [h for h in _p["history"] if h.get("issue", 0) < ISSUE - 1]
     _p["history"].append({
         "issue": ISSUE - 1, "date": D_ANTERIOR, "regime": regime,
@@ -1490,6 +1496,60 @@ eq(next(h for h in pf_rw["history"] if h.get("issue") == ISSUE)["rebalance_reaso
    "stress_on", "e o motivo original da semana continua la")
 shutil.rmtree(tmp_rw, ignore_errors=True)
 
+# ── 19p. A adopcao dos pesos: acontece uma vez, no motor, e desliga-se ────
+#
+# A forma EXECUTADA da transicao. Nao chega o predicado dizer que ha pesos por
+# adoptar: o que interessa e o motor pegar nisso sozinho, numa sexta normal, sem
+# ninguem disparar nada — e nao voltar a faze-lo nunca mais.
+tmp_ad = estado(Path(tempfile.mkdtemp()), com_data=True)
+_p_ad = json.loads((tmp_ad / "portfolio.json").read_text())
+_ANTIGA = {"US_EQUITIES": 10.0, "US_TREASURIES": 20.0, "IG_CREDIT": 15.0,
+           "COMMODITIES": 15.0, "CASH": 30.0, "ALTERNATIVES": 10.0}
+_p_ad["current"]["bucket_allocation_pct"] = dict(_ANTIGA)
+_p_ad["current"].pop("regime_weights_adopted", None)   # como esta hoje em producao
+(tmp_ad / "portfolio.json").write_text(json.dumps(_p_ad))
+
+pf_ad = corre_com_gauge(tmp_ad, None, "Turbulence", None, active=False)
+_h_ad = pf_ad["history"][-1]
+eq(_h_ad["rebalance_reason"], "adopt_regime_weights",
+   "numa sexta calma, o motor adopta os pesos do regime sozinho")
+eq(_h_ad["rebalance_triggered"], True, "e negoceia mesmo")
+eq(pf_ad["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "a carteira fica com o vector do regime")
+eq(pf_ad["current"].get("regime_weights_adopted"), True,
+   "e a marca fica escrita no ficheiro")
+
+# Segunda corrida, semana seguinte: NAO volta a acontecer. Era o risco todo —
+# um gatilho que se re-arma e um rebalanceador semanal disfarcado de migracao.
+_p_ad2 = json.loads((tmp_ad / "portfolio.json").read_text())
+_p_ad2["current"]["issue"] = _p_ad2["current"]["issue"] - 1
+_p_ad2["current"]["date"] = D_ANTERIOR
+# e com a carteira JA a derivar do alvo, para provar que nao e deriva que a arma
+_p_ad2["current"]["bucket_allocation_pct"] = {
+    b: v + (4.0 if b == "US_EQUITIES" else -0.8)
+    for b, v in rules.REGIME_WEIGHTS["Turbulence"].items()}
+_p_ad2["history"] = [h for h in _p_ad2["history"] if h.get("issue", 0) < _p_ad2["current"]["issue"]]
+(tmp_ad / "portfolio.json").write_text(json.dumps(_p_ad2))
+pf_ad2 = corre_com_gauge(tmp_ad, None, "Turbulence", None, active=False)
+eq(pf_ad2["history"][-1]["rebalance_reason"], "hold",
+   "na semana seguinte nao ha adopcao nenhuma — a marca desligou-a")
+eq(pf_ad2["history"][-1]["rebalance_triggered"], False,
+   "e nao se negoceia por deriva: isto nunca foi um rebalanceador de deriva")
+shutil.rmtree(tmp_ad, ignore_errors=True)
+
+# E uma carteira ja alinhada, sem marca nenhuma, tambem nao dispara: o predicado
+# olha para os numeros, nao so para a marca.
+tmp_al = estado(Path(tempfile.mkdtemp()), com_data=True)
+_p_al = json.loads((tmp_al / "portfolio.json").read_text())
+_p_al["current"]["bucket_allocation_pct"] = dict(rules.REGIME_WEIGHTS["Turbulence"])
+_p_al["current"].pop("regime_weights_adopted", None)
+(tmp_al / "portfolio.json").write_text(json.dumps(_p_al))
+pf_al = corre_com_gauge(tmp_al, None, "Turbulence", None, active=False)
+eq(pf_al["history"][-1]["rebalance_reason"], "hold",
+   "uma carteira ja no vector do regime nao adopta nada")
+shutil.rmtree(tmp_al, ignore_errors=True)
+
 # ── 19f. O semestral acontece, leia-se a edicao ou nao ────────────────────
 # Ate Set 2026 o semestral existia para aplicar as percentagens publicadas NESTA
 # edicao, e por isso era cancelado quando a edicao certa nao era legivel: aplicar
@@ -1548,9 +1608,11 @@ def prep_semestral(tmp):
         "shares": {t: 10.0 for t in _mapa.values()},
         "last_prices": {t: PRECOS.get(t, 100.0) for t in _mapa.values()},
         "last_price_dates": {t: SEXTA_SEM.isoformat() for t in _mapa.values()},
-        "bucket_allocation_pct": {"US_EQUITIES": 20.0, "US_TREASURIES": 25.0,
-                                  "IG_CREDIT": 15.0, "COMMODITIES": 12.0,
-                                  "CASH": 20.0, "ALTERNATIVES": 8.0},
+        # Pos-migracao: a carteira ja tem o vector do regime, e o que este
+        # ensaio mede e o SEMESTRAL. Com os pesos anteriores, quem disparava era
+        # a adopcao e o teste passava a medir outra coisa.
+        "bucket_allocation_pct": dict(rules.REGIME_WEIGHTS["Turbulence"]),
+        "regime_weights_adopted": True,
         "newsletter_bucket_allocation_pct": {"US_EQUITIES": 20.0, "US_TREASURIES": 25.0,
                                              "IG_CREDIT": 15.0, "COMMODITIES": 12.0,
                                              "CASH": 20.0, "ALTERNATIVES": 8.0},

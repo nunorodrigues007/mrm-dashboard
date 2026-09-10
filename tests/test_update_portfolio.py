@@ -159,6 +159,61 @@ eq(D("Critical", "Critical", "Critical_FTQ", "Critical_FTQ", False), None, "sub-
 eq(D("Critical", "Turbulence", "Critical_Stress", None, True), "stress_on", "stress ganha ao semestral")
 eq(D("Turbulence", "Critical", None, "Critical_FTQ", True), "stress_off", "saida ganha ao semestral")
 
+# ── a adopcao unica dos pesos do regime ────────────────────────────────────────
+# Uma transicao, uma vez, que se desliga sozinha. Quando os pesos passaram a
+# viver nas regras, a carteira em producao tinha as percentagens da ultima tabela
+# escrita por um modelo e o proximo gatilho estava a quatro meses e meio: sem
+# isto, o sistema declarava um vector e executava outro ate Janeiro.
+_R = up.rules
+_VELHA = {"US_EQUITIES": 10.0, "US_TREASURIES": 20.0, "IG_CREDIT": 15.0,
+          "COMMODITIES": 15.0, "CASH": 30.0, "ALTERNATIVES": 10.0}
+
+eq(_R.pesos_por_adoptar(_VELHA, "Turbulence"), True,
+   "com as percentagens antigas, ha pesos por adoptar")
+eq(_R.pesos_por_adoptar(_VELHA, "Turbulence", ja_adoptado=True), False,
+   "mas uma vez adoptados, nunca mais — a marca desliga-a")
+eq(_R.pesos_por_adoptar(dict(_R.REGIME_WEIGHTS["Turbulence"]), "Turbulence"), False,
+   "e uma carteira ja alinhada nao tem nada para adoptar")
+eq(_R.pesos_por_adoptar({}, "Turbulence"), True,
+   "sem alocacao nenhuma registada, adopta-se")
+
+# NAO e um rebalanceador de deriva: a comparacao e com o ALVO declarado, nao com
+# os pesos de mercado. Meio ponto de diferenca no alvo nao e uma adopcao.
+_quase = dict(_R.REGIME_WEIGHTS["Turbulence"])
+_quase["US_EQUITIES"] += 0.5; _quase["CASH"] -= 0.5
+eq(_R.pesos_por_adoptar(_quase, "Turbulence"), False,
+   "meio ponto de diferenca nao dispara uma adopcao")
+_longe = dict(_R.REGIME_WEIGHTS["Turbulence"])
+_longe["US_EQUITIES"] += 2.0; _longe["CASH"] -= 2.0
+eq(_R.pesos_por_adoptar(_longe, "Turbulence"), True,
+   "dois pontos ja dispara")
+
+# E em cada regime compara-se com o vector DESSE regime.
+for _reg, _sub in (("Resilient", None), ("Turbulence", None),
+                   ("Critical", "Critical_FTQ"), ("Critical", "Critical_Stress")):
+    _chave = _R.resolve_etf_map_key(_reg, _sub)
+    eq(_R.pesos_por_adoptar(dict(_R.REGIME_WEIGHTS[_chave]), _reg, _sub), False,
+       f"{_chave}: alinhada com o proprio vector, nada a adoptar")
+    _outro = next(k for k in _R.REGIME_WEIGHTS if k != _chave)
+    eq(_R.pesos_por_adoptar(dict(_R.REGIME_WEIGHTS[_outro]), _reg, _sub), True,
+       f"{_chave}: com o vector de {_outro}, ha")
+
+# O gatilho, e a sua precedencia: um facto sobre o regime vale mais do que a
+# transicao administrativa, e a adopcao vale mais do que o calendario.
+eq(D("Turbulence", "Turbulence", None, None, False, None, True),
+   "adopt_regime_weights", "sem mais nada a acontecer, a adopcao e o motivo")
+eq(D("Turbulence", "Turbulence", None, None, False, None, False), None,
+   "e sem adopcao pendente, uma semana calma continua a nao negociar")
+eq(D("Critical", "Turbulence", "Critical_Stress", None, False, None, True),
+   "stress_on", "uma entrada em Critical ganha a adopcao")
+eq(D("Turbulence", "Critical", None, "Critical_Stress", False, None, True),
+   "stress_off", "e uma saida tambem")
+eq(D("Turbulence", "Turbulence", None, None, True, None, True),
+   "adopt_regime_weights",
+   "mas a adopcao ganha ao calendario — e um rebalanceamento, nao dois")
+eq(up.rules.REBALANCE_COPY.get("adopt_regime_weights", "")[:4], "The ",
+   "e o motivo tem texto publicado")
+
 # ── ciclo completo: entrar em Critical e sair, com as % a voltarem ao sitio ─────
 # O `news` que sobra aqui e deliberado: e o que a edicao dessa semana publicou,
 # e a entrada e a saida tem de ser as mesmas COM ele e SEM ele. A propriedade

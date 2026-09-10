@@ -223,6 +223,15 @@ def trade_cost(old_shares, new_shares, model="open_close"):
 
 
 REBALANCE_COPY = {
+    "adopt_regime_weights": (
+        "The portfolio adopted the fixed weight vector of its regime. Until this "
+        "week the weights came from the allocation table of the weekly edition; "
+        "they are now declared per regime in the rules, alongside the instrument "
+        "map, and the same vectors the 2007-2026 backtest runs. This is a "
+        "one-off transition, not a tactical trade: from here the weights change "
+        "only when the regime changes or at the scheduled semi-annual "
+        "rebalance."
+    ),
     "stress_on": (
         "Gauge B fired. The portfolio moved to the Critical map: defensive "
         "instruments and the declared Critical weights, which override this "
@@ -584,8 +593,38 @@ def subregime_from_gauge(gauge_subregime, was_critical_last_week,
             "Stress-without-relief (defensive).")
 
 
+ADOPCAO_LIMIAR_PP = 1.0
+
+
+def pesos_por_adoptar(alocacao_actual, regime, critical_subregime=None,
+                      ja_adoptado=False, limiar_pp=ADOPCAO_LIMIAR_PP):
+    """A carteira ainda não está no vector do regime, e nunca foi migrada?
+
+    Existe para uma transição só, e desliga-se sozinha. Quando os pesos passaram
+    a viver aqui (Set 2026), a carteira em produção tinha as percentagens da
+    última tabela publicada por um modelo — 10% em acções contra os 41,5% do
+    vector de Turbulence — e o próximo gatilho programado estava a quatro meses e
+    meio de distância. Sem isto, o sistema declarava um vector e executava outro
+    até Janeiro, e a adopção dependia de uma pessoa se lembrar de disparar a
+    pipeline à mão numa sexta à noite. Um humano no caminho crítico de uma
+    transição não é uma transição automatizada.
+
+    NÃO é um rebalanceador de deriva: a comparação é com o que a carteira
+    DECLARA ter como alvo (`bucket_allocation_pct`), não com os pesos de mercado,
+    que derivam todas as semanas por definição. Depois da adopção os dois valores
+    coincidem, o `ja_adoptado` fica escrito no ficheiro, e este predicado nunca
+    mais devolve True — nem que o mercado mova a carteira toda."""
+    if ja_adoptado:
+        return False
+    alvo = REGIME_WEIGHTS[resolve_etf_map_key(regime, critical_subregime)]
+    if not alocacao_actual:
+        return True
+    return any(abs(float(alocacao_actual.get(b, 0.0)) - alvo[b]) > limiar_pp
+               for b in BUCKETS)
+
+
 def decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
-                     semestral, emergency_reason=None):
+                     semestral, emergency_reason=None, adoptar_pesos=False):
     """Motivo do rebalanceamento, ou None para manter as posições.
 
     Precedência: entrada e saída de Critical primeiro — é o evento a que a
@@ -638,6 +677,13 @@ def decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
         return emergency_reason
     if regime == "Critical" and critical_subregime != was_subregime:
         return f"critical_subregime_switch:{was_subregime or 'none'}->{critical_subregime}"
+    # A adopcao vem DEPOIS dos factos e ANTES do calendario, pela mesma razao que
+    # a emergencia: um facto especifico sobre o que mudou vale mais, como etiqueta
+    # publicada, do que uma data. E se coincidir com o semestral, o
+    # rebalanceamento acontece uma vez so — nao dois — porque isto e um `elif` da
+    # mesma cadeia.
+    if adoptar_pesos:
+        return "adopt_regime_weights"
     if semestral:
         return "semestral_rebalance"
     return None

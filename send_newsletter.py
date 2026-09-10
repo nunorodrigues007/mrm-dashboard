@@ -62,6 +62,9 @@ REBALANCE_STYLE = {          # (fundo, borda, ícone) por classe de motivo
     "critical_subregime_switch": ("#2d1515", "#D73A49", "\u26a0"),
     "stress_off":                ("#0a1f18", "#34D058", "\u27f2"),
     "semestral":                 ("#1a3a5c", "#388BFD", "\u27f3"),
+    # A adopcao dos pesos do regime e uma rotacao executada, uma vez. Azul de
+    # rotacao, como o semestral: nao e um alarme nem um alivio.
+    "adopt_regime_weights":      ("#1a3a5c", "#388BFD", "\u27f3"),
     # Sair de Resilient e uma rotacao executada, nao um alivio: o score subiu
     # acima de 4,0. Azul de rotacao, nao o verde de "o stress acabou".
     "resilient_off":             ("#1a3a5c", "#388BFD", "\u27f3"),

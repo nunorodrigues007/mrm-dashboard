@@ -1272,9 +1272,27 @@ def main():
                      "executa.", issue_lido)
 
     semestral        = is_semestral_rebalance_week(target_date)
+    # A adopcao dos pesos do regime: uma transicao, uma vez, e desliga-se sozinha.
+    # A carteira em producao tinha as percentagens da ultima tabela escrita por um
+    # modelo, e o proximo gatilho programado estava a meses de distancia — o
+    # sistema declararia um vector e executaria outro ate la. O `ja_adoptado` sai
+    # do proprio ficheiro e e escrito na saida, portanto isto e verdade uma vez e
+    # falso para sempre a seguir.
+    _ja_adoptado = bool(current.get("regime_weights_adopted"))
+    adoptar = rules.pesos_por_adoptar(
+        current.get("bucket_allocation_pct") or {}, regime, critical_subregime,
+        ja_adoptado=_ja_adoptado)
+    if adoptar:
+        log.warning("A carteira ainda tem as percentagens anteriores as regras "
+                    "(%s) e o vector de %s e %s. Adopcao unica nesta corrida.",
+                    current.get("bucket_allocation_pct"), regime,
+                    {b: round(v, 1) for b, v in
+                     rules.REGIME_WEIGHTS[rules.resolve_etf_map_key(
+                         regime, critical_subregime)].items()})
     # (check_emergency ja correu acima, antes de confirmar o regime)
     trigger = decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
-                               semestral, emerg_why if emerg else None)
+                               semestral, emerg_why if emerg else None,
+                               adoptar_pesos=adoptar)
 
     rebalance_triggered = False
     rebalance_reason    = "hold"
@@ -1491,6 +1509,10 @@ def main():
         # de ha tres semanas, porque `issue_lido` e a edicao de maior numero
         # no disco e nao necessariamente a N-1.
         "newsletter_alloc_issue": issue_lido,
+        # Uma vez a True, para sempre a True: e o que desliga a adopcao. Escreve-se
+        # quando o rebalanceamento ACONTECEU, nao quando foi decidido — uma
+        # adopcao cancelada por precos em falta tem de voltar a ser tentada.
+        "regime_weights_adopted": bool(_ja_adoptado or rebalance_triggered),
         "stress_gauge_active":           stress_active,
         "stress_gauge_basis":            gauge_basis,
         # Uma semana decidida sobre dados recusados por idade tem de ser
@@ -1551,6 +1573,10 @@ def main():
         # de ha tres semanas, porque `issue_lido` e a edicao de maior numero
         # no disco e nao necessariamente a N-1.
         "newsletter_alloc_issue": issue_lido,
+        # Uma vez a True, para sempre a True: e o que desliga a adopcao. Escreve-se
+        # quando o rebalanceamento ACONTECEU, nao quando foi decidido — uma
+        # adopcao cancelada por precos em falta tem de voltar a ser tentada.
+        "regime_weights_adopted": bool(_ja_adoptado or rebalance_triggered),
         "allocation_pct":         {t: v for t, v in alloc_pct.items() if v > 0},
         # A QUALIDADE da valorizacao acompanha o valor. Estes campos so iam para
         # `history[-1]`, e o site le `data.current`: `renderPortfolioKPIs`
