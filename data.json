@@ -1,23 +1,52 @@
 {
   "meta": {
-    "lastUpdated": "2026-09-09T20:07:49Z",
+    "lastUpdated": "2026-09-10T20:09:56Z",
+    "generatedAt": "2026-09-10T20:09:56Z",
     "source": "FRED API (Live)",
-    "version": "3.0.0",
+    "version": "3.1.0",
+    "freshness": {
+      "generatedAt": "2026-09-10T20:09:56Z",
+      "warnAfterHours": 30,
+      "refuseAfterHours": 48,
+      "degraded": false,
+      "staleSeries": [],
+      "ndPillars": [],
+      "ndReasons": {},
+      "gaugeActive": false
+    },
     "fredSeriesDates": {
-      "T10Y2Y": "2026-09-08",
+      "T10Y2Y": "2026-09-09",
       "M2SL": "2026-07-01",
       "NCBEILQ027S_FBCELLQ027S_GDP": "2026-01-01",
-      "DGS10": "2026-09-04",
+      "DGS10": "2026-09-08",
       "DRALACBN": "2026-04-01",
       "TDSP": "2026-01-01",
-      "ICSA": "2026-08-29",
-      "UNRATE": "2026-08-01"
+      "ICSA": "2026-09-05",
+      "UNRATE": "2026-08-01",
+      "SP500": "2026-09-09"
     },
+    "fredSeriesStale": {},
     "gaugeNote": "Gauge A (globalResilienceScore) is a LEADING fragility measure on a 6-18 month horizon: in a downturn three of its five pillars mechanically improve, so the composite cannot signal concurrent stress. Concurrent stress detection lives in stressGauge, which is not averaged into Gauge A.",
     "deltaBasis": "vs. 2026-09-04",
     "liquidityNote": "Liquidity pillar redefined from discontinued Wilshire 5000 proxy to Buffett Indicator (Total Corp. Equities / GDP), percentile-scored against full history. See fetch_data.py comments."
   },
   "rules": {
+    "rebalanceReasons": [
+      "aborted_invalid_shares",
+      "critical_subregime_switch",
+      "emergency_resilient",
+      "hold",
+      "missing_prices_held",
+      "no_allocation_available",
+      "resilient_off",
+      "semestral_rebalance",
+      "stale_allocation_held",
+      "stress_off",
+      "stress_off_to_resilient",
+      "stress_on",
+      "valuation_incomplete_held",
+      "valuation_not_credible_held"
+    ],
     "resilientMax": 4.0,
     "criticalMin": 8.0,
     "regimeDecidedBy": "gaugeB",
@@ -580,6 +609,7 @@
   "globalResilienceScore": 6.97,
   "status": "Turbulence",
   "ndPillars": [],
+  "ndReasons": {},
   "stressGauge": {
     "active": false,
     "subregime": null,
@@ -590,20 +620,42 @@
         "series": "SAHMREALTIME",
         "value": -0.07,
         "asOf": "2026-08-01",
+        "decides": "regime",
         "threshold": 0.5,
         "fired": false,
+        "ageDays": 40,
+        "stale": false,
+        "ndReason": null,
+        "maxAgeDays": 120,
         "note": "Sahm rule, real-time vintage. Known false positive in 2024."
       },
       "delinquencyAccel": {
         "series": "DRALACBN",
         "value": -0.06,
         "asOf": "2026-04-01",
+        "decides": "regime",
         "threshold": 0.81,
         "fired": false,
+        "ageDays": 162,
+        "stale": false,
+        "ndReason": null,
+        "maxAgeDays": 330,
         "note": "4-quarter change. Threshold = 90th percentile of its own history since 1987."
+      },
+      "tenY3m": {
+        "series": "DGS10",
+        "value": 35.0,
+        "asOf": "2026-09-08",
+        "windowStart": "2026-05-29",
+        "decides": "subregime",
+        "threshold": -10.0,
+        "fired": false,
+        "stale": false,
+        "ndReason": null,
+        "note": "3-month change in the 10Y, in basis points. Decides Flight-to-Quality against Stress-without-relief WITHIN Critical; it does not decide Critical itself."
       }
     },
-    "computedAt": "2026-09-09T20:07:48Z"
+    "computedAt": "2026-09-10T20:09:55Z"
   },
   "pillars": [
     {
@@ -613,9 +665,9 @@
       "metric": "10Y\u20132Y Yield Curve",
       "fredSeries": "T10Y2Y",
       "score": 5.5,
-      "value": "+0.41%",
+      "value": "+0.40%",
       "trend": "steepening",
-      "metricValue": 0.41,
+      "metricValue": 0.4,
       "band": {
         "lo": 0.0,
         "hi": 0.5,
@@ -624,9 +676,9 @@
         "context": "2007\u201308, 2024\u201325",
         "reading": "Post-inversion steepening \u2014 historically the phase immediately preceding recession onset, not an all-clear."
       },
-      "scoredValue": 0.41,
+      "scoredValue": 0.4,
       "nextBandEdge": 0.0,
-      "distanceToNextBand": 0.41,
+      "distanceToNextBand": 0.4,
       "delta": "\u2014",
       "deltaDirection": null,
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
@@ -669,18 +721,18 @@
       "score": 10.0,
       "value": "-0.93%",
       "epEstimated": true,
-      "epValue": 3.85,
+      "epValue": 3.87,
       "epAsOf": "2026-08-31",
       "epAnchor": {
         "refYieldPct": 3.84,
         "refDate": "2026-08-31",
         "indexRef": 7686.14,
-        "indexNow": 7673.52,
-        "indexNowDate": "2026-09-08",
+        "indexNow": 7636.36,
+        "indexNowDate": "2026-09-09",
         "basis": "earnings held from the reference date, price marked to the latest close",
         "indexRefDate": "2026-08-31",
         "earningsPerIndexUnit": 295.15,
-        "ageDays": 9,
+        "ageDays": 10,
         "stale": false
       },
       "trend": "compressed",
@@ -698,7 +750,7 @@
       "distanceToNextBand": null,
       "delta": "\u2014",
       "deltaDirection": null,
-      "description": "ERP = E/P (3.85%) minus the 10Y yield (4.78%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
+      "description": "ERP = E/P (3.87%) minus the 10Y yield (4.80%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
       "status": "critical"
     },
     {
@@ -765,8 +817,8 @@
       "threshold": 275000,
       "thresholdDisplay": "275K",
       "status": "normal",
-      "trend": "rising",
-      "delta": "+2K",
+      "trend": "falling",
+      "delta": "-1K",
       "alert": false,
       "description": "Weekly initial jobless claims at 206K. Red alert triggers above 275,000."
     },
@@ -804,99 +856,125 @@
   "historicalScores": [
     {
       "date": "Oct '24",
-      "score": 6.72
+      "score": 6.72,
+      "month": "2024-10"
     },
     {
       "date": "Nov '24",
-      "score": 6.72
+      "score": 6.72,
+      "month": "2024-11"
     },
     {
       "date": "Dec '24",
-      "score": 6.72
+      "score": 6.72,
+      "month": "2024-12"
     },
     {
       "date": "Jan '25",
-      "score": 6.97
+      "score": 6.97,
+      "month": "2025-01"
     },
     {
       "date": "Feb '25",
-      "score": 6.72
+      "score": 6.72,
+      "month": "2025-02"
     },
     {
       "date": "Mar '25",
-      "score": 6.88
+      "score": 6.88,
+      "month": "2025-03"
     },
     {
       "date": "Apr '25",
-      "score": 6.68
+      "score": 6.68,
+      "month": "2025-04"
     },
     {
       "date": "May '25",
-      "score": 6.68
+      "score": 6.68,
+      "month": "2025-05"
     },
     {
       "date": "Jun '25",
-      "score": 6.88
+      "score": 6.88,
+      "month": "2025-06"
     },
     {
       "date": "Jul '25",
-      "score": 6.68
+      "score": 6.68,
+      "month": "2025-07"
     },
     {
       "date": "Aug '25",
-      "score": 6.68
+      "score": 6.68,
+      "month": "2025-08"
     },
     {
       "date": "Sep '25",
-      "score": 6.53
+      "score": 6.53,
+      "month": "2025-09"
     },
     {
       "date": "Oct '25",
-      "score": 6.53
+      "score": 6.53,
+      "month": "2025-10"
     },
     {
       "date": "Nov '25",
-      "score": 6.53
+      "score": 6.53,
+      "month": "2025-11"
     },
     {
       "date": "Dec '25",
-      "score": 6.53
+      "score": 6.53,
+      "month": "2025-12"
     },
     {
       "date": "Jan '26",
-      "score": 6.53
+      "score": 6.53,
+      "month": "2026-01"
     },
     {
       "date": "Feb '26",
-      "score": 6.53
+      "score": 6.53,
+      "month": "2026-02"
     },
     {
       "date": "Mar '26",
-      "score": 6.53
+      "score": 6.53,
+      "month": "2026-03"
     },
     {
       "date": "Apr '26",
-      "score": 6.53
+      "score": 6.53,
+      "month": "2026-04"
     },
     {
       "date": "May '26",
-      "score": 6.72
+      "score": 6.72,
+      "month": "2026-05"
     },
     {
       "date": "Jun '26",
-      "score": 6.72
+      "score": 6.72,
+      "month": "2026-06"
     },
     {
       "date": "Jul '26",
-      "score": 6.97
+      "score": 6.97,
+      "month": "2026-07"
     },
     {
       "date": "Aug '26",
-      "score": 6.97
+      "score": 6.97,
+      "month": "2026-08"
     },
     {
       "date": "Sep '26",
-      "score": 6.97
+      "score": 6.97,
+      "month": "2026-09"
     }
-  ]
+  ],
+  "historicalScoresSpan": "Oct '24 \u2013 Sep '26",
+  "historicalScoresContiguo": true
 }
