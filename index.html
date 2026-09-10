@@ -1482,7 +1482,7 @@
           <p>Tested on 1996–2026 real-time vintages, Gauge B fires in 2001, in March 2008 (six months before Lehman), in 2020 and briefly in 2024. It stays silent through the 2011, 2018 and 2022 bear markets. That is the distinction that matters: it separates recessions from equity drawdowns. The 2024 firing is a known false positive of the Sahm rule and is published as such rather than filtered away.</p>
 
           <h2>What Changes in the Portfolio</h2>
-          <p>When Gauge B fires, the portfolio moves to the Critical map — defensive instruments, split into Flight-to-Quality and Stress-without-relief by the 10-year signal described in the previous chapter — and to a declared set of Critical weights that override the newsletter's macro allocation for as long as stress persists. When it stands down, the portfolio returns to the Turbulence map and to those macro percentages, in the same week, without a confirmation window.</p>
+          <p>When Gauge B fires, the portfolio moves to the Critical map — defensive instruments, split into Flight-to-Quality and Stress-without-relief by the 10-year signal described in the previous chapter — and to the declared Critical weights for as long as stress persists. When it stands down, the portfolio returns to the Turbulence map and to the Turbulence weights, in the same week, without a confirmation window. Every one of those weight vectors is fixed in the rules — one vector per regime, the same ones the 2007-2026 backtest runs — so the target allocation is a function of the regime and of nothing else. It becomes the portfolio at the next rebalance: between rebalances the portfolio holds what the last one set, which is what the figures on this page report.</p>
 
           <p>The absence of a confirmation window is deliberate. Both triggers are already slow: the Sahm rule is monthly with a month of publication lag, and delinquency is quarterly with five. Adding a waiting period to an indicator that already looks backwards only delays the response. Tested at one to six months of hysteresis, it cost roughly 0.3 percentage points of annual return without improving the maximum drawdown or reducing the number of switches.</p>
 
@@ -4918,7 +4918,7 @@ function renderRebalanceLog(data) {
     <!-- Disclaimer -->
     <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-align:center;padding-top:16px;border-top:1px solid var(--border-subtle);line-height:1.5;opacity:0.6;">
       Virtual portfolio for educational purposes only. Does not constitute financial advice.
-      Prices sourced via Yahoo Finance every Saturday. Allocations mirror MRM Weekly Newsletter model allocation.
+      Prices sourced via Yahoo Finance every Saturday. Allocation weights are fixed per regime in the rules and applied at each rebalance; the figures here are the positions actually held. The newsletter reports the portfolio, it does not set it.
     </div>
 
   </div>

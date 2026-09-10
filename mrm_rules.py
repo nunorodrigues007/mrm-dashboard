@@ -692,6 +692,37 @@ def effective_bucket_alloc(regime, critical_subregime, newsletter_alloc=None):
     return dict(REGIME_WEIGHTS[key]), f"rules ({key})"
 
 
+def allocation_matches(publicada, esperada, tolerancia_pp=1.0):
+    """(bate certo, problemas). Compara uma tabela PUBLICADA com uma alocação de
+    referência, bucket a bucket.
+
+    A referência é um argumento e não `REGIME_WEIGHTS` por uma razão que custou
+    uma tarde a descobrir: o vector das regras e o que a carteira TEM na mão só
+    coincidem depois de um rebalanceamento. Entre a mudança dos pesos e o
+    gatilho seguinte — que pode estar a meses de distância — a carteira continua
+    legitimamente com as posições antigas, e a edição tem de reportar ESSAS. Uma
+    verificação contra as regras rejeitaria todas as edições nesse intervalo,
+    exigindo que a newsletter mentisse para passar."""
+    if not publicada:
+        return False, ["a edição não publicou uma tabela de alocação legível"]
+    if not esperada:
+        return True, []
+    problemas = []
+    for bucket in BUCKETS:
+        if bucket not in publicada:
+            problemas.append(f"{bucket} não aparece na tabela publicada")
+            continue
+        desvio = abs(publicada[bucket] - esperada.get(bucket, 0.0))
+        if desvio > tolerancia_pp:
+            problemas.append(
+                f"{bucket}: a edição diz {publicada[bucket]:.1f}%, a carteira "
+                f"tem {esperada.get(bucket, 0.0):.1f}% ({desvio:.1f} pp de desvio)")
+    for bucket in publicada:
+        if bucket not in BUCKETS:
+            problemas.append(f"a tabela publicada tem um bucket desconhecido: {bucket!r}")
+    return (not problemas), problemas
+
+
 def allocation_matches_rules(publicada, regime, critical_subregime=None,
                              tolerancia_pp=1.0):
     """(bate certo, problemas). Compara uma tabela PUBLICADA com o vector que o
@@ -701,23 +732,9 @@ def allocation_matches_rules(publicada, regime, critical_subregime=None,
     A tolerância é em pontos percentuais e existe porque a tabela é escrita para
     ser lida por uma pessoa — 41,45% aparece como 41%, e arredondar ao inteiro
     chega a desviar meio ponto."""
-    esperada = REGIME_WEIGHTS[resolve_etf_map_key(regime, critical_subregime)]
-    if not publicada:
-        return False, ["a edição não publicou uma tabela de alocação legível"]
-    problemas = []
-    for bucket in BUCKETS:
-        if bucket not in publicada:
-            problemas.append(f"{bucket} não aparece na tabela publicada")
-            continue
-        desvio = abs(publicada[bucket] - esperada[bucket])
-        if desvio > tolerancia_pp:
-            problemas.append(
-                f"{bucket}: a edição diz {publicada[bucket]:.1f}%, o motor "
-                f"executou {esperada[bucket]:.1f}% ({desvio:.1f} pp de desvio)")
-    for bucket in publicada:
-        if bucket not in BUCKETS:
-            problemas.append(f"a tabela publicada tem um bucket desconhecido: {bucket!r}")
-    return (not problemas), problemas
+    return allocation_matches(
+        publicada, REGIME_WEIGHTS[resolve_etf_map_key(regime, critical_subregime)],
+        tolerancia_pp)
 
 
 def validate_allocation(alloc):

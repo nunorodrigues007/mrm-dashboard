@@ -8,14 +8,34 @@ boa tem de ter — e os testes de rejeicao partem-na de proposito.
 
 import re
 
-LINHAS_ALLOC = [
-    ("US Equities", 35),
-    ("US Treasuries", 30),
-    ("Investment-Grade Credit", 10),
-    ("Commodities", 10),
-    ("Cash", 10),
-    ("Alternatives", 5),
+# A tabela de uma edicao boa e, desde Set 2026, a alocacao que o motor executou —
+# nao um vector plausivel qualquer. O `validate_newsletter` compara-a com o
+# `REGIME_WEIGHTS` e recusa a edicao que dela se afaste mais de um ponto
+# percentual, portanto uma fixture com numeros inventados deixaria de passar por
+# uma edicao boa. Deriva-se das regras, arredondada como o prompt a manda
+# escrever: e assim que uma pessoa a le, e e o que o parser volta a ler.
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+import mrm_rules as _rules
+
+_NOMES_ALLOC = [
+    ("US Equities", "US_EQUITIES"),
+    ("US Treasuries", "US_TREASURIES"),
+    ("Investment-Grade Credit", "IG_CREDIT"),
+    ("Commodities", "COMMODITIES"),
+    ("Cash", "CASH"),
+    ("Alternatives", "ALTERNATIVES"),
 ]
+
+
+def linhas_de(regime="Turbulence"):
+    """As seis linhas da tabela, com as percentagens do vector desse regime."""
+    v = _rules.REGIME_WEIGHTS[regime]
+    return [(nome, round(v[bucket])) for nome, bucket in _NOMES_ALLOC]
+
+
+LINHAS_ALLOC = linhas_de("Turbulence")
 
 
 def edicao(issue_number, avisos=(), alloc=LINHAS_ALLOC, enchimento=12000,
@@ -62,6 +82,30 @@ def avisos_do_prompt(prompt):
             if l.strip().startswith("! DATA QUALITY")]
 
 
+def alloc_do_prompt(prompt, prefixo="- Effective allocation now:"):
+    """As seis linhas da tabela, com as percentagens que o prompt mandou.
+
+    O gerador escreve `- Effective allocation now: US_EQUITIES: 41% | ...`, e a
+    regra 8 manda reproduzi-las. Se a linha nao existir — um prompt de um teste
+    que a nao inclui — devolve-se o vector de Turbulence, que e o que uma semana
+    normal executa."""
+    for linha in prompt.splitlines():
+        if linha.strip().startswith(prefixo):
+            corpo = linha.split(":", 1)[1]
+            lidos = {}
+            for parte in corpo.split("|"):
+                if ":" not in parte:
+                    continue
+                bucket, pct = parte.split(":", 1)
+                try:
+                    lidos[bucket.strip()] = int(round(float(pct.strip().rstrip("%"))))
+                except ValueError:
+                    continue
+            if all(b in lidos for _, b in _NOMES_ALLOC):
+                return [(nome, lidos[b]) for nome, b in _NOMES_ALLOC]
+    return linhas_de("Turbulence")
+
+
 def edicao_do_prompt(prompt, issue_number, **kw):
     """A edicao que um modelo OBEDIENTE escreveria para ESTE prompt.
 
@@ -77,4 +121,11 @@ def edicao_do_prompt(prompt, issue_number, **kw):
     """
     kw.setdefault("score", score_do_prompt(prompt))
     kw.setdefault("avisos", avisos_do_prompt(prompt))
+    # E a tabela de alocacao tambem sai do prompt, pela mesma razao que o score:
+    # desde Set 2026 a regra 8 da ao modelo o vector EXACTO que o motor executou
+    # e a validacao recusa a edicao que dele se afaste. Um modelo obediente
+    # copia-o. Um fixture com percentagens proprias nao e um modelo obediente —
+    # e um modelo que inventa, que e o caso que os testes de rejeicao cobrem de
+    # propósito noutro sitio.
+    kw.setdefault("alloc", alloc_do_prompt(prompt))
     return edicao(issue_number, **kw)

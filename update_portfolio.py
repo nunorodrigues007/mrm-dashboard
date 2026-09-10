@@ -131,81 +131,13 @@ def _read_data_doc(path=DATA_PATH, now=None):
     return doc, f"data.json is {age:.1f}h old"
 
 
-def _distancia_alloc(a, b):
-    """A maior diferenca, em pontos percentuais, entre duas alocacoes."""
-    return max(abs(float((a or {}).get(x, 0)) - float((b or {}).get(x, 0)))
-               for x in rules.BUCKETS)
-
-
-def e_o_vector_de_crise(alloc, subregime=None, tolerancia=0.51):
-    """A tabela e, a percentagem, um vector fixo de Critical?
-
-    Igualdade, nao proximidade. Usa-se para afirmar propriedades sobre valores
-    conhecidos; a decisao do motor usa o `e_eco_do_vector_de_crise`, que compara
-    distancias — um modelo re-deriva os numeros, nao os copia byte a byte.
-    """
-    if not alloc:
-        return False
-    candidatos = ([rules.CRITICAL_WEIGHTS[subregime]]
-                  if subregime in rules.CRITICAL_WEIGHTS
-                  else list(rules.CRITICAL_WEIGHTS.values()))
-    return any(_distancia_alloc(alloc, v) < tolerancia for v in candidatos)
-
-
-# Seis pontos percentuais, nao tres. A guarda existe porque o modelo RE-DERIVA
-# os numeros em vez de os copiar, e re-derivar produz desvios de um a seis pp; e
-# a regra 8 proibe explicitamente copiar o vector de crise para a tabela,
-# portanto uma tabela publicada em Critical que caia a menos disto do vector
-# activo e desobediencia ou coincidencia — e nos dois casos reter a macro e o
-# lado seguro. O criterio relativo abaixo protege o outro lado: uma tabela
-# derivada da macro em vigor nao e tocada, por muito perto que calhe ficar.
-ECO_LIMIAR_PP = 6.0
-
-
-def e_eco_do_vector_de_crise(alloc, subregime=None, macro=None,
-                             limiar=ECO_LIMIAR_PP):
-    """A tabela publicada e um ECO do vector de crise que o prompt mostrou?
-
-    Nao "e igual a": um LLM re-deriva os numeros em vez de os copiar. Bastava
-    mexer um ponto percentual em dois buckets para uma comparacao por igualdade
-    falhar, e o eco entrava na memoria macro e era EXECUTADO a saida de Critical
-    — o mesmo dano, com a guarda toda em vigor.
-    #
-    # O criterio e de distancia, e tem duas partes, porque so uma delas nao
-    # chega:
-    #   - perto do vector de crise (<= `limiar` pp em todos os buckets): longe,
-    #     e uma macro genuina e nao se toca nela;
-    #   - e MAIS PERTO do vector de crise do que da macro que ja esta em vigor:
-    #     se estiver mais perto da macro, o modelo partiu dela, que e
-    #     exactamente o que a regra 8 do prompt lhe manda fazer.
-    """
-    if not alloc:
-        return False
-    candidatos = ([rules.CRITICAL_WEIGHTS[subregime]]
-                  if subregime in rules.CRITICAL_WEIGHTS
-                  else list(rules.CRITICAL_WEIGHTS.values()))
-    d_crise = min(_distancia_alloc(alloc, v) for v in candidatos)
-    if not macro:
-        # Sem macro em vigor com que comparar, so resta o piso absoluto.
-        return d_crise <= limiar
-    d_macro = _distancia_alloc(alloc, macro)
-    if d_crise >= d_macro:
-        # Mais perto da macro (ou a meio caminho): o modelo partiu dela, que e
-        # o que a regra 8 lhe manda fazer. Nao se toca na tabela.
-        return False
-    # Mais perto do vector de crise. O piso absoluto NAO pode ser a ultima
-    # palavra aqui: era uma porta fechada a 3 pp, e a propria razao de ser desta
-    # guarda e que um modelo RE-DERIVA os numeros — o que produz desvios de um a
-    # seis pontos percentuais, nao de zero. Com a porta absoluta a frente, a
-    # guarda cobria o caso que nao acontece e falhava o que acontece: 3,5 pp de
-    # desvio bastavam para o vector de crise entrar na memoria macro e ser
-    # EXECUTADO a saida.
-    #
-    # A regra passa a ser relativa: e um eco quando esta claramente do lado do
-    # vector de crise — a menos de metade da distancia a macro em vigor —, ou
-    # quando esta tao perto dele que so pode ser uma copia. Uma tabela a meio
-    # caminho entre os dois e genuinamente ambigua e nao se toca nela.
-    return d_crise <= max(limiar, d_macro / 2.0)
+# As duas funcoes que aqui viviam — `e_o_vector_de_crise` e
+# `e_eco_do_vector_de_crise` — existiam para responder a uma pergunta que
+# deixou de se por: "esta tabela escrita pelo modelo e um eco do vector de
+# crise que o prompt lhe mostrou, ou uma alocacao macro genuina?". Punha-se
+# porque a resposta decidia o que a carteira ia executar a saida de Critical.
+# Com os pesos no `REGIME_WEIGHTS`, a saida de Critical executa o vector de
+# Turbulence e nenhuma tabela — eco, genuina ou absurda — muda isso.
 
 
 def read_resilience_score(path=DATA_PATH, now=None):
@@ -1299,196 +1231,45 @@ def main():
              _val(portfolio_value), _n_d(pnl_pct),
              _val(bench_value), _n_d(bench_pnl), _n_d(alpha))
 
-    # As % da newsletter sao a alocacao macro de base. Guarda-se a ultima valida num
-    # campo proprio porque bucket_allocation_pct passa a guardar a alocacao EFECTIVA,
-    # que em Critical e o vector fixo — sem isto, a saida de Critical nao saberia a
-    # que percentagens voltar e ficaria congelada no vector defensivo.
+    # ── a edicao publicada CONFRONTA-SE com o motor; nao o instrui ──────────
     #
-    # Mas o recurso NAO serve para todos os gatilhos. Uma mudanca de regime tem
-    # de acontecer — a carteira nao pode ficar em Critical porque a tabela da
-    # semana veio mal escrita — e ai a base macro da ultima edicao legivel e a
-    # melhor informacao que existe. Um rebalanceamento SEMESTRAL e outra coisa:
-    # o seu proposito inteiro e aplicar as percentagens publicadas NESTA edicao.
-    # Executar as de uma edicao anterior era negociar sobre uma instrucao que
-    # ninguem deu — e a newsletter dizia aos subscritores, a letra, que nesse
-    # caso o motor mantinha as posicoes. Fazia o contrario.
-    # E preciso mais do que "alguma edicao foi lida": e preciso que seja a
-    # edicao CERTA. O `find_latest_newsletter` devolve a de maior numero que
-    # esteja no disco, e nunca era confrontada com a semana que se esta a
-    # decidir. Se a edicao N-1 nao tivesse sido publicada, o motor lia a N-3 e o
-    # semestral executava percentagens de ha tres semanas — com a newsletter a
-    # dizer aos subscritores que nesse caso o motor mantinha as posicoes.
+    # Aqui viviam ~190 linhas cujo proposito unico era escolher, de entre as
+    # tabelas que o modelo tinha escrito, uma alocacao macro em que se pudesse
+    # confiar: deteccao do eco do vector de crise, reconstrucao da macro pelo
+    # historico, recusa de tabelas obsoletas, guardas contra envenenamento pela
+    # porta lateral. Cada uma dessas linhas era uma auditoria a fechar um buraco
+    # DENTRO de uma decisao que nunca devia ter sido do modelo.
     #
-    # A edicao esperada e a N-1: este job corre ANTES de a edicao desta semana
-    # ser escrita, e e por isso que le a da semana passada.
-    issue_esperado = issue_number - 1
-    alloc_desta_edicao = bool(bucket_alloc) and issue_lido == issue_esperado
-    if bucket_alloc and not alloc_desta_edicao:
-        log.warning("A alocacao legivel vem da edicao %s, mas a semana a decidir "
-                    "esperava a %s. Serve de base macro, nao de instrucao desta "
-                    "semana.", issue_lido, issue_esperado)
-    # A memoria macro nao pode ser o ECO do proprio vector de crise.
-    #
-    # Este campo existe para uma coisa so: saber a que percentagens VOLTAR
-    # quando a crise passar. Mas a edicao N-1 mostra a alocacao EFECTIVA da
-    # semana N-1, e em Critical essa e o vector fixo de `CRITICAL_WEIGHTS`. O
-    # prompt imprime-o ao modelo ("Effective allocation now: ...") como o unico
-    # vector de seis buckets do documento e manda-o publicar uma tabela de seis
-    # buckets a somar 100; a alocacao macro pre-crise nunca entra no prompt,
-    # portanto o modelo nao tem outra ancora. Reproduzir o que lhe foi mostrado
-    # nao e um erro do modelo — e a unica coisa que ele pode fazer.
-    #
-    # Com isso, UMA semana de Critical bastava para a memoria macro passar a ser
-    # o vector de crise. A saida (`stress_off`) o motor executava esse vector em
-    # instrumentos de Turbulence — transaccao real, custo real, sem um unico
-    # sinal a pedi-la — e a partir dai auto-perpetuava-se, porque a alocacao
-    # efectiva ja era essa e o ciclo recomecava. Permanente e silencioso.
-    #
-    # A causa era o prompt ter UMA so ancora de seis buckets. Agora tem duas — a
-    # efectiva e a macro em vigor —, e a regra 8 manda o modelo partir da macro.
-    # Descartar a tabela de TODAS as semanas de Critical seria trocar um defeito
-    # por outro: a regra 8 obriga a edicao a DIZER aos subscritores que aquela
-    # tabela e a que retoma, e o motor executaria outra coisa. O que se recusa e
-    # so o eco — a tabela que, a percentagem, e o vector de crise que o prompt
-    # mostrou. Uma macro genuina publicada durante a crise vale, e e a que se
-    # executa a saida: o que a edicao diz e o que a carteira faz.
-    #
-    # A comparacao e com o regime e o sub-regime da semana que ESCREVEU a
-    # edicao LIDA — nao com `was_regime`, que e o estado da semana anterior a
-    # esta. Os dois divergem sempre que a edicao N-1 nao chegou a ser publicada
-    # (o motor le entao a N-2 ou a N-3) e numa re-corrida forcada da mesma
-    # sexta (o `main` ja tem a edicao N). Nesses casos o eco nao era
-    # reconhecido, e o vector de crise entrava na memoria macro exactamente
-    # como antes: uma semana de newsletter falhada a seguir a uma semana de
-    # crise bastava, e a partir dai auto-perpetuava-se.
-    # O recurso ao `bucket_allocation_pct` NAO pode trazer o vector de crise:
-    # em Critical a alocacao efectiva E o vector de crise, e usa-la como "macro
-    # em falta" reintroduzia o defeito por uma porta lateral. Sem macro
-    # registada e com a efectiva a ser um vector de crise, nao ha nada para
-    # reter — e melhor nao ter memoria do que ter uma memoria falsa.
-    # A alocacao efectiva anterior so serve como macro quando NAO e, ela
-    # propria, um vector de crise. Calcula-se uma vez e usa-se nos dois sitios
-    # que a podiam querer — o recurso da memoria macro e o ultimo `or` da cadeia
-    # — para nao haver um caminho com o filtro e outro sem ele.
-    _efectiva_util = current.get("bucket_allocation_pct") or {}
-    if e_o_vector_de_crise(_efectiva_util, was_subregime):
-        _efectiva_util = {}
-    _macro_anterior = current.get("newsletter_bucket_allocation_pct") or {}
-    if not _macro_anterior:
-        # Sem campo registado — um portfolio.json escrito por uma versao
-        # anterior — a macro deriva-se do HISTORICO: por definicao, e a ultima
-        # alocacao que a carteira executou FORA de Critical. Nao se inventa
-        # nada, le-se o que ja la esta.
-        for _h_ant in reversed(portfolio.get("history") or []):
-            _al_ant = _h_ant.get("bucket_allocation_pct") or {}
-            # E passa pela MESMA validacao que a tabela da newsletter tem de
-            # passar: uma entrada antiga com buckets em falta ou fora das
-            # bandas era adoptada tal e qual e executada a saida, sem a
-            # verificacao que qualquer alocacao publicada leva.
-            # E o regime da entrada le-se pelo normalizador, pela mesma razao:
-            # `!= "Critical"` deixava passar uma entrada de crise escrita com
-            # outra grafia, e so o `e_o_vector_de_crise` a apanhava — por acaso,
-            # e so enquanto a igualdade fosse exacta.
-            _reg_ant = rules.normaliza_regime(
-                _h_ant.get("regime"), _h_ant.get("critical_subregime"),
-                _h_ant.get("active_etf_map"))[0]
-            # `not in (None, "Critical")`: um regime que NAO se conseguiu ler
-            # nao e um regime calmo — e o principio que este modulo declara em
-            # todo o lado, e aqui `!= "Critical"` fazia o desconhecido passar
-            # por seguro e adoptava a alocacao dessa entrada como macro.
-            if (_reg_ant not in (None, "Critical") and _al_ant
-                    and not e_o_vector_de_crise(_al_ant)
-                    and rules.validate_allocation(_al_ant)[0]):
-                _macro_anterior = dict(_al_ant)
-                log.warning("newsletter_bucket_allocation_pct ausente — a macro "
-                            "foi reconstruida da edicao %s do historico, a ultima "
-                            "fora de Critical.", _h_ant.get("issue"))
-                break
-    if not _macro_anterior:
-        # E, em ultimo recurso, a alocacao efectiva — mas so quando ela nao e,
-        # ela propria, um vector de crise: adopta-la em Critical reintroduzia
-        # pela porta lateral o defeito que esta guarda existe para fechar.
-        _macro_anterior = _efectiva_util
-    _reg_lido, _sub_lido, _conhecido = None, None, False
-    for _h_le in (portfolio.get("history") or []):
-        if _h_le.get("issue") == issue_lido:
-            # Pelo MESMO normalizador que ja guarda o `current` e a entrada da
-            # re-corrida. Este era o TERCEIRO leitor do campo, e ficou cru — o
-            # que e grave porque e ele que arma a guarda do eco: com
-            # `"Critical_Stress"` (ou `"critical"`, ou `"Crisis"`) escrito na
-            # entrada N-1, `_reg_lido == "Critical"` dava False, a guarda
-            # DESLIGAVA-SE inteira, e a memoria macro passava a ser o vector de
-            # crise. A saida de Critical o motor executava-o em instrumentos de
-            # Turbulence — transaccao real, sem sinal nenhum a pedi-la, sem
-            # `macro_echo_discarded` e sem uma linha de log — e a alocacao
-            # efectiva ficava a ser essa, semana apos semana.
-            _reg_lido, _sub_lido, _n_le = rules.normaliza_regime(
-                _h_le.get("regime"), _h_le.get("critical_subregime"),
-                _h_le.get("active_etf_map"))
-            if _n_le:
-                log.error(f"estado ilegivel na entrada {issue_lido} do "
-                          f"historico: {_n_le}")
-            # Uma entrada PRESENTE mas sem `regime` continua a ser um regime
-            # desconhecido. Marca-la como conhecida punha `_pode_ser_eco` a
-            # False e desarmava a guarda inteira — bastava um portfolio.json
-            # editado a mao (que o RUNBOOK manda fazer) ou escrito por uma
-            # versao anterior.
-            _conhecido = _reg_lido is not None
-            break
-    if not _conhecido and issue_lido == issue_number - 1:
-        _reg_lido, _sub_lido, _conhecido = was_regime, was_subregime, True
-    # Regime desconhecido nao e regime calmo: compara-se com TODOS os vectores
-    # de crise. Assumir "nao era Critical" era o que deixava o eco passar.
-    _pode_ser_eco = (not _conhecido) or _reg_lido == "Critical"
-    _eco = bool(bucket_alloc and _pode_ser_eco
-                and e_eco_do_vector_de_crise(bucket_alloc, _sub_lido,
-                                             _macro_anterior))
-    if _eco:
-        log.error("A tabela da edicao %s (regime dessa semana: %s) esta a menos "
-                  "de %.1f pp de um vector de crise e mais perto dele do que da "
-                  "macro em vigor (%s): e um ECO do que o prompt mostrou ao "
-                  "modelo, nao uma alocacao macro. A memoria macro (%s) e "
-                  "RETIDA para a saida. Se isto se repetir, o modelo nao esta a "
-                  "seguir a regra 8 e a edicao devia ser corrigida.",
-                  issue_lido, _reg_lido or "desconhecido", ECO_LIMIAR_PP,
-                  bucket_alloc, _macro_anterior or "vazia")
-        if not _macro_anterior:
-            log.error("E NAO HA memoria macro registada para reter: o campo "
-                      "newsletter_bucket_allocation_pct esta vazio e a alocacao "
-                      "efectiva e o proprio vector de crise. A semana fica sem "
-                      "alocacao macro — o motor mantem as posicoes a saida em "
-                      "vez de executar um vector inventado. Corrigir a mao o "
-                      "portfolio.json ou a edicao.")
-        newsletter_alloc = _macro_anterior
-    elif bucket_alloc and not alloc_desta_edicao and _macro_anterior:  # noqa: E501
-        # A tabela lida NAO e a da semana passada: e de ha duas, tres ou mais
-        # semanas. A macro registada na semana passada e mais fresca do que
-        # ela, e substitui-la por uma tabela mais velha e recuar. O aviso ja
-        # tinha sido dado acima; a decisao faltava.
-        log.warning("A alocacao lida vem da edicao %s e a macro registada da "
-                    "semana passada e mais recente: mantem-se a registada (%s) "
-                    "em vez de recuar para a tabela mais velha (%s).",
-                    issue_lido, _macro_anterior, bucket_alloc)
-        newsletter_alloc = _macro_anterior
-    else:
-        # O ultimo recurso e o `_efectiva_ant` JA FILTRADO acima, nao o
-        # `current["bucket_allocation_pct"]` cru: quarenta linhas acima o codigo
-        # recusa deliberadamente adoptar a alocacao efectiva como macro quando
-        # ela e um vector de crise, e este `or` fazia exactamente isso outra
-        # vez, sem o filtro. Fica latente ate ao dia em que o historico for
-        # compactado — que o proprio motor antecipa — e ai o vector de crise
-        # entra pela porta lateral.
-        newsletter_alloc = (bucket_alloc
-                            or _macro_anterior
-                            or _efectiva_util)
-    # Cinto e suspensorios: fora de Critical, executar um vector de crise nao e
-    # ilegal mas e sempre suspeito — e o sintoma de que a memoria macro foi
-    # envenenada em algum ponto. Declara-se em vez de passar em silencio.
-    if regime != "Critical" and e_o_vector_de_crise(newsletter_alloc):
-        log.error("A alocacao macro a executar fora de Critical (%s) e, a "
-                  "percentagem, um vector de crise. Isto nao acontece por "
-                  "acaso: verificar o newsletter_bucket_allocation_pct do "
-                  "portfolio.json e a tabela da ultima edicao.", newsletter_alloc)
+    # Com o `REGIME_WEIGHTS`, o regime escolhe o vector e mais nada o escolhe. A
+    # tabela da edicao deixa de ser uma instrucao e passa a ser uma AFIRMACAO
+    # sobre o que a carteira fez — que pode estar certa ou errada, e e aqui que
+    # se verifica. Uma edicao que diga uma coisa diferente do que o motor
+    # executou continua a ser um defeito grave (os subscritores leem-na), mas e
+    # um defeito de publicacao, nao de carteira: nenhum dolar se move por causa
+    # dele.
+    issue_esperado   = issue_number - 1
+    newsletter_alloc = dict(bucket_alloc or {})   # registo, nao instrucao
+    _executada_entao = current.get("bucket_allocation_pct") or {}
+    if newsletter_alloc and issue_lido != issue_esperado:
+        log.info("A tabela legivel vem da edicao %s e a semana a decidir esperava "
+                 "a %s. Fica registada como o que essa edicao publicou; nao "
+                 "instrui nada.", issue_lido, issue_esperado)
+    elif newsletter_alloc and _executada_entao:
+        _desvios = [
+            f"{b}: edicao {newsletter_alloc.get(b, float('nan')):.1f}% vs motor "
+            f"{_executada_entao.get(b, 0.0):.1f}%"
+            for b in BUCKETS
+            if abs(newsletter_alloc.get(b, -999.0) - _executada_entao.get(b, 0.0)) > 1.0
+        ]
+        if _desvios:
+            log.error("A edicao %s publicou uma alocacao diferente da que a "
+                      "carteira executava nessa semana: %s. A carteira esta "
+                      "certa por construcao — quem esta errado e o texto que "
+                      "foi enviado aos subscritores. Verificar o gerador da "
+                      "newsletter.", issue_lido, "; ".join(_desvios))
+        else:
+            log.info("A edicao %s publica a mesma alocacao que a carteira "
+                     "executa.", issue_lido)
 
     semestral        = is_semestral_rebalance_week(target_date)
     # (check_emergency ja correu acima, antes de confirmar o regime)
@@ -1511,13 +1292,13 @@ def main():
     final_regime        = held_regime
     final_critical_subregime = held_subregime
 
-    if trigger == "semestral_rebalance" and not alloc_desta_edicao:
-        log.error("Rebalanceamento semestral cancelado: a alocacao desta edicao "
-                  "nao foi legivel, e o semestral existe para aplicar ESTA "
-                  "alocacao — nao a de uma edicao anterior. Posicoes mantidas.")
-        rebalance_reason = "stale_allocation_held"
-    elif trigger:
-        candidate_alloc, alloc_source = effective_bucket_alloc(regime, critical_subregime, newsletter_alloc)
+    # O semestral cancelava-se quando a edicao da semana nao era legivel: existia
+    # para aplicar as percentagens publicadas NESSA edicao, e aplicar as de outra
+    # era negociar sobre uma instrucao que ninguem deu. Deixou de haver instrucao
+    # nenhuma para ler — o semestral aplica o vector do regime, e uma newsletter
+    # que falhe nao adia nem altera o que a carteira faz.
+    if trigger:
+        candidate_alloc, alloc_source = effective_bucket_alloc(regime, critical_subregime)
         if candidate_alloc:
             rebalance_triggered = True
             rebalance_reason    = trigger
@@ -1706,12 +1487,10 @@ def main():
         # a alocacao que retoma; se o motor a descartou, a semana
         # seguinte executa percentagens que nenhuma edicao publicou. O
         # caminho gemeo — a tabela que o parser recusa — ja publica uma
-        # faixa a dizer isso mesmo.
-        "macro_echo_discarded": bool(_eco),
-        # E de QUE edicao veio: "a semana passada" pode ser de ha tres
-        # semanas, porque `issue_lido` e a edicao de maior numero no
-        # disco e nao necessariamente a N-1.
-        "macro_echo_issue": (issue_lido if _eco else None),
+        # De que edicao veio a tabela registada: "a semana passada" pode ser
+        # de ha tres semanas, porque `issue_lido` e a edicao de maior numero
+        # no disco e nao necessariamente a N-1.
+        "newsletter_alloc_issue": issue_lido,
         "stress_gauge_active":           stress_active,
         "stress_gauge_basis":            gauge_basis,
         # Uma semana decidida sobre dados recusados por idade tem de ser
@@ -1768,12 +1547,10 @@ def main():
         # a alocacao que retoma; se o motor a descartou, a semana
         # seguinte executa percentagens que nenhuma edicao publicou. O
         # caminho gemeo — a tabela que o parser recusa — ja publica uma
-        # faixa a dizer isso mesmo.
-        "macro_echo_discarded": bool(_eco),
-        # E de QUE edicao veio: "a semana passada" pode ser de ha tres
-        # semanas, porque `issue_lido` e a edicao de maior numero no
-        # disco e nao necessariamente a N-1.
-        "macro_echo_issue": (issue_lido if _eco else None),
+        # De que edicao veio a tabela registada: "a semana passada" pode ser
+        # de ha tres semanas, porque `issue_lido` e a edicao de maior numero
+        # no disco e nao necessariamente a N-1.
+        "newsletter_alloc_issue": issue_lido,
         "allocation_pct":         {t: v for t, v in alloc_pct.items() if v > 0},
         # A QUALIDADE da valorizacao acompanha o valor. Estes campos so iam para
         # `history[-1]`, e o site le `data.current`: `renderPortfolioKPIs`
