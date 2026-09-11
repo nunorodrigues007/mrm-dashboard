@@ -1,3 +1,13 @@
 {
-  "sent": []
+  "sent": [
+    {
+      "issue": 27,
+      "recipients": 1,
+      "sentAt": "2026-09-11T23:47:55Z",
+      "served": [
+        "4caeaa0612fb743e"
+      ],
+      "complete": true
+    }
+  ]
 }
