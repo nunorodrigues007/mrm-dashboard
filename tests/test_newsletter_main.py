@@ -1050,4 +1050,84 @@ true("earnings reference" in _html13,
      "e o aviso da ancora dos earnings tambem")
 shutil.rmtree(tmp13, ignore_errors=True)
 
+# ── 14. A marca perdida: a Brevo e a segunda testemunha ───────────────────
+#
+# O caso mais perigoso do RUNBOOK, e o unico que ainda exigia uma pessoa: a
+# edicao sai e o push do `sent_issues.json` falha. O runner e destruido com o
+# registo dentro e a corrida seguinte, sem marca nenhuma, reenviava a TODA a
+# gente — uma segunda edicao, com texto diferente, porque quem a escreve e um
+# modelo.
+def _prepara_perdida(dir_):
+    """Uma semana em que a edicao JA esta publicada e a marca nao existe."""
+    _t = prepara(dir_)
+    _c = build_context_qualquer(_t)
+    (_t / f"MRM_Newsletter_Issue{ISSUE_HOJE}_{_c}.html").write_text(
+        edicao(ISSUE_HOJE), encoding="utf-8")
+    (_t / "sent_issues.json").write_text(json.dumps({"sent": []}))
+    return _t
+
+def build_context_qualquer(_t):
+    # O nome do ficheiro so precisa de casar com o glob `Issue{N}_*.html`.
+    return "11Sep2026"
+
+def _corre(tmp_, *, brevo_vistos=None, brevo_erro=None, subs=("a@x.com", "b@x.com")):
+    _env, _pub, _consultas = [], [], []
+    sn.call_model = lambda prompt, key: edicao_do_prompt(prompt, ISSUE_HOJE)
+    sn.git_publish = lambda files, msg, **kw: (_pub.append(list(files)), True)[1]
+    sn.brevo_subscribers = lambda key: list(subs)
+    sn.brevo_send = lambda key, sender, to, subject, html, **kw: (
+        _env.append((to, kw.get("tags"))), (True, types.SimpleNamespace(status_code=200)))[1]
+    def _consulta(key, issue, **kw):
+        _consultas.append(issue)
+        return (set(brevo_vistos or ()), brevo_erro)
+    sn.brevo_destinatarios_da_edicao = _consulta
+    erro = None
+    os.chdir(tmp_)
+    try:
+        sn.main()
+    except BaseException as e:
+        erro = e
+    finally:
+        os.chdir(cwd)
+    return _env, _pub, _consultas, erro
+
+# (a) A Brevo diz que um dos dois ja recebeu: serve-se so o outro.
+_t14 = _prepara_perdida(Path(tempfile.mkdtemp()))
+_env14, _pub14, _cons14, _erro14 = _corre(_t14, brevo_vistos={"a@x.com"})
+true(_erro14 is None, f"a corrida termina sem excepcao ({_erro14!r})")
+true(_cons14 == [ISSUE_HOJE],
+     f"perguntou-se a Brevo por esta edicao, uma vez ({_cons14})")
+_destinos14 = [e for e, _tags in _env14]
+true("a@x.com" not in _destinos14,
+     f"quem a Brevo diz ter recebido NAO recebe outra vez ({_destinos14})")
+true("b@x.com" in _destinos14, f"e quem faltava recebe ({_destinos14})")
+shutil.rmtree(_t14, ignore_errors=True)
+
+# (b) A Brevo nao responde: nao se envia nada. Duplicar custa mais do que esperar.
+_t14b = _prepara_perdida(Path(tempfile.mkdtemp()))
+_env14b, _pub14b, _cons14b, _erro14b = _corre(_t14b, brevo_erro="HTTP 503")
+true(isinstance(_erro14b, RuntimeError),
+     f"sem resposta da Brevo e sem marca, a corrida PARA ({_erro14b!r})")
+true("RUNBOOK" in str(_erro14b), "e manda ler o RUNBOOK")
+true(_env14b == [], f"e nao saiu uma unica mensagem ({_env14b})")
+shutil.rmtree(_t14b, ignore_errors=True)
+
+# (c) Sem edicao publicada nao ha desconfianca nenhuma: uma semana normal nao
+#     passa a depender da API de estatisticas da Brevo para poder enviar.
+_t14c = prepara(Path(tempfile.mkdtemp()))
+(_t14c / "sent_issues.json").write_text(json.dumps({"sent": []}))
+_env14c, _pub14c, _cons14c, _erro14c = _corre(_t14c, brevo_erro="HTTP 503")
+true(_erro14c is None, f"a semana normal corre na mesma ({_erro14c!r})")
+true(_cons14c == [], f"e nao se pergunta nada a Brevo ({_cons14c})")
+true(len([e for e, _ in _env14c if e in ("a@x.com", "b@x.com")]) == 2,
+     f"e os dois subscritores recebem ({_env14c})")
+
+# (d) E cada mensagem vai etiquetada com a edicao — e essa etiqueta que torna a
+#     pergunta da alinea (a) possivel na semana seguinte.
+_tags14 = [t for e, t in _env14c if e in ("a@x.com", "b@x.com")]
+true(all(t == [sn.etiqueta_edicao(ISSUE_HOJE)] for t in _tags14),
+     f"cada envio leva a etiqueta da edicao ({_tags14})")
+shutil.rmtree(_t14c, ignore_errors=True)
+
+
 print(f"TODOS OS {ok} TESTES PASSARAM")

@@ -2013,7 +2013,55 @@ def brevo_subscribers(api_key, page_size=500, max_pages=20):
     return emails
 
 
-def brevo_send(api_key, sender, to, subject, html, retries=3, timeout=60):
+def etiqueta_edicao(issue_number):
+    """A etiqueta com que cada mensagem desta edicao vai marcada na Brevo.
+
+    Existe para uma coisa so, e e a mais perigosa do RUNBOOK: a edicao sai e a
+    marca nao chega a ser commitada. O runner e destruido com o registo dentro, e
+    a corrida seguinte — sem nada no `sent_issues.json` — gera uma edicao nova e
+    REENVIA A TODA A GENTE. A unica prova de quem recebeu vivia num ficheiro que
+    podia nao ter sido publicado; passa a viver tambem do lado de quem entregou,
+    que e a Brevo, e que nao depende de um `git push` ter corrido bem."""
+    return f"mrm-issue-{int(issue_number)}"
+
+
+def brevo_destinatarios_da_edicao(api_key, issue_number, dias=30, timeout=30,
+                                  limite=5000):
+    """Quem a Brevo diz ter recebido esta edicao. Devolve (conjunto, erro).
+
+    Um erro NAO e um conjunto vazio, e a diferenca e dinheiro: "a Brevo diz que
+    ninguem recebeu" autoriza enviar; "nao consegui perguntar a Brevo" nao
+    autoriza nada. Quem chama tem de distinguir os dois — devolver `set()` nos
+    dois casos era construir a duplicacao que isto existe para impedir."""
+    eventos = ("delivered", "requests", "opened", "clicks")
+    encontrados, erro = set(), None
+    for evento in eventos:
+        try:
+            r = requests.get("https://api.brevo.com/v3/smtp/statistics/events",
+                             headers={"api-key": api_key, "accept": "application/json"},
+                             params={"tags": etiqueta_edicao(issue_number),
+                                     "days": dias, "limit": limite, "event": evento},
+                             timeout=timeout)
+        except requests.RequestException as e:
+            erro = f"{type(e).__name__}: {e}"
+            continue
+        if r.status_code == 404:
+            # A Brevo devolve 404 quando nao ha eventos nenhuns para o filtro.
+            # Isso E uma resposta: nao ha registo de envio.
+            continue
+        if r.status_code != 200:
+            erro = f"HTTP {r.status_code}"
+            continue
+        for ev in (r.json() or {}).get("events") or []:
+            if ev.get("email"):
+                encontrados.add(ev["email"].strip().lower())
+    if encontrados:
+        return encontrados, None
+    return encontrados, erro
+
+
+def brevo_send(api_key, sender, to, subject, html, retries=3, timeout=60,
+               tags=None):
     """Envia para UM destinatario. Com prazo e tentativas.
 
     Nao tem `to` plural de proposito. A versao anterior punha toda a lista de
@@ -2040,7 +2088,13 @@ def brevo_send(api_key, sender, to, subject, html, retries=3, timeout=60):
                               headers={"api-key": api_key, "content-type": "application/json",
                                        "accept": "application/json"},
                               json={"sender": sender, "to": [{"email": to}],
-                                    "subject": subject, "htmlContent": html},
+                                    "subject": subject, "htmlContent": html,
+                                    # As etiquetas sao o que torna o envio
+                                    # consultavel depois. Sem elas, o registo do
+                                    # lado da Brevo existe mas nao e pesquisavel
+                                    # por edicao, e a reconstrucao da marca
+                                    # perdida nao tem por onde pegar.
+                                    **({"tags": list(tags)} if tags else {})},
                               timeout=timeout)
         except requests.RequestException as e:
             r, motivo = None, f"{type(e).__name__}: {e}"
@@ -2089,7 +2143,9 @@ def send_to_each(api_key, sender, recipients, subject, html, issue_number=None,
                   f"{len(restantes)} por servir. Para-se aqui em vez de o job ser "
                   f"morto a meio.")
             break
-        ok, r = brevo_send(api_key, sender, e, subject, html)
+        ok, r = brevo_send(api_key, sender, e, subject, html,
+                           tags=([etiqueta_edicao(issue_number)]
+                                 if issue_number is not None else None))
         (enviados if ok else falhados).append(e)
         restantes.remove(e)
         if not ok:
@@ -2152,6 +2208,70 @@ def main():
                            f"re-correr normalmente."))
 
     ja = already_sent(issue_number)
+
+    # ── a marca perdida: perguntar a quem entregou ──────────────────────────
+    #
+    # O caso mais perigoso do RUNBOOK, e o unico que ainda exigia uma pessoa: a
+    # edicao saiu e o `sent_issues.json` ficou no runner, que ja foi destruido.
+    # Sem marca, tudo aqui em baixo conclui "esta semana ainda nao saiu" e
+    # reenvia a TODA a gente — a edicao chega duas vezes, e a segunda e um texto
+    # diferente, porque quem a escreve e um modelo.
+    #
+    # O ficheiro nao e a unica prova de que uma mensagem foi entregue: a Brevo
+    # tambem sabe. Cada envio vai etiquetado com a edicao, e aqui pergunta-se.
+    # Pergunta-se a Brevo SO quando ha motivo para desconfiar, e ha um sinal
+    # exacto: a edicao desta semana ja esta publicada no repositorio. O
+    # `git_publish` da edicao corre ANTES do envio e e fatal — se a pagina nao
+    # foi publicada, nada foi enviado, e uma semana normal (a primeira passagem)
+    # nao tem ficheiro nenhum. Sem esta porta, todas as semanas passavam a
+    # depender da API de estatisticas da Brevo para poder enviar, e uma avaria
+    # dela transformava-se numa semana sem newsletter — trocar uma duplicacao
+    # rara por uma falha semanal nao e um bom negocio.
+    _ja_publicada = bool(_glob.glob(f"MRM_Newsletter_Issue{issue_number}_*.html"))
+    if not ja and _ja_publicada:
+        print(f"A edicao #{issue_number} esta publicada no repositorio mas nao "
+              f"tem marca no {SENT_MARKER}. A perguntar a Brevo se ja foi "
+              f"entregue a alguem antes de enviar seja o que for.")
+        _vistos, _erro_brevo = brevo_destinatarios_da_edicao(brevo_key, issue_number)
+        if _erro_brevo and not _vistos:
+            # NAO se envia as cegas. Nao saber se a edicao ja saiu e o estado em
+            # que reenviar custa mais do que esperar: o ficheiro pode estar
+            # perdido, e a alternativa a parar e duplicar.
+            raise RuntimeError(
+                f"Nao ha marca de envio para a edicao #{issue_number} no "
+                f"{SENT_MARKER} e NAO foi possivel perguntar a Brevo quem ja a "
+                f"recebeu ({_erro_brevo}). Parar e o comportamento certo: se a "
+                f"edicao tiver saido e o push da marca tiver falhado, enviar "
+                f"agora duplica-a para toda a lista. Ver o RUNBOOK.md, caso 1a.")
+        if _vistos:
+            print(f"AVISO: o {SENT_MARKER} nao tem marca da edicao "
+                  f"#{issue_number}, mas a Brevo regista {len(_vistos)} "
+                  f"destinatario(s) ja servido(s). A marca perdeu-se — "
+                  f"reconstroi-se a partir da Brevo e serve-se apenas quem "
+                  f"falta. Ninguem recebe duas vezes.")
+            ja = {"issue": issue_number,
+                  "recipients": len(_vistos),
+                  "sentAt": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                  "served": marcas(sorted(_vistos)),
+                  "failed": [], "pending": [],
+                  # `complete: False` de proposito: o que a Brevo sabe e quem
+                  # recebeu, nao quem faltava. Se a lista nao tiver crescido, a
+                  # retoma nao encontra ninguem por servir e termina sem enviar
+                  # nada — que e o resultado certo.
+                  "complete": False,
+                  "recovered_from": "brevo"}
+            # E escreve-se JA no ficheiro, antes de qualquer envio. Duas razoes:
+            # o `ja` e relido mais abaixo (depois de publicar) e um objecto so
+            # em memoria evaporava-se ai, voltando a reenviar a toda a gente; e
+            # se esta corrida morrer a meio, a seguinte encontra a marca em vez
+            # de repetir a reconstrucao — que so funciona enquanto a Brevo
+            # responder e os eventos nao expirarem.
+            mark_sent(issue_number, len(_vistos),
+                      servidos=sorted(_vistos), restantes=["por-apurar"])
+            _m = already_sent(issue_number)
+            if _m:
+                ja = dict(_m, recovered_from="brevo")
+
     if ja and ja.get("complete", True):
         print(f"A edicao #{issue_number} ja foi enviada a {ja.get('recipients')} "
               f"destinatarios em {ja.get('sentAt')}. Nada a fazer.")
