@@ -252,6 +252,15 @@ jobs:
             const hoje = new Date().toISOString().slice(0, 10);
             const titulo = `🚨 Pipeline de sexta falhou — ${hoje}`;
             const corpo = [
+              // A MENÇÃO não é decoração: é o que faz a notificação chegar.
+              // O repositório está em "Watch: Participating and @mentions", e
+              // um issue aberto pelo github-actions[bot] não é participação de
+              // ninguém — sem esta linha, o alerta das 22:00 de sexta é um
+              // issue que fica no GitHub à espera de ser descoberto. Com ela,
+              // chega por e-mail e por push do GitHub Mobile sem depender de
+              // uma definição que pode mudar sem ninguém dar por isso.
+              `@${context.repo.owner}`,
+              ``,
               `A corrida de ${hoje} não completou. **A carteira desta semana pode não ter sido actualizada e a newsletter pode não ter saído.**`,
               ``,
               `Corrida: ${url}`,
