@@ -2,9 +2,18 @@ name: 🗓️ MRM Friday Pipeline (Portfolio + Newsletter)
 
 on:
   schedule:
-    # Sexta às 22:00 UTC — depois do fecho de 16:00 ET tanto em EDT (20:00 UTC)
+    # Sexta às 22:13 UTC — depois do fecho de 16:00 ET tanto em EDT (20:00 UTC)
     # como em EST (21:00 UTC).
-    - cron: "0 22 * * 5"
+    #
+    # Os treze minutos não são decorativos. As corridas agendadas do GitHub são
+    # best-effort e ficam em fila; a hora certa é o horário mais disputado que
+    # existe, porque é onde toda a gente agenda. Medido neste repositório: a
+    # corrida de 11 Set arrancou 1h44 depois da hora, a de 4 Set 1h35, a de 29
+    # Ago 5h26 — e o cron diário das 18:00 aterra sistematicamente às 20:09.
+    # Sair do minuto zero é a mitigação conhecida. Não é garantia nenhuma: o
+    # atraso continua a ser do lado do GitHub e o sistema tem de aguentá-lo —
+    # aguenta, porque nada aqui depende da hora a que corre, só de correr.
+    - cron: "13 22 * * 5"
   workflow_dispatch:
     inputs:
       force_rebalance:
