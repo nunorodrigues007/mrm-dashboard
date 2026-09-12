@@ -426,6 +426,12 @@ def estado(tmp, regime="Turbulence", subregime=None, com_data=False, com_edicao=
               else dict(ALLOC_ORDINARIA))
     _p["current"]["bucket_allocation_pct"] = _alloc
     _p["current"]["newsletter_bucket_allocation_pct"] = dict(ALLOC_ORDINARIA)
+    # O estado construido e POS-migracao: a adopcao dos pesos do regime e uma
+    # transicao unica de Set 2026, e o que estes ensaios descrevem e o sistema
+    # em regime permanente. Sem esta marca, a adopcao disparava em todos eles e
+    # transformava cada semana calma num rebalanceamento. A migracao em si tem
+    # ensaios proprios, mais abaixo.
+    _p["current"]["regime_weights_adopted"] = True
     _p["history"] = [h for h in _p["history"] if h.get("issue", 0) < ISSUE - 1]
     _p["history"].append({
         "issue": ISSUE - 1, "date": D_ANTERIOR, "regime": regime,
@@ -1350,21 +1356,24 @@ true("TLT" in pf_nd2["current"]["shares"],
      f"({sorted(pf_nd2['current']['shares'])})")
 shutil.rmtree(tmp_nd2, ignore_errors=True)
 
-# ── 19f. O vector de crise NAO contamina a memoria macro ─────────────────
+# ── 19f-19o. A memoria macro deixou de existir ────────────────────────────
 #
-# `newsletter_bucket_allocation_pct` existe para uma coisa so: saber a que
-# percentagens VOLTAR quando a crise passar. Mas ele era reescrito todas as
-# semanas com o que o parser le da edicao N-1 — INCLUSIVE durante Critical, em
-# que a edicao mostra a alocacao efectiva, que e o vector fixo de crise. E o
-# prompt imprime esse vector ao modelo ("Effective allocation now: ...") como o
-# unico vector de seis buckets do documento, e manda-o publicar uma tabela de
-# seis buckets a somar 100; a alocacao macro pre-crise nunca entra no prompt.
-# Reproduzir o que lhe foi mostrado e a unica coisa que o modelo pode fazer.
+# Aqui viviam catorze regressoes — 19f a 19o — sobre uma pergunta so: de que
+# tabela, de entre as que o modelo escreveu, se pode confiar para saber a que
+# percentagens a carteira volta quando a crise passar. Deteccao do eco do vector
+# de crise (byte a byte e aproximado, com limiar dos dois lados), tabelas
+# obsoletas, reconstrucao da macro pelo historico, o regime da edicao lida, a
+# grafia desse regime, o ultimo recurso da cadeia, e a recusa de inventar uma
+# macro quando nao ha nenhuma.
 #
-# Consequencia: UMA semana de Critical bastava para a memoria macro passar a ser
-# o vector de crise, e a saida o motor EXECUTAVA-O em instrumentos de
-# Turbulence — transaccao real, custo real, sem um unico sinal a pedi-la — e
-# auto-perpetuava-se a partir dai. Nada na suite acusava.
+# Set 2026: a pergunta desapareceu. A carteira volta ao vector de Turbulence do
+# `REGIME_WEIGHTS`, esteja a edicao anterior como estiver, e o campo
+# `newsletter_bucket_allocation_pct` passou a ser o REGISTO do que a ultima
+# edicao publicou — sem consequencia nenhuma sobre o que se executa.
+#
+# O que fica no lugar e a forma executada dessa afirmacao. Nao e menos teste do
+# que os catorze: e o mesmo dinheiro protegido por uma propriedade que nao tem
+# como falhar, em vez de por catorze guardas que podiam.
 from fixture_newsletter import edicao as _ed_macro
 
 _NOMES_BUCKET = {"US_EQUITIES": "US Equities", "US_TREASURIES": "US Treasuries",
@@ -1381,215 +1390,9 @@ def _poe_edicao_com(tmp, issue, dia, alloc_por_bucket):
     (tmp / nome).write_text(_ed_macro(issue, alloc=linhas), encoding="utf-8")
     return nome
 
-# A carteira ja esta em Critical_Stress, e a edicao N-1 — escrita nessa semana —
-# publica, como manda, o vector de crise.
-tmp_macro = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                   subregime="Critical_Stress", com_data=True)
-_MACRO_PRE = dict(ALLOC_ORDINARIA)
-_p_macro = json.loads((tmp_macro / "portfolio.json").read_text())
-_p_macro["current"]["newsletter_bucket_allocation_pct"] = dict(_MACRO_PRE)
-(tmp_macro / "portfolio.json").write_text(json.dumps(_p_macro))
-_poe_edicao_com(tmp_macro, ISSUE - 1, ANTERIOR,
-                rules.CRITICAL_WEIGHTS["Critical_Stress"])
-# confirma-se que a edicao construida e mesmo lida como o vector de crise —
-# senao o ensaio passava por nao haver nada para ler.
-import newsletter_parse as _np_macro
-_lida_macro, _, _ = _np_macro.parse_allocation(
-    next(tmp_macro.glob(f"MRM_Newsletter_Issue{ISSUE - 1}_*.html")).read_text(encoding="utf-8"))
-eq(_lida_macro, dict(rules.CRITICAL_WEIGHTS["Critical_Stress"]),
-   f"a edicao N-1 construida publica mesmo o vector de crise ({_lida_macro})")
 
-pf_macro = corre_com_gauge(tmp_macro, "STRESS", "Critical", "Critical_Stress")
-eq(pf_macro["current"]["newsletter_bucket_allocation_pct"], _MACRO_PRE,
-   "com a edicao N-1 escrita em Critical, a memoria macro e RETIDA — o motor "
-   "nao a substitui pelo eco do seu proprio vector de crise")
-
-# E a prova de que isto e dinheiro: na semana seguinte o medidor desliga e o
-# motor executa. O que se executa tem de ser a macro pre-crise, nao o vector
-# que a edicao publicou.
-pf_saida = corre_com_gauge(tmp_macro, None, "Critical", "Critical_Stress",
-                           active=False)
-eq(pf_saida["current"]["regime"], "Turbulence",
-   f"o medidor desligado tira a carteira de Critical "
-   f"({pf_saida['current']['regime']})")
-eq(pf_saida["current"]["bucket_allocation_pct"], _MACRO_PRE,
-   "e o que a carteira EXECUTA a saida e a alocacao macro pre-crise, nao o "
-   "vector de crise que a edicao publicou — isto sao dolares")
-true(pf_saida["current"]["bucket_allocation_pct"]
-     not in [dict(v) for v in rules.CRITICAL_WEIGHTS.values()],
-     f"e nao e nenhum dos vectores de crise "
-     f"({pf_saida['current']['bucket_allocation_pct']})")
-shutil.rmtree(tmp_macro, ignore_errors=True)
-
-# ── 19g. E o outro lado: uma macro GENUINA publicada em Critical VALE ─────
-#
-# Descartar a tabela de todas as semanas de Critical seria trocar um defeito por
-# outro. A regra 8 do prompt obriga a edicao a publicar uma tabela macro e a
-# DIZER aos subscritores, a letra, que e essa que retoma quando o medidor
-# desligar. Se o motor a ignorasse sempre, a edicao dizia uma coisa e a carteira
-# fazia outra — a semana seguinte executava uma alocacao que ninguem publicou,
-# e o subscritor nao tinha como saber. O que se recusa e so o ECO; uma macro
-# diferente do vector de crise vale, e e a que se executa a saida.
-_MACRO_NOVA = {"US_EQUITIES": 25.0, "US_TREASURIES": 30.0, "IG_CREDIT": 15.0,
-               "COMMODITIES": 10.0, "CASH": 15.0, "ALTERNATIVES": 5.0}
-true(not up.e_o_vector_de_crise(_MACRO_NOVA, "Critical_Stress"),
-     "a macro do ensaio nao e, ela propria, um vector de crise")
-tmp_macro2 = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                    subregime="Critical_Stress", com_data=True)
-_p_m2 = json.loads((tmp_macro2 / "portfolio.json").read_text())
-_p_m2["current"]["newsletter_bucket_allocation_pct"] = dict(ALLOC_ORDINARIA)
-(tmp_macro2 / "portfolio.json").write_text(json.dumps(_p_m2))
-_poe_edicao_com(tmp_macro2, ISSUE - 1, ANTERIOR, _MACRO_NOVA)
-pf_m2 = corre_com_gauge(tmp_macro2, "STRESS", "Critical", "Critical_Stress")
-eq(pf_m2["current"]["newsletter_bucket_allocation_pct"], _MACRO_NOVA,
-   "uma tabela macro GENUINA publicada durante Critical e registada — e o que "
-   "a edicao diz aos subscritores que vai retomar")
-eq(pf_m2["current"].get("macro_echo_discarded"), False,
-   "e nao ha eco nenhum a declarar quando a tabela e genuina")
-eq(pf_m2["history"][-1].get("macro_echo_discarded"), False,
-   "nem no historico")
-eq(pf_m2["current"]["bucket_allocation_pct"],
-   dict(rules.CRITICAL_WEIGHTS["Critical_Stress"]),
-   "e a carteira continua a executar o vector de crise enquanto a crise durar")
-pf_m2_saida = corre_com_gauge(tmp_macro2, None, "Critical", "Critical_Stress",
-                              active=False)
-eq(pf_m2_saida["current"]["bucket_allocation_pct"], _MACRO_NOVA,
-   "e a saida executa-se essa — o que a edicao publicou e o que a carteira faz")
-shutil.rmtree(tmp_macro2, ignore_errors=True)
-
-# E o motor sabe distinguir os dois casos sem olhar para o texto: a fronteira e
-# o valor da tabela, nao a semana em que ela saiu.
-for _sub_v in ("Critical_Stress", "Critical_FTQ"):
-    true(up.e_o_vector_de_crise(dict(rules.CRITICAL_WEIGHTS[_sub_v]), _sub_v),
-         f"o vector de {_sub_v} e reconhecido como eco")
-    true(up.e_o_vector_de_crise(dict(rules.CRITICAL_WEIGHTS[_sub_v]), None),
-         f"e tambem quando o sub-regime da semana e desconhecido ({_sub_v})")
-true(not up.e_o_vector_de_crise(dict(ALLOC_ORDINARIA), "Critical_Stress"),
-     "e uma alocacao macro normal nao e confundida com um eco")
-true(not up.e_o_vector_de_crise({}, "Critical_Stress"),
-     "e uma tabela vazia nao e um eco — e uma tabela vazia")
-
-# ── 19i. O eco nao e uma COPIA byte a byte ───────────────────────────────
-#
-# A guarda comparava por igualdade (< 0,51 pp). Mas quem escreve a edicao e um
-# modelo, que RE-DERIVA os numeros: bastava mexer um ponto percentual em dois
-# buckets para a comparacao falhar e o eco entrar na memoria macro — o mesmo
-# dano, com a guarda toda em vigor e a suite verde.
 _CS = dict(rules.CRITICAL_WEIGHTS["Critical_Stress"])
-_MACRO_VIGOR = {"US_EQUITIES": 15.0, "US_TREASURIES": 25.0, "IG_CREDIT": 15.0,
-                "COMMODITIES": 15.0, "CASH": 20.0, "ALTERNATIVES": 10.0}
-_ECO_APROX = {**_CS, "CASH": _CS["CASH"] - 1, "ALTERNATIVES": _CS["ALTERNATIVES"] + 1}
-true(up.e_eco_do_vector_de_crise(_CS, "Critical_Stress", _MACRO_VIGOR),
-     "a copia exacta do vector de crise e um eco")
-true(up.e_eco_do_vector_de_crise(_ECO_APROX, "Critical_Stress", _MACRO_VIGOR),
-     f"e a copia com um ponto percentual de desvio tambem ({_ECO_APROX})")
-true(up.e_eco_do_vector_de_crise(_ECO_APROX, None, _MACRO_VIGOR),
-     "e tambem quando o sub-regime da semana e desconhecido")
-# E o outro lado: uma macro genuina, longe do vector de crise, NAO e um eco.
-true(not up.e_eco_do_vector_de_crise(_MACRO_NOVA, "Critical_Stress", _MACRO_VIGOR),
-     f"uma macro genuina nao e um eco ({_MACRO_NOVA})")
-true(not up.e_eco_do_vector_de_crise(_MACRO_VIGOR, "Critical_Stress", _MACRO_VIGOR),
-     "e republicar a propria macro em vigor tambem nao")
-# A segunda metade do criterio: perto do vector de crise NAO chega. Uma tabela
-# que esta a 2 pp do vector de crise mas a 1 pp da macro em vigor foi derivada
-# da macro — que e o que a regra 8 manda fazer.
-_PERTO_DOS_DOIS = {**_CS, "US_TREASURIES": _CS["US_TREASURIES"] + 2,
-                   "CASH": _CS["CASH"] - 2}
-_MACRO_PERTO = {**_PERTO_DOS_DOIS, "COMMODITIES": _PERTO_DOS_DOIS["COMMODITIES"] + 1,
-                "IG_CREDIT": _PERTO_DOS_DOIS["IG_CREDIT"] - 1}
-true(not up.e_eco_do_vector_de_crise(_PERTO_DOS_DOIS, "Critical_Stress",
-                                     _MACRO_PERTO),
-     f"uma tabela mais perto da macro em vigor do que do vector de crise nao e "
-     f"um eco ({_PERTO_DOS_DOIS} vs macro {_MACRO_PERTO})")
 
-# E a FRONTEIRA, que e onde o defeito vive. A guarda tinha um piso ABSOLUTO de
-# 3 pp a frente do criterio relativo: 3,5 pp de desvio ja passavam. E a propria
-# razao de ser desta guarda e que um modelo RE-DERIVA os numeros — o que produz
-# desvios de um a seis pontos percentuais, nao de zero. A guarda cobria o caso
-# que nao acontece e falhava o que acontece.
-_MACRO_LONGE = {"US_EQUITIES": 35.0, "US_TREASURIES": 30.0, "IG_CREDIT": 10.0,
-                "COMMODITIES": 10.0, "CASH": 10.0, "ALTERNATIVES": 5.0}
-for _pp in (0, 1, 2, 3, 3.5, 4, 5, 6):   # o que um modelo re-derivado produz
-    _desviado = {**_CS, "CASH": _CS["CASH"] - _pp,
-                 "US_EQUITIES": _CS["US_EQUITIES"] + _pp}
-    true(up.e_eco_do_vector_de_crise(_desviado, "Critical_Stress", _MACRO_LONGE),
-         f"um eco com {_pp} pp de desvio continua a ser um eco ({_desviado})")
-# E o PISO tem de ser generoso: um modelo que re-deriva os numeros produz
-# desvios de um a seis pontos percentuais, e a macro em vigor pode estar ela
-# propria a poucos pontos do vector de crise (numa crise longa, aproxima-se).
-# Com um piso de tres, quatro pontos de desvio ja passavam por macro genuina.
-_MACRO_PERTINHO = {"US_EQUITIES": 20.0, "US_TREASURIES": 25.0, "IG_CREDIT": 15.0,
-                   "COMMODITIES": 15.0, "CASH": 20.0, "ALTERNATIVES": 5.0}
-_a_quatro = {**_CS, "US_EQUITIES": _CS["US_EQUITIES"] + 4, "CASH": _CS["CASH"] - 4}
-true(up.e_eco_do_vector_de_crise(_a_quatro, "Critical_Stress", _MACRO_PERTINHO),
-     f"com a macro a cinco pontos do vector de crise, uma tabela a QUATRO "
-     f"pontos dele continua a ser um eco ({_a_quatro})")
-
-# E o criterio e RELATIVO, nao um piso fixo: com a macro em vigor muito longe do
-# vector de crise, uma tabela a oito pontos percentuais do vector continua a
-# estar claramente do lado dele — e um eco, mesmo passando o piso absoluto.
-_MACRO_MUITO_LONGE = {"US_EQUITIES": 45.0, "US_TREASURIES": 20.0,
-                      "IG_CREDIT": 20.0, "COMMODITIES": 15.0, "CASH": 0.0,
-                      "ALTERNATIVES": 0.0}
-_a_oito = {**_CS, "US_EQUITIES": _CS["US_EQUITIES"] + 8, "CASH": _CS["CASH"] - 8}
-true(up.e_eco_do_vector_de_crise(_a_oito, "Critical_Stress", _MACRO_MUITO_LONGE),
-     f"com a macro a vinte e dois pontos do vector de crise, uma tabela a oito "
-     f"pontos dele e um eco ({_a_oito})")
-true(not up.e_eco_do_vector_de_crise(_a_oito, "Critical_Stress", _a_oito),
-     "e a propria tabela, republicada como macro, nao e")
-
-# E uma tabela claramente longe do vector de crise nao e tocada, mesmo com a
-# macro em vigor ainda mais longe.
-_longe_do_crise = {**_CS, "CASH": _CS["CASH"] - 12, "US_EQUITIES": _CS["US_EQUITIES"] + 12}
-true(not up.e_eco_do_vector_de_crise(_longe_do_crise, "Critical_Stress",
-                                     _MACRO_LONGE),
-     f"a doze pontos percentuais do vector de crise ja nao e um eco "
-     f"({_longe_do_crise})")
-# ── E o LIMIAR tem os dois lados presos, nao so o de baixo ────────────────
-#
-# Baixa-lo faz cair uma assercao; SUBI-LO nao fazia cair nenhuma, porque em
-# todos os ensaios acima o criterio RELATIVO (`d_crise >= d_macro`) ja protegia
-# a macro genuina sozinho. Com o limiar a 30 pp, uma tabela a doze pontos do
-# vector de crise — e ainda assim mais perto dele do que da macro — passava a
-# ser descartada: a edicao dizia uma coisa e a carteira fazia outra, que e
-# exactamente o defeito que esta guarda existe para nao ter.
-# A tabela esta a 12 pp do vector de crise e a 20 pp da macro: mais perto do
-# vector, portanto o criterio relativo NAO a protege. So o limiar a protege.
-_A_DOZE = {**_CS, "US_EQUITIES": _CS["US_EQUITIES"] + 12,
-           "US_TREASURIES": _CS["US_TREASURIES"] - 12}
-_MACRO_MT_LONGE = {**_A_DOZE, "IG_CREDIT": _A_DOZE["IG_CREDIT"] + 20,
-                   "CASH": _A_DOZE["CASH"] - 20}
-eq(up._distancia_alloc(_A_DOZE, _CS), 12.0, "a tabela esta a 12 pp do vector")
-eq(up._distancia_alloc(_A_DOZE, _MACRO_MT_LONGE), 20.0,
-   "e a 20 pp da macro — mais perto do VECTOR do que dela, portanto o "
-   "criterio relativo nao a protege; so o limiar a protege")
-true(not up.e_eco_do_vector_de_crise(_A_DOZE, "Critical_Stress",
-                                     _MACRO_MT_LONGE),
-     f"a doze pontos do vector, e ainda assim mais perto dele, NAO e um eco — "
-     f"o limiar e {up.ECO_LIMIAR_PP} pp e nao trinta ({_A_DOZE})")
-# E o lado de baixo continua preso: a um ponto, e.
-true(up.e_eco_do_vector_de_crise(_ECO_APROX, "Critical_Stress", _MACRO_MT_LONGE),
-     "e a um ponto do vector continua a ser")
-
-# E a meio caminho entre os dois nao se adivinha: e genuinamente ambiguo.
-_meio = {b: (_CS[b] + _MACRO_LONGE[b]) / 2 for b in rules.BUCKETS}
-true(not up.e_eco_do_vector_de_crise(_meio, "Critical_Stress", _MACRO_LONGE),
-     f"uma tabela a meio caminho entre o vector de crise e a macro nao e "
-     f"tratada como eco ({_meio})")
-
-# ── 19j. Uma tabela VELHA nao substitui a macro registada ────────────────
-#
-# `issue_lido` e a edicao de maior numero que esteja NO DISCO, e pode nao ser a
-# N-1: basta o job da newsletter falhar numa semana (o RUNBOOK trata disso como
-# rotina) ou uma re-corrida forcada da mesma sexta, em que o `main` ja tem a
-# edicao N. Nesses casos a guarda do eco comparava a tabela com o regime da
-# semana ERRADA — a anterior a esta, nao a que escreveu a edicao — e o vector de
-# crise entrava na memoria macro como se fosse informacao nova. E, mesmo sem ser
-# um eco, uma tabela de ha tres semanas e MAIS VELHA do que a macro que ficou
-# registada na semana passada: substitui-la e recuar.
-tmp_velha = estado(Path(tempfile.mkdtemp()), com_data=True)
-_p_v = json.loads((tmp_velha / "portfolio.json").read_text())
-_p_v["current"]["newsletter_bucket_allocation_pct"] = dict(_MACRO_VIGOR)
 def _linha_hist(n_, reg, sub, al, accoes):
     return {"issue": n_, "date": D_ANTERIOR, "regime": reg,
             "regime_signalled": reg, "critical_subregime": sub,
@@ -1598,492 +1401,49 @@ def _linha_hist(n_, reg, sub, al, accoes):
             "portfolio_pnl_pct": 0.0, "bucket_allocation_pct": dict(al),
             "shares": dict(accoes)}
 
-_accoes_v = dict(_p_v["current"]["shares"])
-_HIST_V = [
-    _linha_hist(ISSUE - 3, "Critical", "Critical_Stress", _CS, _accoes_v),
-    _linha_hist(ISSUE - 2, "Critical", "Critical_Stress", _CS, _accoes_v),
-    _linha_hist(ISSUE - 1, "Turbulence", None, _MACRO_VIGOR, _accoes_v),
-]
-(tmp_velha / "portfolio.json").write_text(json.dumps(_p_v))
-for _f_v in tmp_velha.glob("MRM_Newsletter_Issue*_*.html"):
-    _f_v.unlink()
-_poe_edicao_com(tmp_velha, ISSUE - 3, ANTERIOR, _MACRO_NOVA)
-pf_v = corre_com_gauge(tmp_velha, None, "Turbulence", None, active=False,
-                       historico=_HIST_V)
-eq(pf_v["current"]["newsletter_bucket_allocation_pct"], _MACRO_VIGOR,
-   "com a edicao N-1 por publicar, o motor le uma edicao velha — e NAO deixa "
-   "que ela substitua a macro registada na semana passada, que e mais recente "
-   "do que ela (e a tabela velha nem sequer e um eco: e uma macro genuina de "
-   "ha tres semanas)")
-true(not up.e_o_vector_de_crise(pf_v["current"]["bucket_allocation_pct"]),
-     f"e o que executa nao e um vector de crise "
-     f"({pf_v['current']['bucket_allocation_pct']})")
-shutil.rmtree(tmp_velha, ignore_errors=True)
-
-# ── 19k. O ECO chega ao motor, nao so a funcao ───────────────────────────
-#
-# As asserçoes acima sao sobre o `e_eco_do_vector_de_crise`. Estas sao sobre o
-# MOTOR: trocar a chamada por uma comparacao por igualdade deixava o eco
-# aproximado — um ponto percentual de desvio, que e o que um modelo produz —
-# entrar na memoria macro e ser executado a saida.
-tmp_ap = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                subregime="Critical_Stress", com_data=True)
-_p_ap = json.loads((tmp_ap / "portfolio.json").read_text())
-_p_ap["current"]["newsletter_bucket_allocation_pct"] = dict(_MACRO_VIGOR)
-(tmp_ap / "portfolio.json").write_text(json.dumps(_p_ap))
-_poe_edicao_com(tmp_ap, ISSUE - 1, ANTERIOR, _ECO_APROX)
-pf_ap = corre_com_gauge(tmp_ap, "STRESS", "Critical", "Critical_Stress")
-eq(pf_ap["current"]["newsletter_bucket_allocation_pct"], _MACRO_VIGOR,
-   f"um eco com um ponto percentual de desvio e reconhecido pelo MOTOR e a "
-   f"macro e retida ({pf_ap['current']['newsletter_bucket_allocation_pct']})")
-# E o eco fica DECLARADO no ficheiro, nao so no log: a edicao ja tinha dito aos
-# subscritores que aquela tabela era a alocacao que retoma, e sem esta marca a
-# semana seguinte executa percentagens que nenhuma edicao publicou, em silencio.
-eq(pf_ap["current"].get("macro_echo_discarded"), True,
-   f"e o motor DECLARA que descartou a tabela ({pf_ap['current'].get('macro_echo_discarded')})")
-eq(pf_ap["history"][-1].get("macro_echo_discarded"), True,
-   f"e a linha do historico tambem — e ela que fica como registo da semana "
-   f"({pf_ap['history'][-1].get('macro_echo_discarded')})")
-# E DE QUE edicao veio: "a semana passada" pode ser de ha tres semanas, porque
-# a edicao lida e a de maior numero no disco. Sem este campo, a edicao seguinte
-# afirmava, palavra por palavra, uma coisa que podia ser falsa.
-eq(pf_ap["current"].get("macro_echo_issue"), ISSUE - 1,
-   f"e o motor grava a edicao de onde veio o eco "
-   f"({pf_ap['current'].get('macro_echo_issue')})")
-eq(pf_ap["history"][-1].get("macro_echo_issue"), ISSUE - 1,
-   f"no historico tambem ({pf_ap['history'][-1].get('macro_echo_issue')})")
-pf_ap_saida = corre_com_gauge(tmp_ap, None, "Critical", "Critical_Stress",
-                              active=False)
-eq(pf_ap_saida["current"]["bucket_allocation_pct"], _MACRO_VIGOR,
-   "e a saida executa-se a macro, nao o eco aproximado")
-shutil.rmtree(tmp_ap, ignore_errors=True)
-
-# ── 19l. O regime da edicao LIDA sai do historico, nao do `was_regime` ────
-#
-# Os dois divergem numa re-corrida (o `main` ja tem a edicao N e o estado
-# anterior foi rebobinado) e sempre que a edicao N-1 nao foi publicada. Com o
-# `was_regime` a dizer Turbulence e a edicao lida escrita em Critical, o eco nao
-# era reconhecido e o vector de crise entrava na memoria macro.
-tmp_hl = estado(Path(tempfile.mkdtemp()), com_data=True)
-_p_hl = json.loads((tmp_hl / "portfolio.json").read_text())
-_p_hl["current"]["newsletter_bucket_allocation_pct"] = dict(_MACRO_VIGOR)
-_accoes_hl = dict(_p_hl["current"]["shares"])
-# o `current` (e portanto `was_regime`) diz Turbulence; o HISTORICO diz que a
-# edicao N-1 foi escrita com a carteira em Critical.
-_HIST_HL = [
-    _linha_hist(ISSUE - 2, "Turbulence", None, _MACRO_VIGOR, _accoes_hl),
-    _linha_hist(ISSUE - 1, "Critical", "Critical_Stress", _CS, _accoes_hl),
-]
-(tmp_hl / "portfolio.json").write_text(json.dumps(_p_hl))
-for _f_hl in tmp_hl.glob("MRM_Newsletter_Issue*_*.html"):
-    _f_hl.unlink()
-_poe_edicao_com(tmp_hl, ISSUE - 1, ANTERIOR, _ECO_APROX)
-pf_hl = corre_com_gauge(tmp_hl, None, "Turbulence", None, active=False,
-                        historico=_HIST_HL)
-eq(pf_hl["current"]["newsletter_bucket_allocation_pct"], _MACRO_VIGOR,
-   f"com o `current` a dizer Turbulence mas o HISTORICO a dizer que a edicao "
-   f"lida foi escrita em Critical, o eco e reconhecido na mesma "
-   f"({pf_hl['current']['newsletter_bucket_allocation_pct']})")
-shutil.rmtree(tmp_hl, ignore_errors=True)
-
-# E com o regime da semana lida DESCONHECIDO — sem entrada no historico e sem
-# macro registada para reter — nao se adopta a tabela: desconhecido nao e calmo.
-tmp_dh = estado(Path(tempfile.mkdtemp()), com_data=True)
-_p_dh = json.loads((tmp_dh / "portfolio.json").read_text())
-_p_dh["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_dh["current"]["bucket_allocation_pct"] = dict(_CS)
-_accoes_dh = dict(_p_dh["current"]["shares"])
-_HIST_DH = [_linha_hist(ISSUE - 1, "Critical", "Critical_Stress", _CS, _accoes_dh)]
-(tmp_dh / "portfolio.json").write_text(json.dumps(_p_dh))
-for _f_dh in tmp_dh.glob("MRM_Newsletter_Issue*_*.html"):
-    _f_dh.unlink()
-_poe_edicao_com(tmp_dh, ISSUE - 5, ANTERIOR, _ECO_APROX)
-pf_dh = corre_com_gauge(tmp_dh, None, "Turbulence", None, active=False,
-                        historico=_HIST_DH)
-true(not up.e_eco_do_vector_de_crise(
-        pf_dh["current"].get("newsletter_bucket_allocation_pct") or {}, None),
-     f"com o regime da edicao lida desconhecido, a tabela NAO e adoptada como "
-     f"macro ({pf_dh['current'].get('newsletter_bucket_allocation_pct')})")
-shutil.rmtree(tmp_dh, ignore_errors=True)
-
-# ── 19m. A macro reconstruida do historico passa pela validacao ──────────
-#
-# Era adoptada tal e qual, e o `rebalance_shares` renormaliza a 100 e executa:
-# uma entrada antiga com buckets em falta ou fora das bandas era negociada sem a
-# verificacao que qualquer alocacao publicada tem de passar.
-tmp_iv = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                subregime="Critical_Stress", com_data=True)
-_p_iv = json.loads((tmp_iv / "portfolio.json").read_text())
-_p_iv["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_iv["current"]["bucket_allocation_pct"] = dict(_CS)
-_accoes_iv = dict(_p_iv["current"]["shares"])
-_INVALIDA = {"US_EQUITIES": 90.0, "US_TREASURIES": 5.0, "IG_CREDIT": 5.0,
-             "COMMODITIES": 0.0, "CASH": 0.0, "ALTERNATIVES": 0.0}
-true(not rules.validate_allocation(_INVALIDA)[0],
-     "a alocacao do ensaio e mesmo invalida (90% em accoes)")
-_HIST_IV = [
-    _linha_hist(ISSUE - 4, "Turbulence", None, _MACRO_VIGOR, _accoes_iv),
-    _linha_hist(ISSUE - 3, "Turbulence", None, _INVALIDA, _accoes_iv),
-    _linha_hist(ISSUE - 2, "Critical", "Critical_Stress", _CS, _accoes_iv),
-    _linha_hist(ISSUE - 1, "Critical", "Critical_Stress", _CS, _accoes_iv),
-]
-(tmp_iv / "portfolio.json").write_text(json.dumps(_p_iv))
-_poe_edicao_com(tmp_iv, ISSUE - 1, ANTERIOR, _CS)
-pf_iv = corre_com_gauge(tmp_iv, "STRESS", "Critical", "Critical_Stress",
-                        historico=_HIST_IV)
-eq(pf_iv["current"]["newsletter_bucket_allocation_pct"], _MACRO_VIGOR,
-   f"a reconstrucao salta a entrada do historico que NAO passa a validacao e "
-   f"pega na anterior ({pf_iv['current']['newsletter_bucket_allocation_pct']})")
-shutil.rmtree(tmp_iv, ignore_errors=True)
-
-# ── 19n. Uma entrada de historico SEM `regime` e um regime DESCONHECIDO ───
-#
-# O comentario da guarda diz que desconhecido nao e calmo, mas o codigo so
-# tratava como desconhecida a entrada AUSENTE. Uma entrada presente sem o campo
-# `regime` — um portfolio.json editado a mao, que e o que o RUNBOOK manda fazer
-# numa recuperacao — dava `_reg_lido = None` com `_conhecido = True`, e a
-# guarda ficava desarmada. (Com a edicao lida a ser a N-1 o recurso ao
-# `was_regime` tapa o buraco, porque N-1 e por definicao a semana anterior; o
-# caso que fica a descoberto e o da edicao mais velha, que e quando `was_regime`
-# nao tem nada que ver com quem escreveu a tabela.)
-tmp_sr = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                subregime="Critical_Stress", com_data=True)
-_p_sr = json.loads((tmp_sr / "portfolio.json").read_text())
-_p_sr["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_sr["current"]["bucket_allocation_pct"] = dict(_CS)
-_accoes_sr = dict(_p_sr["current"]["shares"])
-_linha_sr = _linha_hist(ISSUE - 3, "Critical", "Critical_Stress", _CS, _accoes_sr)
-_linha_sr.pop("regime")
-_linha_sr.pop("regime_signalled", None)
-(tmp_sr / "portfolio.json").write_text(json.dumps(_p_sr))
-for _f_sr in tmp_sr.glob("MRM_Newsletter_Issue*_*.html"):
-    _f_sr.unlink()
-_poe_edicao_com(tmp_sr, ISSUE - 3, ANTERIOR, _CS)
-pf_sr = corre_com_gauge(tmp_sr, None, "Turbulence", None, active=False,
-                        historico=[_linha_sr])
-true(not up.e_o_vector_de_crise(
-        pf_sr["current"].get("newsletter_bucket_allocation_pct") or {}),
-     f"com a entrada do historico SEM `regime`, a guarda corre na mesma — "
-     f"desconhecido nao e calmo "
-     f"({pf_sr['current'].get('newsletter_bucket_allocation_pct')})")
-shutil.rmtree(tmp_sr, ignore_errors=True)
-
-# ── 19n-bis. E a GRAFIA do regime na entrada nao pode desarmar a guarda ──
-#
-# `_reg_lido == "Critical"` era uma igualdade exacta sobre o campo CRU. Era o
-# terceiro leitor deste campo — o `current` e a entrada da re-corrida ja tinham
-# ganho o normalizador — e e ele que ARMA a guarda do eco: com
-# `"Critical_Stress"` escrito na entrada (a forma longa que o proprio ficheiro
-# usa noutros sitios, e a que o site imprime), `_pode_ser_eco` ficava False, a
-# guarda desligava-se inteira, e a memoria macro passava a ser o vector de
-# crise. A saida de Critical o motor executava-o em instrumentos de Turbulence:
-# transaccao real, sem sinal nenhum a pedi-la, sem `macro_echo_discarded` e sem
-# uma linha de log — e a alocacao efectiva ficava a ser essa.
-for _grafia_g in ("Critical", "Critical_Stress", "Critical_FTQ", "critical",
-                  "CRITICAL", "Crisis"):
-    tmp_g = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                   subregime="Critical_Stress", com_data=True)
-    _p_g = json.loads((tmp_g / "portfolio.json").read_text())
-    _p_g["current"].pop("newsletter_bucket_allocation_pct", None)
-    _p_g["current"]["bucket_allocation_pct"] = dict(_CS)
-    _accoes_g = dict(_p_g["current"]["shares"])
-    _linha_g = _linha_hist(ISSUE - 3, "Critical", "Critical_Stress", _CS, _accoes_g)
-    _linha_g["regime"] = _grafia_g
-    (tmp_g / "portfolio.json").write_text(json.dumps(_p_g))
-    for _f_g in tmp_g.glob("MRM_Newsletter_Issue*_*.html"):
-        _f_g.unlink()
-    _poe_edicao_com(tmp_g, ISSUE - 3, ANTERIOR, _CS)
-    pf_g = corre_com_gauge(tmp_g, None, "Turbulence", None, active=False,
-                           historico=[_linha_g])
-    _macro_g = pf_g["current"].get("newsletter_bucket_allocation_pct") or {}
-    true(not up.e_o_vector_de_crise(_macro_g),
-         f"com o regime escrito {_grafia_g!r} na entrada, a guarda do eco "
-         f"corre na mesma — a grafia nao pode desarma-la ({_macro_g})")
-    eq(pf_g["current"].get("macro_echo_discarded"), True,
-       f"e o descarte fica DECLARADO ({_grafia_g!r}: "
-       f"{pf_g['current'].get('macro_echo_discarded')})")
-    shutil.rmtree(tmp_g, ignore_errors=True)
-# E com a entrada FORA de Critical, a guarda nao dispara — senao isto passava
-# com um motor que descarta sempre a tabela publicada.
-tmp_gt = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                subregime="Critical_Stress", com_data=True)
-_p_gt = json.loads((tmp_gt / "portfolio.json").read_text())
-_p_gt["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_gt["current"]["bucket_allocation_pct"] = dict(_CS)
-_accoes_gt = dict(_p_gt["current"]["shares"])
-_linha_gt = _linha_hist(ISSUE - 3, "Turbulence", None, _MACRO_VIGOR, _accoes_gt)
-(tmp_gt / "portfolio.json").write_text(json.dumps(_p_gt))
-for _f_gt in tmp_gt.glob("MRM_Newsletter_Issue*_*.html"):
-    _f_gt.unlink()
-_poe_edicao_com(tmp_gt, ISSUE - 3, ANTERIOR, _MACRO_VIGOR)
-pf_gt = corre_com_gauge(tmp_gt, None, "Turbulence", None, active=False,
-                        historico=[_linha_gt])
-eq(pf_gt["current"].get("newsletter_bucket_allocation_pct"), _MACRO_VIGOR,
-   f"com a entrada fora de Critical, a tabela publicada e adoptada "
-   f"({pf_gt['current'].get('newsletter_bucket_allocation_pct')})")
-true(not pf_gt["current"].get("macro_echo_discarded"),
-     "e nao ha descarte nenhum a declarar")
-shutil.rmtree(tmp_gt, ignore_errors=True)
-
-# ── 19n-ter. E a RECONSTRUCAO da macro tambem le o regime pelo normalizador ─
-#
-# `_h_ant.get("regime") != "Critical"` escolhe, do historico, "a ultima entrada
-# FORA de Critical" para reconstruir a macro. Com a forma longa escrita la, uma
-# entrada de CRISE passava por estar fora de Critical e a sua alocacao — o
-# vector defensivo — era adoptada como macro. So o `e_o_vector_de_crise` a
-# apanhava a seguir, por acaso e so enquanto a igualdade fosse exacta: um vector
-# ligeiramente diferente (o que uma versao anterior tenha escrito, ou uma
-# entrada com custos ja deduzidos) passava inteiro.
-_QUASE_CS = {k: (v + (1.0 if k == "CASH" else (-1.0 if k == "IG_CREDIT" else 0.0)))
-             for k, v in _CS.items()}
-for _grafia_r in ("Critical_Stress", "critical", "Crisis"):
-    tmp_r = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                   subregime="Critical_Stress", com_data=True)
-    _p_r = json.loads((tmp_r / "portfolio.json").read_text())
-    _p_r["current"].pop("newsletter_bucket_allocation_pct", None)
-    _p_r["current"]["bucket_allocation_pct"] = dict(_CS)
-    _accoes_r = dict(_p_r["current"]["shares"])
-    _hist_r = [
-        # A mais antiga, FORA de Critical: e esta a macro legitima.
-        _linha_hist(ISSUE - 3, "Turbulence", None, _MACRO_VIGOR, _accoes_r),
-        # E a mais recente, de CRISE, escrita com a grafia longa.
-        {**_linha_hist(ISSUE - 2, "Critical", "Critical_Stress", _QUASE_CS,
-                       _accoes_r), "regime": _grafia_r},
-    ]
-    (tmp_r / "portfolio.json").write_text(json.dumps(_p_r))
-    for _f_r in tmp_r.glob("MRM_Newsletter_Issue*_*.html"):
-        _f_r.unlink()
-    _poe_edicao_com(tmp_r, ISSUE - 1, ANTERIOR, _CS)
-    pf_r = corre_com_gauge(tmp_r, "STRESS", "Critical", "Critical_Stress",
-                           historico=_hist_r)
-    eq(pf_r["current"].get("newsletter_bucket_allocation_pct"), _MACRO_VIGOR,
-       f"com {_grafia_r!r} na entrada de crise, a reconstrucao SALTA-A e pega "
-       f"na ultima entrada mesmo fora de Critical "
-       f"({pf_r['current'].get('newsletter_bucket_allocation_pct')})")
-    shutil.rmtree(tmp_r, ignore_errors=True)
-
-# E uma entrada cujo regime nao se consegue ler DE TODO — sem sub-regime e sem
-# mapa — nao pode passar por "fora de Critical": desconhecido nao e calmo, que e
-# o principio que este modulo declara em todo o lado. Com `!= "Critical"`, a
-# alocacao dessa entrada era adoptada como macro sem que ninguem saiba de que
-# semana ela e.
-tmp_u = estado(Path(tempfile.mkdtemp()), regime="Critical",
-               subregime="Critical_Stress", com_data=True)
-_p_u = json.loads((tmp_u / "portfolio.json").read_text())
-_p_u["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_u["current"]["bucket_allocation_pct"] = dict(_CS)
-_accoes_u = dict(_p_u["current"]["shares"])
-_OUTRA_MACRO = {"US_EQUITIES": 30.0, "US_TREASURIES": 20.0, "IG_CREDIT": 15.0,
-                "COMMODITIES": 10.0, "CASH": 20.0, "ALTERNATIVES": 5.0}
-_linha_u = _linha_hist(ISSUE - 2, "Turbulence", None, _OUTRA_MACRO, _accoes_u)
-_linha_u["regime"] = "?????"
-_linha_u.pop("critical_subregime", None)
-_linha_u.pop("active_etf_map", None)
-_hist_u = [_linha_hist(ISSUE - 3, "Turbulence", None, _MACRO_VIGOR, _accoes_u),
-           _linha_u]
-(tmp_u / "portfolio.json").write_text(json.dumps(_p_u))
-for _f_u in tmp_u.glob("MRM_Newsletter_Issue*_*.html"):
-    _f_u.unlink()
-_poe_edicao_com(tmp_u, ISSUE - 1, ANTERIOR, _CS)
-pf_u = corre_com_gauge(tmp_u, "STRESS", "Critical", "Critical_Stress",
-                       historico=_hist_u)
-eq(pf_u["current"].get("newsletter_bucket_allocation_pct"), _MACRO_VIGOR,
-   f"uma entrada com o regime ilegivel NAO passa por fora de Critical — "
-   f"desconhecido nao e calmo "
-   f"({pf_u['current'].get('newsletter_bucket_allocation_pct')})")
-shutil.rmtree(tmp_u, ignore_errors=True)
-
-# ── 19n-quater. Uma entrada PRESENTE com o regime ilegivel e desconhecida ─
-#
-# `_conhecido = _reg_lido is not None` e o que faz "presente mas ilegivel" cair
-# no ramo do desconhecido, e desconhecido nao e calmo: compara-se com TODOS os
-# vectores de crise. Marca-la como conhecida punha `_pode_ser_eco` a False e
-# desarmava a guarda inteira — o mesmo estrago que a grafia fazia, por outra
-# porta. Aqui a entrada existe e traz um regime que ninguem consegue ler, sem
-# sub-regime e sem mapa que o identifiquem.
-tmp_ci = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                subregime="Critical_Stress", com_data=True)
-_p_ci = json.loads((tmp_ci / "portfolio.json").read_text())
-_p_ci["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_ci["current"]["bucket_allocation_pct"] = dict(_CS)
-_accoes_ci = dict(_p_ci["current"]["shares"])
-_linha_ci = _linha_hist(ISSUE - 3, "Critical", "Critical_Stress", _CS, _accoes_ci)
-_linha_ci["regime"] = "?????"
-_linha_ci.pop("critical_subregime", None)
-_linha_ci.pop("active_etf_map", None)
-_linha_ci.pop("regime_signalled", None)
-(tmp_ci / "portfolio.json").write_text(json.dumps(_p_ci))
-for _f_ci in tmp_ci.glob("MRM_Newsletter_Issue*_*.html"):
-    _f_ci.unlink()
-_poe_edicao_com(tmp_ci, ISSUE - 3, ANTERIOR, _CS)
-pf_ci = corre_com_gauge(tmp_ci, None, "Turbulence", None, active=False,
-                        historico=[_linha_ci])
-true(not up.e_o_vector_de_crise(
-        pf_ci["current"].get("newsletter_bucket_allocation_pct") or {}),
-     f"com a entrada PRESENTE e o regime ilegivel, a guarda corre na mesma "
-     f"({pf_ci['current'].get('newsletter_bucket_allocation_pct')})")
-eq(pf_ci["current"].get("macro_echo_discarded"), True,
-   f"e o descarte fica declarado ({pf_ci['current'].get('macro_echo_discarded')})")
-shutil.rmtree(tmp_ci, ignore_errors=True)
-
-# ── 19n-quinquies. A reconstrucao pega na ULTIMA fora de Critical ─────────
-#
-# `reversed(history)` e o que faz "a ultima" ser a ultima. Sem ele, num
-# historico real — em que cada semana calma escreve a sua alocacao — a saida de
-# Critical executava a macro da PRIMEIRA semana do historico, de ha meses,
-# publicada como se fosse a que estava em vigor.
-_MACRO_VELHA = {"US_EQUITIES": 40.0, "US_TREASURIES": 15.0, "IG_CREDIT": 15.0,
-                "COMMODITIES": 10.0, "CASH": 15.0, "ALTERNATIVES": 5.0}
-tmp_rv = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                subregime="Critical_Stress", com_data=True)
-_p_rv = json.loads((tmp_rv / "portfolio.json").read_text())
-_p_rv["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_rv["current"]["bucket_allocation_pct"] = dict(_CS)
-_accoes_rv = dict(_p_rv["current"]["shares"])
-_hist_rv = [
-    _linha_hist(ISSUE - 5, "Turbulence", None, _MACRO_VELHA, _accoes_rv),
-    _linha_hist(ISSUE - 4, "Turbulence", None, _MACRO_VIGOR, _accoes_rv),
-    _linha_hist(ISSUE - 2, "Critical", "Critical_Stress", _CS, _accoes_rv),
-]
-(tmp_rv / "portfolio.json").write_text(json.dumps(_p_rv))
-for _f_rv in tmp_rv.glob("MRM_Newsletter_Issue*_*.html"):
-    _f_rv.unlink()
-_poe_edicao_com(tmp_rv, ISSUE - 1, ANTERIOR, _CS)
-pf_rv = corre_com_gauge(tmp_rv, "STRESS", "Critical", "Critical_Stress",
-                        historico=_hist_rv)
-eq(pf_rv["current"].get("newsletter_bucket_allocation_pct"), _MACRO_VIGOR,
-   f"a reconstrucao pega na ULTIMA semana fora de Critical, nao na primeira "
-   f"({pf_rv['current'].get('newsletter_bucket_allocation_pct')})")
-shutil.rmtree(tmp_rv, ignore_errors=True)
-
-# ── 19o. O ULTIMO recurso da cadeia tambem nao pode ser o vector de crise ─
-#
-# Quarenta linhas acima o motor recusa deliberadamente adoptar a alocacao
-# efectiva como macro quando ela e um vector de crise. O ultimo `or` da cadeia
-# fazia exactamente isso outra vez, sem o filtro — latente ate ao dia em que o
-# historico for compactado, que o proprio motor antecipa.
-tmp_ur = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                subregime="Critical_Stress", com_data=True)
-_p_ur = json.loads((tmp_ur / "portfolio.json").read_text())
-_p_ur["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_ur["current"]["bucket_allocation_pct"] = dict(_CS)
-_accoes_ur = dict(_p_ur["current"]["shares"])
-(tmp_ur / "portfolio.json").write_text(json.dumps(_p_ur))
-# historico COMPACTADO: so entradas de Critical, nada de onde reconstruir
-_HIST_UR = [_linha_hist(ISSUE - 1, "Critical", "Critical_Stress", _CS, _accoes_ur)]
-# e SEM edicao legivel nenhuma: a tabela nao chega a existir
-for _f_ur in tmp_ur.glob("MRM_Newsletter_Issue*_*.html"):
-    _f_ur.unlink()
-pf_ur = corre_com_gauge(tmp_ur, None, "Critical", "Critical_Stress",
-                        active=False, historico=_HIST_UR)
-true(not up.e_o_vector_de_crise(
-        pf_ur["current"].get("newsletter_bucket_allocation_pct") or {}),
-     f"sem tabela, sem campo e com o historico compactado, o ultimo recurso da "
-     f"cadeia NAO adopta o vector de crise como macro "
-     f"({pf_ur['current'].get('newsletter_bucket_allocation_pct')})")
-shutil.rmtree(tmp_ur, ignore_errors=True)
-
-# ── 19h. Sem memoria macro registada, nao se INVENTA uma ─────────────────
-#
-# O `portfolio.json` commitado nao trazia `newsletter_bucket_allocation_pct` no
-# bloco `current`. Com o campo vazio, o recurso natural — a alocacao efectiva —
-# e, em Critical, o proprio vector de crise: reintroduzia o defeito por uma
-# porta lateral, e em silencio. Sem macro registada e com a efectiva a ser um
-# vector de crise, e melhor nao ter memoria do que ter uma memoria falsa.
-tmp_sem = estado(Path(tempfile.mkdtemp()), regime="Critical",
+# A carteira esta em Critical_Stress e a edicao N-1 publica o vector de crise —
+# o "eco" que catorze regressoes existiam para apanhar. A saida, o que se
+# executa nao e esse vector: e o de Turbulence, das regras.
+tmp_eco = estado(Path(tempfile.mkdtemp()), regime="Critical",
                  subregime="Critical_Stress", com_data=True)
-_p_sem = json.loads((tmp_sem / "portfolio.json").read_text())
-_p_sem["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_sem["current"]["bucket_allocation_pct"] = dict(
-    rules.CRITICAL_WEIGHTS["Critical_Stress"])
-(tmp_sem / "portfolio.json").write_text(json.dumps(_p_sem))
-_poe_edicao_com(tmp_sem, ISSUE - 1, ANTERIOR,
-                rules.CRITICAL_WEIGHTS["Critical_Stress"])
-pf_sem = corre_com_gauge(tmp_sem, "STRESS", "Critical", "Critical_Stress")
-_macro_sem = pf_sem["current"].get("newsletter_bucket_allocation_pct") or {}
-true(not up.e_o_vector_de_crise(_macro_sem, "Critical_Stress"),
-     f"sem memoria macro registada, o motor NAO adopta o vector de crise como "
-     f"macro ({_macro_sem})")
-# E tem de reconstruir uma: deixa-la VAZIA seria o erro simetrico — sem
-# alocacao macro a carteira nao consegue SAIR de Critical e fica presa nos
-# instrumentos de crise, que e o oposto do que a guarda existe para conseguir.
-# A macro deriva-se do historico: por definicao, a ultima alocacao executada
-# fora de Critical. Nao se inventa nada, le-se o que ja la esta.
-true(_macro_sem,
-     f"e reconstroi-a do historico em vez de a deixar vazia ({_macro_sem})")
-eq(round(sum(_macro_sem.values())), 100,
-   f"e a macro reconstruida e uma alocacao completa ({_macro_sem})")
-pf_sem_saida = corre_com_gauge(tmp_sem, None, "Critical", "Critical_Stress",
+_poe_edicao_com(tmp_eco, ISSUE - 1, ANTERIOR, rules.CRITICAL_WEIGHTS["Critical_Stress"])
+pf_eco_saida = corre_com_gauge(tmp_eco, None, "Critical", "Critical_Stress",
                                active=False)
-eq(pf_sem_saida["current"]["regime"], "Turbulence",
-   "e a carteira consegue SAIR de Critical — sem macro nenhuma ficava presa "
-   "nos instrumentos de crise indefinidamente")
-true(not up.e_o_vector_de_crise(
-        pf_sem_saida["current"]["bucket_allocation_pct"]),
-     f"e o que executa a saida nao e um vector de crise "
-     f"({pf_sem_saida['current']['bucket_allocation_pct']})")
-shutil.rmtree(tmp_sem, ignore_errors=True)
+eq(pf_eco_saida["current"]["regime"], "Turbulence",
+   "o medidor desligado tira a carteira de Critical")
+eq(pf_eco_saida["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "e o que se executa a saida e o vector das regras, nao a tabela da edicao")
+true(pf_eco_saida["current"]["bucket_allocation_pct"] != dict(_CS),
+     "que era o eco que catorze guardas existiam para impedir")
+shutil.rmtree(tmp_eco, ignore_errors=True)
 
-# E a reconstrucao le a ultima entrada FORA de Critical, nao simplesmente a
-# ultima: com a carteira ja ha semanas em Critical, a entrada mais recente traz
-# o vector de crise, e aceita-la reintroduzia o defeito pela porta do historico.
-tmp_sem2 = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                  subregime="Critical_Stress", com_data=True)
-_p_s2 = json.loads((tmp_sem2 / "portfolio.json").read_text())
-_p_s2["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_s2["current"]["bucket_allocation_pct"] = dict(
-    rules.CRITICAL_WEIGHTS["Critical_Stress"])
-_MACRO_HIST = {"US_EQUITIES": 20.0, "US_TREASURIES": 25.0, "IG_CREDIT": 15.0,
-               "COMMODITIES": 10.0, "CASH": 20.0, "ALTERNATIVES": 10.0}
-_linha_h = lambda n_, reg, sub, al: {
-    "issue": n_, "date": D_ANTERIOR, "regime": reg, "regime_signalled": reg,
-    "critical_subregime": sub, "rebalance_triggered": False,
-    "rebalance_reason": "hold", "mrm_score": 6.9, "portfolio_value": 10000.0,
-    "portfolio_pnl_pct": 0.0, "bucket_allocation_pct": dict(al),
-    "shares": dict(_p_s2["current"]["shares"])}
-_p_s2["history"] = [
-    _linha_h(ISSUE - 3, "Turbulence", None, _MACRO_HIST),
-    _linha_h(ISSUE - 2, "Critical", "Critical_Stress",
-             rules.CRITICAL_WEIGHTS["Critical_Stress"]),
-    _linha_h(ISSUE - 1, "Critical", "Critical_Stress",
-             rules.CRITICAL_WEIGHTS["Critical_Stress"]),
-]
-(tmp_sem2 / "portfolio.json").write_text(json.dumps(_p_s2))
-_poe_edicao_com(tmp_sem2, ISSUE - 1, ANTERIOR,
-                rules.CRITICAL_WEIGHTS["Critical_Stress"])
-pf_s2 = corre_com_gauge(tmp_sem2, "STRESS", "Critical", "Critical_Stress")
-eq(pf_s2["current"].get("newsletter_bucket_allocation_pct"), _MACRO_HIST,
-   "a reconstrucao salta as entradas de Critical e pega na ultima alocacao "
-   "executada FORA dele")
-shutil.rmtree(tmp_sem2, ignore_errors=True)
+# E o mesmo com uma tabela ABSURDA: 95% em accoes publicado na edicao N-1 nao
+# move a carteira um ponto. Antes, uma tabela dentro das bandas era executada
+# tal e qual no semestral seguinte.
+tmp_abs = estado(Path(tempfile.mkdtemp()), regime="Critical",
+                 subregime="Critical_Stress", com_data=True)
+_poe_edicao_com(tmp_abs, ISSUE - 1, ANTERIOR,
+                {"US_EQUITIES": 95.0, "US_TREASURIES": 1.0, "IG_CREDIT": 1.0,
+                 "COMMODITIES": 1.0, "CASH": 1.0, "ALTERNATIVES": 1.0})
+pf_abs = corre_com_gauge(tmp_abs, None, "Critical", "Critical_Stress", active=False)
+eq(pf_abs["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "uma tabela absurda na edicao nao muda o que a carteira executa")
+shutil.rmtree(tmp_abs, ignore_errors=True)
 
-# E quando nao ha NADA — sem campo, sem historico utilizavel, e com a efectiva
-# a ser o proprio vector de crise — nao se inventa: a macro fica vazia. Adoptar
-# o vector de crise seria gravar como "alocacao a retomar" exactamente aquilo
-# de que a carteira tem de sair.
-tmp_sem3 = estado(Path(tempfile.mkdtemp()), regime="Critical",
-                  subregime="Critical_Stress", com_data=True)
-_p_s3 = json.loads((tmp_sem3 / "portfolio.json").read_text())
-_p_s3["current"].pop("newsletter_bucket_allocation_pct", None)
-_p_s3["current"]["bucket_allocation_pct"] = dict(
-    rules.CRITICAL_WEIGHTS["Critical_Stress"])
-_p_s3["history"] = [{**h, "regime": "Critical",
-                     "critical_subregime": "Critical_Stress",
-                     "bucket_allocation_pct":
-                         dict(rules.CRITICAL_WEIGHTS["Critical_Stress"])}
-                    for h in _p_s3["history"]]
-(tmp_sem3 / "portfolio.json").write_text(json.dumps(_p_s3))
-_poe_edicao_com(tmp_sem3, ISSUE - 1, ANTERIOR,
-                rules.CRITICAL_WEIGHTS["Critical_Stress"])
-pf_s3 = corre_com_gauge(tmp_sem3, "STRESS", "Critical", "Critical_Stress")
-true(not up.e_o_vector_de_crise(
-        pf_s3["current"].get("newsletter_bucket_allocation_pct") or {},
-        "Critical_Stress"),
-     f"sem nada de onde reconstruir, a macro NAO passa a ser o vector de crise "
-     f"({pf_s3['current'].get('newsletter_bucket_allocation_pct')})")
-shutil.rmtree(tmp_sem3, ignore_errors=True)
-
-shutil.rmtree(tmp_ftq2, ignore_errors=True)
+# E sem edicao NENHUMA no disco a carteira executa a mesma coisa. Era este o
+# caso que cancelava o rebalanceamento semestral e adiava seis meses.
+tmp_sem_ed = estado(Path(tempfile.mkdtemp()), regime="Critical",
+                    subregime="Critical_Stress", com_data=True)
+for _f_se in tmp_sem_ed.glob("MRM_Newsletter_Issue*_*.html"):
+    _f_se.unlink()
+pf_sem_ed = corre_com_gauge(tmp_sem_ed, None, "Critical", "Critical_Stress",
+                            active=False)
+eq(pf_sem_ed["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "sem edicao nenhuma para ler, a carteira executa o vector do regime")
+shutil.rmtree(tmp_sem_ed, ignore_errors=True)
 
 # ── 19e. Re-corrida COM a edicao N-1: a porta decide-se pelo estado de N-1 ─
 # Este e o defeito original, na sua forma exacta: correr o job outra vez fazia
@@ -2136,14 +1496,67 @@ eq(next(h for h in pf_rw["history"] if h.get("issue") == ISSUE)["rebalance_reaso
    "stress_on", "e o motivo original da semana continua la")
 shutil.rmtree(tmp_rw, ignore_errors=True)
 
-# ── 19f. O semestral aplica ESTA alocacao, ou nao aplica nenhuma ──────────
-# A newsletter diz aos subscritores, a letra, que quando a tabela de alocacao
-# nao passa na validacao "o motor mantem as posicoes no proximo rebalanceamento
-# programado". Nao mantinha: a cadeia de recurso
-# (`bucket_alloc or newsletter_bucket_allocation_pct or bucket_allocation_pct`)
-# fazia com que quase nunca ficasse vazia, e o semestral executava as
-# percentagens de uma edicao anterior — uma instrucao que ninguem publicou nesta
-# semana — enquanto o site afirmava o contrario.
+# ── 19p. A adopcao dos pesos: acontece uma vez, no motor, e desliga-se ────
+#
+# A forma EXECUTADA da transicao. Nao chega o predicado dizer que ha pesos por
+# adoptar: o que interessa e o motor pegar nisso sozinho, numa sexta normal, sem
+# ninguem disparar nada — e nao voltar a faze-lo nunca mais.
+tmp_ad = estado(Path(tempfile.mkdtemp()), com_data=True)
+_p_ad = json.loads((tmp_ad / "portfolio.json").read_text())
+_ANTIGA = {"US_EQUITIES": 10.0, "US_TREASURIES": 20.0, "IG_CREDIT": 15.0,
+           "COMMODITIES": 15.0, "CASH": 30.0, "ALTERNATIVES": 10.0}
+_p_ad["current"]["bucket_allocation_pct"] = dict(_ANTIGA)
+_p_ad["current"].pop("regime_weights_adopted", None)   # como esta hoje em producao
+(tmp_ad / "portfolio.json").write_text(json.dumps(_p_ad))
+
+pf_ad = corre_com_gauge(tmp_ad, None, "Turbulence", None, active=False)
+_h_ad = pf_ad["history"][-1]
+eq(_h_ad["rebalance_reason"], "adopt_regime_weights",
+   "numa sexta calma, o motor adopta os pesos do regime sozinho")
+eq(_h_ad["rebalance_triggered"], True, "e negoceia mesmo")
+eq(pf_ad["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "a carteira fica com o vector do regime")
+eq(pf_ad["current"].get("regime_weights_adopted"), True,
+   "e a marca fica escrita no ficheiro")
+
+# Segunda corrida, semana seguinte: NAO volta a acontecer. Era o risco todo —
+# um gatilho que se re-arma e um rebalanceador semanal disfarcado de migracao.
+_p_ad2 = json.loads((tmp_ad / "portfolio.json").read_text())
+_p_ad2["current"]["issue"] = _p_ad2["current"]["issue"] - 1
+_p_ad2["current"]["date"] = D_ANTERIOR
+# e com a carteira JA a derivar do alvo, para provar que nao e deriva que a arma
+_p_ad2["current"]["bucket_allocation_pct"] = {
+    b: v + (4.0 if b == "US_EQUITIES" else -0.8)
+    for b, v in rules.REGIME_WEIGHTS["Turbulence"].items()}
+_p_ad2["history"] = [h for h in _p_ad2["history"] if h.get("issue", 0) < _p_ad2["current"]["issue"]]
+(tmp_ad / "portfolio.json").write_text(json.dumps(_p_ad2))
+pf_ad2 = corre_com_gauge(tmp_ad, None, "Turbulence", None, active=False)
+eq(pf_ad2["history"][-1]["rebalance_reason"], "hold",
+   "na semana seguinte nao ha adopcao nenhuma — a marca desligou-a")
+eq(pf_ad2["history"][-1]["rebalance_triggered"], False,
+   "e nao se negoceia por deriva: isto nunca foi um rebalanceador de deriva")
+shutil.rmtree(tmp_ad, ignore_errors=True)
+
+# E uma carteira ja alinhada, sem marca nenhuma, tambem nao dispara: o predicado
+# olha para os numeros, nao so para a marca.
+tmp_al = estado(Path(tempfile.mkdtemp()), com_data=True)
+_p_al = json.loads((tmp_al / "portfolio.json").read_text())
+_p_al["current"]["bucket_allocation_pct"] = dict(rules.REGIME_WEIGHTS["Turbulence"])
+_p_al["current"].pop("regime_weights_adopted", None)
+(tmp_al / "portfolio.json").write_text(json.dumps(_p_al))
+pf_al = corre_com_gauge(tmp_al, None, "Turbulence", None, active=False)
+eq(pf_al["history"][-1]["rebalance_reason"], "hold",
+   "uma carteira ja no vector do regime nao adopta nada")
+shutil.rmtree(tmp_al, ignore_errors=True)
+
+# ── 19f. O semestral acontece, leia-se a edicao ou nao ────────────────────
+# Ate Set 2026 o semestral existia para aplicar as percentagens publicadas NESTA
+# edicao, e por isso era cancelado quando a edicao certa nao era legivel: aplicar
+# as de outra semana era negociar sobre uma instrucao que ninguem deu. Deixou de
+# haver instrucao para ler — o semestral aplica o vector do regime — e o que se
+# testa agora e o simetrico: uma newsletter falhada JA NAO adia seis meses o
+# unico rebalanceamento programado do ano.
 # A semana semestral sai da propria regra publicada, a contar da sexta ensaiada
 # — nao de uma data escrita a mao, que caduca quando o repositorio a ultrapassa.
 SEXTA_SEM = rules.next_semestral_date(SEXTA + _td_topo(days=1))
@@ -2195,9 +1608,11 @@ def prep_semestral(tmp):
         "shares": {t: 10.0 for t in _mapa.values()},
         "last_prices": {t: PRECOS.get(t, 100.0) for t in _mapa.values()},
         "last_price_dates": {t: SEXTA_SEM.isoformat() for t in _mapa.values()},
-        "bucket_allocation_pct": {"US_EQUITIES": 20.0, "US_TREASURIES": 25.0,
-                                  "IG_CREDIT": 15.0, "COMMODITIES": 12.0,
-                                  "CASH": 20.0, "ALTERNATIVES": 8.0},
+        # Pos-migracao: a carteira ja tem o vector do regime, e o que este
+        # ensaio mede e o SEMESTRAL. Com os pesos anteriores, quem disparava era
+        # a adopcao e o teste passava a medir outra coisa.
+        "bucket_allocation_pct": dict(rules.REGIME_WEIGHTS["Turbulence"]),
+        "regime_weights_adopted": True,
         "newsletter_bucket_allocation_pct": {"US_EQUITIES": 20.0, "US_TREASURIES": 25.0,
                                              "IG_CREDIT": 15.0, "COMMODITIES": 12.0,
                                              "CASH": 20.0, "ALTERNATIVES": 8.0},
@@ -2223,12 +1638,14 @@ tmp_sem = Path(tempfile.mkdtemp())
 _accoes_sem = prep_semestral(tmp_sem)
 pf_sem = corre_semestral(tmp_sem, com_newsletter_legivel=False)
 h_sem = pf_sem["history"][-1]
-eq(h_sem["rebalance_reason"], "stale_allocation_held",
-   "sem alocacao legivel desta edicao, o semestral e CANCELADO")
-eq(h_sem["rebalance_triggered"], False, "e nao e marcado como executado")
-eq(pf_sem["current"]["shares"], _accoes_sem,
-   "as posicoes ficam como estavam — nada foi negociado sobre uma instrucao "
-   "de uma edicao anterior")
+eq(h_sem["rebalance_reason"], "semestral_rebalance",
+   "sem alocacao legivel nenhuma, o semestral acontece na mesma")
+eq(h_sem["rebalance_triggered"], True, "e e executado")
+eq(pf_sem["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "com o vector do regime, que e o que ele aplica")
+true(pf_sem["current"]["shares"] != _accoes_sem,
+     "e as posicoes mudam mesmo — nao e um semestral no papel")
 shutil.rmtree(tmp_sem, ignore_errors=True)
 
 # E com a edicao CERTA legivel, o semestral executa normalmente.
@@ -2258,10 +1675,14 @@ escreve_edicao(tmp_sem2, ISSUE_SEMESTRAL - 1)
 pf_sem2 = corre_semestral(tmp_sem2, com_newsletter_legivel=True)
 h_sem2 = pf_sem2["history"][-1]
 eq(h_sem2["rebalance_reason"], "semestral_rebalance",
-   "com a alocacao da edicao N-1 legivel, o semestral acontece")
+   "com a edicao N-1 legivel, o semestral acontece")
 eq(h_sem2["rebalance_triggered"], True, "e e executado")
-eq(round(pf_sem2["current"]["bucket_allocation_pct"]["US_EQUITIES"], 1), 35.0,
-   "com as percentagens dessa edicao")
+eq(pf_sem2["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "com o vector do regime — e NAO com os 35% que a edicao publicou")
+eq(pf_sem["current"]["bucket_allocation_pct"],
+   pf_sem2["current"]["bucket_allocation_pct"],
+   "com edicao ou sem ela, a carteira acaba exactamente igual")
 shutil.rmtree(tmp_sem2, ignore_errors=True)
 
 # E com uma edicao ANTIGA no disco — a N-3, porque a N-1 nunca chegou a ser
@@ -2276,12 +1697,15 @@ escreve_edicao(tmp_sem3, ISSUE_SEMESTRAL - 3,
                       ("Cash", 10), ("Alternatives", 5)])
 pf_sem3 = corre_semestral(tmp_sem3, com_newsletter_legivel=True)
 h_sem3 = pf_sem3["history"][-1]
-eq(h_sem3["rebalance_reason"], "stale_allocation_held",
-   f"com so a edicao N-3 no disco, o semestral e cancelado "
+eq(h_sem3["rebalance_reason"], "semestral_rebalance",
+   f"com so a edicao N-3 no disco, o semestral acontece na mesma "
    f"(obtido {h_sem3['rebalance_reason']})")
-eq(h_sem3["rebalance_triggered"], False, "e nao e executado")
+eq(h_sem3["rebalance_triggered"], True, "e e executado")
 true(round(pf_sem3["current"]["bucket_allocation_pct"].get("US_EQUITIES", 0), 1) != 55.0,
      "e as percentagens de ha tres semanas NAO foram aplicadas")
+eq(pf_sem3["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "porque nenhuma edicao aplica percentagens nenhumas")
 shutil.rmtree(tmp_sem3, ignore_errors=True)
 
 # E uma MUDANCA DE REGIME nao e cancelada pela mesma razao: a carteira nao pode
@@ -2560,9 +1984,13 @@ for _nome, _fmt in (("seta", lambda a, b: f"{a}% \u2192 {b}%"),
     eq(_np_a.parse_allocation(_tab_celula(_fmt))[0], {},
        f"uma celula com duas percentagens ({_nome}) NAO e lida como a primeira")
 
-# ── 19l. Publica-se a alocacao EXECUTADA, nao a tabela em bruto ─────────
-# O dinheiro ficava certo (rebalance_shares renormaliza) e o registo dele nao:
-# o site desenhava barras e um donut a somar 96% ao lado de uma carteira a 100.
+# ── 19l. Publica-se a alocacao EXECUTADA, e ela soma 100 ────────────────
+# O dinheiro ficava certo (rebalance_shares renormaliza) e o registo dele nao: o
+# site desenhava barras e um donut a somar 96% ao lado de uma carteira a 100,
+# porque a tabela da edicao entrava em bruto no `bucket_allocation_pct`.
+# Desde que os pesos vem das regras nao ha tabela em bruto para entrar — mas a
+# propriedade que interessa (o que se PUBLICA e o que se EXECUTA, e soma 100)
+# fica a ser verificada, porque e sobre ela que o site desenha.
 tmp_ren = Path(tempfile.mkdtemp())
 prep_semestral(tmp_ren)
 escreve_edicao(tmp_ren, ISSUE_SEMESTRAL - 1,
@@ -2571,16 +1999,17 @@ escreve_edicao(tmp_ren, ISSUE_SEMESTRAL - 1,
                       ("Cash", 20), ("Alternatives", 10)])   # soma 96
 pf_ren = corre_semestral(tmp_ren, com_newsletter_legivel=True)
 _h_ren = pf_ren["history"][-1]
-eq(_h_ren["rebalance_reason"], "semestral_rebalance", "a tabela a somar 96 e aceite")
+eq(_h_ren["rebalance_reason"], "semestral_rebalance",
+   "uma tabela a somar 96 na edicao nao impede nem altera o semestral")
 _soma_pub = sum(pf_ren["current"]["bucket_allocation_pct"].values())
 true(abs(_soma_pub - 100.0) < 0.01,
      f"e a alocacao publicada soma 100, como a carteira (obtido {_soma_pub:.2f})")
 _valor = sum(q * PRECOS.get(t, 100.0) for t, q in pf_ren["current"]["shares"].items())
 true(abs(_valor - _h_ren["portfolio_value"]) < 1.0,
      f"e o valor bate com as accoes ({_valor:.2f} vs {_h_ren['portfolio_value']})")
-eq(round(pf_ren["current"]["bucket_allocation_pct"]["US_EQUITIES"], 1),
-   round(16.0 / 96.0 * 100, 1),
-   "com os pesos relativos que a edicao pediu")
+eq(pf_ren["current"]["bucket_allocation_pct"],
+   dict(rules.REGIME_WEIGHTS["Turbulence"]),
+   "e o que se publica e o vector do regime, nao os 16% que a edicao pediu")
 shutil.rmtree(tmp_ren, ignore_errors=True)
 
 # E a PROPRIEDADE, corrida sobre o motor inteiro: com um pilar fora do composto
@@ -2699,9 +2128,11 @@ for _mau in ("FTQ", "STRESS", "critical_ftq", "Critical_Ftq", "Turbulence",
         "Critical", _mau, {"US_EQUITIES": 60.0, "US_TREASURIES": 10.0,
                            "IG_CREDIT": 10.0, "COMMODITIES": 5.0,
                            "CASH": 10.0, "ALTERNATIVES": 5.0})
-    true(_origem.startswith("critical override"),
-         f"e a alocacao vem do vector de crise, nao da newsletter "
+    true(_origem == f"rules ({_chave})",
+         f"e a alocacao vem do vector de crise das regras, nao da newsletter "
          f"({_mau!r} -> {_origem})")
+    eq(_alloc, dict(rules.CRITICAL_WEIGHTS[_chave]),
+       f"e e mesmo o vector dessa chave ({_mau!r})")
     _tk = set(rules.get_active_tickers("Critical", _mau))
     true(_tk != set(rules.REGIME_ETF_MAP["Turbulence"].values()),
          f"e o mapa NAO e o de Turbulence ({_mau!r} -> {sorted(_tk)})")

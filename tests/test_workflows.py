@@ -722,6 +722,23 @@ _recusa(so_a_instalacao_precede_o_portao, {}, "ensaio",
 # E a isencao do relatorio nao pode alargar-se: cada uma das tres condicoes,
 # sozinha, tem de a negar.
 _ALERTA_REAL = W["friday-pipeline"]["jobs"]["alert-on-failure"]
+
+# ── o alerta tem de CHEGAR a alguem, nao so de existir ────────────────────
+#
+# O repositorio esta em "Watch: Participating and @mentions". Um issue aberto
+# pelo github-actions[bot] nao e participacao de ninguem: sem uma mencao, o
+# alerta das 22:00 de sexta e um issue que fica no GitHub a espera de ser
+# descoberto, e a unica coisa que avisa que a semana falhou e a newsletter nao
+# ter chegado. A mencao e o que faz a notificacao sair — por e-mail e por push
+# — sem depender de uma definicao da conta que pode mudar sem ninguem dar por
+# isso.
+_script_alerta = "\n".join(
+    (_p.get("with") or {}).get("script") or "" for _p in _ALERTA_REAL["steps"])
+true("@${context.repo.owner}" in _script_alerta,
+     "o issue de alerta menciona o dono — senao a notificacao nao sai")
+true("RUNBOOK" in _script_alerta,
+     "e remete para o RUNBOOK, que e o que diz o que fazer a seguir")
+
 true(_e_job_de_relatorio(_ALERTA_REAL),
      "o job de alerta REAL e reconhecido como relatorio — senao esta regra "
      "estaria verde por nunca isentar ninguem")

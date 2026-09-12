@@ -336,7 +336,10 @@ def verifica(r, nome, stress, antes):
     _mudou_sub = cur.get("critical_subregime") != antes["critical_subregime"]
     if h["rebalance_triggered"]:
         _transicao = ("stress_on", "stress_off", "stress_off_to_resilient",
-                      "resilient_off", "semestral_rebalance")
+                      "resilient_off", "semestral_rebalance",
+                      # A adopcao unica dos pesos do regime tambem negoceia, e
+                      # tambem sem mudanca de regime: e uma transicao declarada.
+                      "adopt_regime_weights")
         true(_motivo in _transicao or _motivo.startswith("critical_subregime_switch")
              or _motivo.startswith("emergency_resilient"),
              f"{nome}: uma semana que negoceia declara um motivo de transiccao "
@@ -345,7 +348,7 @@ def verifica(r, nome, stress, antes):
             true(_motivo != "semestral_rebalance",
                  f"{nome}: uma mudanca de regime nao se chama semestral ({_motivo})")
         else:
-            true(_motivo == "semestral_rebalance"
+            true(_motivo in ("semestral_rebalance", "adopt_regime_weights")
                  or _motivo.startswith("critical_subregime_switch"),
                  f"{nome}: sem mudanca de regime, so o semestral ou uma troca de "
                  f"sub-regime justificam negociar ({_motivo})")

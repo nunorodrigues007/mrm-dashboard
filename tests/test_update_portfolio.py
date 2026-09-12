@@ -44,13 +44,34 @@ for key, w in up.CRITICAL_WEIGHTS.items():
 
 alloc, src = up.effective_bucket_alloc("Critical", "Critical_FTQ", {"US_EQUITIES": 60.0})
 eq(alloc["US_EQUITIES"], 15.0, "Critical ignora as % da newsletter")
-eq("critical override" in src, True, "origem declarada como override")
+eq("rules (Critical_FTQ)" in src, True, "origem declarada como as regras")
+
+# ── a newsletter NAO decide, em regime nenhum ───────────────────────────────
+# Ate Set 2026 a linha de cima valia so para Critical: fora de Critical o
+# `effective_bucket_alloc` devolvia a tabela da newsletter tal e qual, e era
+# essa tabela que o semestral executava. Um numero errado escrito pelo modelo
+# — ou lido da coluna errada — era dinheiro colocado errado. Agora o regime
+# escolhe o vector e mais nada o escolhe, e estes tres ensaios sao a forma
+# EXECUTADA dessa afirmacao: passa-se lixo no terceiro argumento e o resultado
+# nao se mexe.
+_TURB = dict(up.rules.REGIME_WEIGHTS["Turbulence"])
 
 alloc, src = up.effective_bucket_alloc("Turbulence", None, {"US_EQUITIES": 60.0})
-eq(alloc, {"US_EQUITIES": 60.0}, "fora de Critical mandam as % da newsletter")
-eq(src, "newsletter", "origem declarada como newsletter")
+eq(alloc, _TURB, "fora de Critical a alocacao vem das regras, nao da newsletter")
+eq(src, "rules (Turbulence)", "origem declarada como as regras")
 
-eq(up.effective_bucket_alloc("Turbulence", None, {})[0], {}, "sem newsletter nao inventa alocacao")
+eq(up.effective_bucket_alloc("Turbulence", None, {})[0], _TURB,
+   "sem newsletter nenhuma a alocacao continua a existir — nao vinha de la")
+
+eq(up.effective_bucket_alloc("Turbulence", None,
+                             {"US_EQUITIES": 95.0, "CASH": 5.0})[0], _TURB,
+   "uma tabela absurda do modelo nao move um unico ponto da carteira")
+
+for _reg, _sub in (("Resilient", None), ("Turbulence", None),
+                   ("Critical", "Critical_FTQ"), ("Critical", "Critical_Stress")):
+    _a, _ = up.effective_bucket_alloc(_reg, _sub)
+    eq(round(sum(_a.values()), 6), 100.0, f"{_reg}/{_sub}: o vector soma 100%")
+    eq(sorted(_a), sorted(up.BUCKETS), f"{_reg}/{_sub}: cobre os seis buckets")
 
 # ── porta do sub-regime ─────────────────────────────────────────────────────────
 eq(up.determine_critical_subregime("FTQ", False)[0], "Critical_Stress", "entrada fresca e sempre defensiva")
@@ -138,14 +159,79 @@ eq(D("Critical", "Critical", "Critical_FTQ", "Critical_FTQ", False), None, "sub-
 eq(D("Critical", "Turbulence", "Critical_Stress", None, True), "stress_on", "stress ganha ao semestral")
 eq(D("Turbulence", "Critical", None, "Critical_FTQ", True), "stress_off", "saida ganha ao semestral")
 
+# ── a adopcao unica dos pesos do regime ────────────────────────────────────────
+# Uma transicao, uma vez, que se desliga sozinha. Quando os pesos passaram a
+# viver nas regras, a carteira em producao tinha as percentagens da ultima tabela
+# escrita por um modelo e o proximo gatilho estava a quatro meses e meio: sem
+# isto, o sistema declarava um vector e executava outro ate Janeiro.
+_R = up.rules
+_VELHA = {"US_EQUITIES": 10.0, "US_TREASURIES": 20.0, "IG_CREDIT": 15.0,
+          "COMMODITIES": 15.0, "CASH": 30.0, "ALTERNATIVES": 10.0}
+
+eq(_R.pesos_por_adoptar(_VELHA, "Turbulence"), True,
+   "com as percentagens antigas, ha pesos por adoptar")
+eq(_R.pesos_por_adoptar(_VELHA, "Turbulence", ja_adoptado=True), False,
+   "mas uma vez adoptados, nunca mais — a marca desliga-a")
+eq(_R.pesos_por_adoptar(dict(_R.REGIME_WEIGHTS["Turbulence"]), "Turbulence"), False,
+   "e uma carteira ja alinhada nao tem nada para adoptar")
+eq(_R.pesos_por_adoptar({}, "Turbulence"), True,
+   "sem alocacao nenhuma registada, adopta-se")
+
+# NAO e um rebalanceador de deriva: a comparacao e com o ALVO declarado, nao com
+# os pesos de mercado. Meio ponto de diferenca no alvo nao e uma adopcao.
+_quase = dict(_R.REGIME_WEIGHTS["Turbulence"])
+_quase["US_EQUITIES"] += 0.5; _quase["CASH"] -= 0.5
+eq(_R.pesos_por_adoptar(_quase, "Turbulence"), False,
+   "meio ponto de diferenca nao dispara uma adopcao")
+_longe = dict(_R.REGIME_WEIGHTS["Turbulence"])
+_longe["US_EQUITIES"] += 2.0; _longe["CASH"] -= 2.0
+eq(_R.pesos_por_adoptar(_longe, "Turbulence"), True,
+   "dois pontos ja dispara")
+
+# E em cada regime compara-se com o vector DESSE regime.
+for _reg, _sub in (("Resilient", None), ("Turbulence", None),
+                   ("Critical", "Critical_FTQ"), ("Critical", "Critical_Stress")):
+    _chave = _R.resolve_etf_map_key(_reg, _sub)
+    eq(_R.pesos_por_adoptar(dict(_R.REGIME_WEIGHTS[_chave]), _reg, _sub), False,
+       f"{_chave}: alinhada com o proprio vector, nada a adoptar")
+    _outro = next(k for k in _R.REGIME_WEIGHTS if k != _chave)
+    eq(_R.pesos_por_adoptar(dict(_R.REGIME_WEIGHTS[_outro]), _reg, _sub), True,
+       f"{_chave}: com o vector de {_outro}, ha")
+
+# O gatilho, e a sua precedencia: um facto sobre o regime vale mais do que a
+# transicao administrativa, e a adopcao vale mais do que o calendario.
+eq(D("Turbulence", "Turbulence", None, None, False, None, True),
+   "adopt_regime_weights", "sem mais nada a acontecer, a adopcao e o motivo")
+eq(D("Turbulence", "Turbulence", None, None, False, None, False), None,
+   "e sem adopcao pendente, uma semana calma continua a nao negociar")
+eq(D("Critical", "Turbulence", "Critical_Stress", None, False, None, True),
+   "stress_on", "uma entrada em Critical ganha a adopcao")
+eq(D("Turbulence", "Critical", None, "Critical_Stress", False, None, True),
+   "stress_off", "e uma saida tambem")
+eq(D("Turbulence", "Turbulence", None, None, True, None, True),
+   "adopt_regime_weights",
+   "mas a adopcao ganha ao calendario — e um rebalanceamento, nao dois")
+eq(up.rules.REBALANCE_COPY.get("adopt_regime_weights", "")[:4], "The ",
+   "e o motivo tem texto publicado")
+
 # ── ciclo completo: entrar em Critical e sair, com as % a voltarem ao sitio ─────
+# O `news` que sobra aqui e deliberado: e o que a edicao dessa semana publicou,
+# e a entrada e a saida tem de ser as mesmas COM ele e SEM ele. A propriedade
+# que interessa e a simetria — entrar corta accoes, sair devolve-as ao nivel de
+# Turbulence — e essa propriedade deixou de depender de alguem ter escrito uma
+# tabela legivel nessa semana.
 news = {"US_EQUITIES": 40.0, "US_TREASURIES": 20.0, "IG_CREDIT": 15.0,
         "COMMODITIES": 10.0, "CASH": 10.0, "ALTERNATIVES": 5.0}
 a_in,  _ = up.effective_bucket_alloc("Critical", "Critical_Stress", news)
 a_out, _ = up.effective_bucket_alloc("Turbulence", None, news)
 eq(a_in["US_EQUITIES"],  15.0, "em Critical corta accoes para 15%")
-eq(a_out["US_EQUITIES"], 40.0, "a saida devolve as % da newsletter")
-eq(a_out, news, "a saida restitui a alocacao macro inteira")
+eq(a_out, _TURB, "a saida devolve o vector de Turbulence das regras")
+eq(a_out["US_EQUITIES"] > a_in["US_EQUITIES"], True,
+   "sair de Critical volta a subir a exposicao a accoes")
+eq(up.effective_bucket_alloc("Turbulence", None)[0], a_out,
+   "e a saida e a mesma sem edicao nenhuma pelo meio")
+eq(sorted(a_out), sorted(up.BUCKETS),
+   "a saida restitui a alocacao macro inteira — os seis buckets, nao um subconjunto")
 
 # ── Feriados do NYSE: calculados, nao escritos a mao para um ano so ───────
 # A tabela anterior tinha 2026 e mais nada. A partir de 1 de Janeiro de 2027 o

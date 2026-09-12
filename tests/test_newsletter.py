@@ -138,9 +138,11 @@ def make_data(score=6.97, stress=False, subregime=None, nd=None, idade_horas=2.0
 def make_portfolio(regime="Turbulence", subregime=None, reason="hold", triggered=False,
                    issue=27):
     key = rules.resolve_etf_map_key(regime, subregime)
-    alloc = (dict(rules.CRITICAL_WEIGHTS[key]) if key in rules.CRITICAL_WEIGHTS
-             else {"US_EQUITIES": 20.0, "US_TREASURIES": 25.0, "IG_CREDIT": 15.0,
-                   "COMMODITIES": 12.0, "CASH": 20.0, "ALTERNATIVES": 8.0})
+    # O vector das regras, e nao um plausivel escrito a mao: desde Set 2026 uma
+    # carteira so pode ter o que o regime dela manda ter, e a edicao e recusada
+    # se publicar outra coisa. Um fixture com numeros proprios descreveria uma
+    # carteira que o motor nunca produz.
+    alloc = dict(rules.REGIME_WEIGHTS[key])
     cur = {"issue": issue, "regime": regime, "critical_subregime": subregime,
            "active_etf_map": dict(rules.REGIME_ETF_MAP[key]),
            "bucket_allocation_pct": alloc,
@@ -220,23 +222,31 @@ _c_none = sn.build_context(make_data(nd=["liquidity"]), make_portfolio(issue=27)
 _p_none = sn.build_prompt(_c_none)
 hasnt(_p_none, "None/10", "um pilar em n/d nao vai ao modelo como 'None/10'")
 hasnt(_p_none, "None |", "nem o seu valor")
-# E as bandas chegam ao modelo SEM ARREDONDAR. Com `:.0f`, uma banda de 5,4 era
-# anunciada como "5" e um modelo obediente escrevia 5,0 — que o motor rejeita.
-# Arredondar o numero que se manda ao modelo desfaz a razao de ser de o mandar
-# do motor. Hoje as bandas sao todas inteiras, portanto so uma banda fraccionaria
-# distingue as duas formatacoes.
-_bandas_guardadas = dict(rules.ALLOCATION_BANDS)
-try:
-    rules.ALLOCATION_BANDS["US_EQUITIES"] = (5.4, 60.0)
-    rules.ALLOCATION_BANDS["COMMODITIES"] = (0.0, 24.6)
-    _p_frac = sn.build_prompt(sn.build_context(
-        make_data(), make_portfolio(issue=27), PREV, D, 27, AGORA))
-    has(_p_frac, "US equities 5.4-60",
-        "uma banda fraccionaria chega ao modelo com a fraccao")
-    has(_p_frac, "commodities 0-24.6", "e o limite de cima tambem")
-finally:
-    rules.ALLOCATION_BANDS.clear()
-    rules.ALLOCATION_BANDS.update(_bandas_guardadas)
+# As bandas de alocacao SAIRAM do prompt, e o teste que verificava a sua
+# formatacao saiu com elas. Existiam para enquadrar uma escolha do modelo; desde
+# que o vector vem do `REGIME_WEIGHTS` nao ha escolha nenhuma para enquadrar, e
+# um envelope a volta de um numero fixo so ensinaria o modelo que ha margem.
+# O que se verifica agora e o oposto: que o prompt leva o vector EXACTO e que a
+# validacao recusa quem dele se afaste.
+_c_al = sn.build_context(make_data(), make_portfolio(issue=27), PREV, D, 27, AGORA)
+_p_al = sn.build_prompt(_c_al)
+hasnt(_p_al, "stay inside these bands", "o prompt ja nao manda bandas ao modelo")
+has(_p_al, "Effective allocation now:", "leva o vector que a carteira tem")
+eq(_c_al["alloc_efectiva"], dict(make_portfolio(issue=27)["current"]["bucket_allocation_pct"]),
+   "e o contexto guarda esse vector para a validacao o comparar com a tabela")
+
+# E a validacao usa-o: uma tabela que se afasta e recusada, uma que bate certo passa.
+_al_boa = {b: _c_al["alloc_efectiva"][b] for b in rules.BUCKETS}
+eq(rules.allocation_matches(_al_boa, _c_al["alloc_efectiva"])[0], True,
+   "a tabela igual a carteira passa")
+_al_ma = dict(_al_boa); _al_ma["US_EQUITIES"] = _al_boa["US_EQUITIES"] + 5
+eq(rules.allocation_matches(_al_ma, _c_al["alloc_efectiva"])[0], False,
+   "cinco pontos a mais em accoes nao passam")
+# Meio ponto passa: a tabela e escrita para uma pessoa e arredonda ao inteiro.
+_al_red = dict(_al_boa); _al_red["US_EQUITIES"] = round(_al_boa["US_EQUITIES"])
+eq(rules.allocation_matches(_al_red, _c_al["alloc_efectiva"])[0], True,
+   "arredondar ao inteiro nao e divergir")
+
 has(_p_none, "Score: n/d/10", "vai como n/d, que e o que o resto do sistema usa")
 # E a coluna WoW de um pilar em n/d nao pode ser um NUMERO.
 #
@@ -252,44 +262,28 @@ for _linha_nd in _p_none.splitlines():
 true(any(l.startswith("- ") and "Score: n/d/10" in l
          for l in _p_none.splitlines()),
      "o ensaio tem mesmo um pilar em n/d no prompt")
-# As bandas que o prompt anuncia ao modelo TEM de ser as que o motor aplica.
-# Eram duas copias do mesmo par de numeros: apertar uma banda no motor sem tocar
-# no prompt da um modelo obediente a escrever uma tabela que o motor rejeita —
-# semana mantida, e numa semana semestral seis meses de espera pela oportunidade
-# seguinte. E o mesmo par de janelas que ja fechou noutros sitios.
-for _b_nome, _b_txt in (("US_EQUITIES", "US equities"),
-                        ("US_TREASURIES", "US treasuries"),
-                        ("IG_CREDIT", "investment-grade credit"),
-                        ("COMMODITIES", "commodities"),
-                        ("CASH", "cash"), ("ALTERNATIVES", "alternatives")):
-    _lo, _hi = rules.ALLOCATION_BANDS[_b_nome]
-    has(p, f"{_b_txt} {_lo:g}-{_hi:g}",
-        f"a banda de {_b_nome} no prompt e a do motor ({_lo}-{_hi})")
-    # E o numero que o prompt manda ao modelo tem de ser ACEITE pelo motor —
-    # nao apenas igual a uma copia formatada da mesma maneira. Com `:.0f`, uma
-    # banda de 5,4 era anunciada como "5" e um modelo obediente escrevia 5,0,
-    # que o motor rejeitava: o teste comparava duas cópias arredondadas da mesma
-    # forma e ficava verde.
-    _m_banda = _re_comp.search(
-        rf"{_re_comp.escape(_b_txt)} ([\d.]+)-([\d.]+)", p)
-    true(_m_banda is not None, f"o prompt anuncia a banda de {_b_nome}")
-    for _extremo in _m_banda.groups():
-        _tabela_banda = {b_: (100.0 - float(_extremo)) / 5 for b_ in rules.BUCKETS}
-        _tabela_banda[_b_nome] = float(_extremo)
-        _ok_banda, _probs_banda = rules.validate_allocation(_tabela_banda)
-        true(not any(_b_nome in _pb for _pb in _probs_banda),
-             f"o extremo {_extremo} que o prompt anuncia para {_b_nome} e "
-             f"aceite pelo motor ({_probs_banda})")
+# Aqui verificava-se que as bandas anunciadas ao modelo eram as que o motor
+# aplicava — duas copias do mesmo par de numeros, e apertar uma sem a outra dava
+# um modelo obediente a escrever uma tabela que o motor rejeitava. A duplicacao
+# desapareceu com as bandas: o prompt leva UM vector, que e o mesmo objecto que a
+# validacao compara. Nao ha duas copias para divergirem.
+_al_prompt = [l for l in p.splitlines() if l.strip().startswith("- Effective allocation now:")]
+true(len(_al_prompt) == 1, f"o prompt leva a alocacao efectiva uma vez ({_al_prompt})")
+for _b in rules.BUCKETS:
+    has(_al_prompt[0], f"{_b}:", f"e leva o bucket {_b}")
+
+# A macro em vigor continua a ir ao prompt, mas ja nao e uma memoria do que
+# alguma edicao escreveu: e o vector de Turbulence das regras, que e o que a
+# carteira volta a executar quando o medidor B desligar. Continuam a ser duas
+# linhas distintas, porque em Critical as duas coisas sao mesmo diferentes.
 has(p, "resumes when Gauge B stands down",
     "e o prompt diz para que serve — senao e mais um numero")
-has(p, "Do NOT copy the effective Critical vector",
-    "e a regra 8 diz explicitamente para nao ecoar o vector de crise")
 _i_ef = p.index("Effective allocation now")
 _i_ma = p.index("Macro allocation on record")
 true(_i_ef != _i_ma, "sao duas linhas distintas, nao a mesma")
-true(c["macro_line"] != c["alloc_line"] or c["macro_line"] == "n/a",
-     f"e trazem valores distintos quando ha macro registada "
-     f"({c['macro_line']!r} vs {c['alloc_line']!r})")
+for _b in rules.BUCKETS:
+    has(c["macro_line"], f"{_b}: {rules.REGIME_WEIGHTS['Turbulence'][_b]:.0f}%",
+        f"a macro anunciada e a das regras, em {_b}")
 has(p, "-0.07 (fires at >= 0.5", "valor do gatilho de Sahm")
 hasnt(p, "No structural regime change detected", "texto legado desapareceu")
 hasnt(p, "EMERGENCY REBALANCE ACTIVATED", "decisao legada por score desapareceu")
@@ -508,6 +502,7 @@ finally:
 
 # ── validate_newsletter: o contrato com quem le a seguir ─────────────────────
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import fixture_newsletter
 from fixture_newsletter import edicao
 
 _aviso = ("DATA QUALITY: at least one price this week is a fallback "
@@ -1501,65 +1496,49 @@ true(any("may be stale" in a for a in _av_anc2),
 true(not any("was excluded" in a for a in _av_anc2),
      f"e nao afirma uma exclusao que nao houve ({_av_anc2})")
 
-# ── E o ECO descartado pelo motor chega ao leitor ─────────────────────────
+# ── A tabela publicada tem de ser a carteira que existe ───────────────────
 #
-# Quando a tabela publicada em Critical era o vector de crise, o motor descarta-a
-# e retem a macro anterior — mas a edicao dessa semana ja tinha dito aos
-# subscritores, por ordem da regra 8, que aquela tabela era a alocacao que
-# retoma. Sem aviso, a saida de Critical executa percentagens que nenhuma
-# edicao publicou e ninguem tem como saber. O caminho gemeo — a tabela que o
-# parser recusa — ja publica uma faixa.
-_pf_eco = make_portfolio(issue=27)
-_pf_eco["current"]["macro_echo_discarded"] = True
-_c_eco = sn.build_context(make_data(), _pf_eco, PREV, D, 27, AGORA)
-_av_eco = [a for a in _c_eco["avisos"] if "allocation table repeated" in a]
-true(_av_eco, f"o eco descartado vira aviso de qualidade de dados ({_c_eco['avisos']})")
-true(all(not any(ch.isdigit() for ch in a) for a in _av_eco),
-     f"e o aviso nao leva numeros — tem de ser copiado a letra todas as semanas "
-     f"em que dure ({_av_eco})")
-_pf_sem_eco = make_portfolio(issue=27)
-_pf_sem_eco["current"]["macro_echo_discarded"] = False
-_c_sem = sn.build_context(make_data(), _pf_sem_eco, PREV, D, 27, AGORA)
-true(not any("allocation table repeated" in a for a in _c_sem["avisos"]),
-     f"e sem eco nao ha aviso ({_c_sem['avisos']})")
-# E o aviso nao pode afirmar coisas que o proprio ficheiro contradiz.
+# Aqui vivia o aviso do "eco": em Critical, a tabela publicada era muitas vezes
+# o proprio vector de crise que o prompt mostrara ao modelo, o motor descartava-a
+# e retinha a macro anterior, e a edicao tinha de avisar os subscritores de que
+# aquilo que lhes dissera nao era o que ia acontecer. Toda essa figura desapareceu
+# com o `REGIME_WEIGHTS`: nao ha tabela a descartar porque nao ha tabela a
+# executar.
 #
-# Sem macro em registo, o `macro_line` do prompt mostra "n/a" e o motor vai
-# MANTER as posicoes a saida — dizer "a macro que retoma e a anterior, mostrada
-# acima" e afirmar o contrario do que o ficheiro diz, num aviso obrigatorio
-# palavra por palavra.
-_pf_vazio = make_portfolio(issue=27)
-_pf_vazio["current"]["macro_echo_discarded"] = True
-_pf_vazio["current"]["macro_echo_issue"] = 26
-_pf_vazio["current"]["newsletter_bucket_allocation_pct"] = {}
-_c_vazio = sn.build_context(make_data(), _pf_vazio, PREV, D, 27, AGORA)
-_av_vazio = [a for a in _c_vazio["avisos"] if "allocation table repeated" in a]
-true(_av_vazio, f"o eco sem macro em registo tambem vira aviso ({_c_vazio['avisos']})")
-true(not any("previously on record, shown above" in a for a in _av_vazio),
-     f"mas nao afirma que ha uma macro em registo quando nao ha ({_av_vazio})")
-true(any("no macro allocation on record" in a for a in _av_vazio),
-     f"e diz o que acontece: a carteira mantem as posicoes ({_av_vazio})")
-eq(_c_vazio["macro_line"], "n/a",
-   f"e o prompt mostra mesmo n/a ({_c_vazio['macro_line']})")
-# E "a semana passada" so quando foi mesmo a semana passada: `issue_lido` e a
-# edicao de maior numero no disco, que numa semana em que a newsletter falhou e
-# a de ha duas ou tres.
-_pf_velho = make_portfolio(issue=27)
-_pf_velho["current"]["macro_echo_discarded"] = True
-_pf_velho["current"]["macro_echo_issue"] = 24
-_c_velho = sn.build_context(make_data(), _pf_velho, PREV, D, 27, AGORA)
-_av_velho = [a for a in _c_velho["avisos"] if "repeated the fixed crisis" in a]
-true(_av_velho, f"o eco de uma edicao velha tambem vira aviso ({_c_velho['avisos']})")
-true(not any("last week's" in a for a in _av_velho),
-     f"mas nao lhe chama a da semana passada ({_av_velho})")
-true(any("most recent readable edition" in a for a in _av_velho),
-     f"e diz o que ela e ({_av_velho})")
-_pf_n1 = make_portfolio(issue=27)
-_pf_n1["current"]["macro_echo_discarded"] = True
-_pf_n1["current"]["macro_echo_issue"] = 26
-_c_n1 = sn.build_context(make_data(), _pf_n1, PREV, D, 27, AGORA)
-true(any("last week's" in a for a in _c_n1["avisos"]),
-     f"e quando foi mesmo a da semana passada, di-lo ({_c_n1['avisos']})")
+# O que ficou no lugar e mais simples e mais forte — a edicao NAO SAI se a tabela
+# nao for a carteira. Nao e um aviso a posteriori: e uma recusa antes do envio.
+_c_tab = sn.build_context(make_data(), make_portfolio(issue=27), PREV, D, 27, AGORA)
+_efectiva = _c_tab["alloc_efectiva"]
+
+_ed_boa = edicao(27, alloc=[(nome, round(_efectiva[b]))
+                            for nome, b in fixture_newsletter._NOMES_ALLOC])
+eq([t for t, _ in sn.validate_newsletter(_ed_boa, _c_tab)], [],
+   "a edicao que publica a carteira que existe passa")
+
+# O desvio move seis pontos de accoes para cash: o total continua em 100, e
+# portanto a tabela continua a passar no parser. O que a apanha e a comparacao
+# com a carteira — que e exactamente a verificacao nova.
+_desviada = dict(_efectiva)
+_desviada["US_EQUITIES"] = _efectiva["US_EQUITIES"] + 6
+_desviada["CASH"] = _efectiva["CASH"] - 6
+_ed_ma = edicao(27, alloc=[(nome, round(_desviada[b]))
+                           for nome, b in fixture_newsletter._NOMES_ALLOC])
+_probs_tab = sn.validate_newsletter(_ed_ma, _c_tab)
+true(any(t == sn.FALHA_ALOCACAO for t, _ in _probs_tab),
+     f"e a que inventa seis pontos em accoes e recusada ({_probs_tab})")
+true(any("US_EQUITIES" in m for _, m in _probs_tab),
+     f"com o bucket e o desvio nomeados ({[m for _, m in _probs_tab]})")
+
+# E em Critical vale o mesmo, contra o vector de crise que a carteira tem.
+_c_crit = sn.build_context(make_data(stress=True, subregime="STRESS"),
+                           make_portfolio("Critical", "Critical_Stress", "stress_on", True),
+                           PREV, D, 27, AGORA)
+_ed_crit = edicao(27, alloc=[(nome, round(_c_crit["alloc_efectiva"][b]))
+                             for nome, b in fixture_newsletter._NOMES_ALLOC],
+                  avisos=_c_crit["avisos"])
+true(not any(t == sn.FALHA_ALOCACAO for t, _ in sn.validate_newsletter(_ed_crit, _c_crit)),
+     "em Critical passa a edicao que publica o vector de crise que a carteira tem")
+
 # A DATA da ultima observacao, nao a idade em dias: a idade cresce sete dias por
 # semana enquanto a avaria durar, e o aviso tem de ser copiado PALAVRA POR
 # PALAVRA para a edicao sob pena de FALHA_FORMA. Uma frase nova todas as semanas

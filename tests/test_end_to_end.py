@@ -77,9 +77,10 @@ def run_world(stress):
         # commitado fazia a asserçao "a alocacao efectiva nao e o vector de
         # Critical" ficar vermelha na sexta seguinte a carteira entrar em
         # Critical — o portao a fechar-se durante a crise.
-        "bucket_allocation_pct": {"US_EQUITIES": 20.0, "US_TREASURIES": 25.0,
-                                  "IG_CREDIT": 15.0, "COMMODITIES": 12.0,
-                                  "CASH": 20.0, "ALTERNATIVES": 8.0},
+        "bucket_allocation_pct": dict(rules.REGIME_WEIGHTS["Turbulence"]),
+        # Pos-migracao, como o sistema esta depois da primeira corrida com os
+        # pesos nas regras. A adopcao e uma transicao unica, com ensaios proprios.
+        "regime_weights_adopted": True,
     })
     # O `newsletter_bucket_allocation_pct` NAO se semeia: e o que o motor le da
     # edicao N-1 com o parser, e ha uma asserçao mais abaixo sobre ele. Semea-lo

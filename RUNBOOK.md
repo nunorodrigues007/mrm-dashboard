@@ -37,15 +37,32 @@ A mensagem diz qual, e há três variantes:
 
 ### 1a. `a marca de envio NAO foi publicada no repositorio`
 
-**O mais perigoso.** A edição saiu, mas o `sent_issues.json` ficou só no runner,
-que já foi destruído. Se o workflow correr outra vez sem se corrigir isto, ele
-não vê a marca, gera uma edição nova e **reenvia a toda a gente**.
+**Era o mais perigoso. Desde Set 2026, o sistema recupera sozinho.**
 
-O que fazer, por esta ordem:
+A edição saiu, mas o `sent_issues.json` ficou só no runner, que já foi destruído.
+Antigamente, a corrida seguinte não via marca nenhuma, gerava uma edição nova e
+**reenviava a toda a gente**.
 
-1. Abrir a corrida falhada no GitHub Actions e ler o log do job
-   `send-newsletter`. Procurar a linha `Issue #N: X enviados, Y falhados`.
-2. Criar a entrada à mão no `sent_issues.json` de `main`:
+Agora há uma segunda testemunha de quem recebeu, e não depende de um `git push`:
+cada mensagem vai etiquetada na Brevo com `mrm-issue-<N>`. Quando a edição da
+semana **já está publicada no repositório** mas não tem marca, a corrida pergunta
+à Brevo quem já a recebeu, reconstrói a marca, grava-a, e serve **apenas quem
+falta**. Ninguém recebe duas vezes.
+
+A pergunta só se faz quando há motivo para desconfiar — a página publicada. Numa
+semana normal (primeira passagem, sem ficheiro publicado) não se pergunta nada, e
+uma avaria da API de estatísticas da Brevo não impede a newsletter de sair.
+
+**O que ainda precisa de uma pessoa:** se a Brevo não responder *e* a edição
+estiver publicada sem marca, a corrida **pára** com um erro que aponta para aqui.
+É deliberado: nesse estado ninguém sabe se a edição saiu, e reenviar custa mais do
+que esperar. O que fazer:
+
+1. Abrir o painel da Brevo → *Transactional* → *Logs*, e filtrar pela etiqueta
+   `mrm-issue-N`. Isso diz quem recebeu.
+2. Se ninguém recebeu, re-correr o workflow normalmente.
+3. Se alguém recebeu e a Brevo continuar indisponível, criar a entrada à mão no
+   `sent_issues.json` de `main`, como descrito abaixo.
 
    ```json
    {"sent": [{"issue": N, "recipients": X, "sentAt": "2026-09-11T22:41:00Z",
@@ -58,7 +75,7 @@ O que fazer, por esta ordem:
    digests de 16 caracteres — e é isso que está no log da marca escrita antes de
    o push falhar (procurar `sent_issues.json` no log e copiar os digests tal e
    qual). Se não estiverem lá, pôr só `complete: true` e a contagem: impede o
-   reenvio, que é o que interessa.
+reenvio, que é o que interessa.
 
    Se for mesmo preciso calcular uma marca a partir de um endereço:
    `python3 -c "import send_newsletter as s; print(s.marca_destinatario('a@b.pt'))"`.

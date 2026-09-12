@@ -465,8 +465,17 @@ _prompt_regra8 = (Path(__file__).resolve().parent.parent
                   / "send_newsletter.py").read_text(encoding="utf-8")
 true("exactly ONE column of percentages" in _prompt_regra8,
      "a regra 8 exige uma so coluna de percentagens na tabela de alocacao")
-true('Head that column "Macro Allocation" when the operative' in _prompt_regra8,
-     "e diz como se chama essa coluna em Critical")
+true('headed "Regime Target"' in _prompt_regra8,
+     "e diz como se chama essa coluna — uma so, em todos os regimes")
+# Set 2026: a tabela deixou de ser uma instrucao. A regra 8 da o vector exacto e
+# diz ao modelo, por palavras, que nada do que ele escreva move a carteira — e
+# que uma tabela que nao bata certo faz a edicao ser recusada antes de sair.
+true("the engine does not read it back" in _prompt_regra8,
+     "a regra 8 diz ao modelo que a tabela nao e lida de volta pelo motor")
+true("{_alloc_line}" in _prompt_regra8,
+     "e da-lhe o vector exacto que tem de reproduzir")
+true("REJECTED before it is sent" in _prompt_regra8,
+     "e avisa que a edicao e recusada se a tabela nao bater certo")
 
 # ── Uma coluna SOLITARIA nao e uma referencia so por levar um adjectivo ───
 #

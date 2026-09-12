@@ -177,21 +177,18 @@ def gauge_b_subregime(m):
         return None
     return "FTQ" if (a - b) <= TENY_FTQ_BP else "STRESS"
 
-# ── alocacao macro fora de Critical ──────────────────────────────────────────
-# Em producao vem da newsletter semanal, que nao existe antes de Mar 2026. Usa-se
-# um vector fixo, igual nos dois sistemas, para que a comparacao isole o efeito
-# do medidor B e nao o do julgamento semanal.
-_t = {"US_EQUITIES": 40, "US_TREASURIES": 19, "IG_CREDIT": 15,
-      "COMMODITIES": 6, "CASH": 14, "ALTERNATIVES": 2.5}
-_s = sum(_t.values())
-MACRO_ALLOC = {k: v / _s * 100 for k, v in _t.items()}
-RESILIENT_ALLOC = {"US_EQUITIES": 55, "US_TREASURIES": 5, "IG_CREDIT": 15,
-                   "COMMODITIES": 5, "CASH": 5, "ALTERNATIVES": 15}
+# ── alocacao por regime ─────────────────────────────────────────────────────
+# Estes vectores estavam AQUI, escritos a mao, enquanto o sistema vivo executava
+# a tabela da newsletter: o backtest publicava 6,56% de CAGR sobre uma carteira
+# que a producao nunca correu, e ninguem podia dar por isso porque a constante
+# existia em dois sitios. Agora ha um sitio so — `rules.REGIME_WEIGHTS` — e este
+# ficheiro le de la. Se os pesos mudarem, mudam nos dois ao mesmo tempo ou nao
+# mudam.
+MACRO_ALLOC     = dict(rules.REGIME_WEIGHTS["Turbulence"])
+RESILIENT_ALLOC = dict(rules.REGIME_WEIGHTS["Resilient"])
 
 def alloc_for(regime, subregime):
-    if regime == "Resilient":
-        return dict(RESILIENT_ALLOC)
-    a, _ = rules.effective_bucket_alloc(regime, subregime, MACRO_ALLOC)
+    a, _ = rules.effective_bucket_alloc(regime, subregime)
     return a
 
 def value(shares, m):

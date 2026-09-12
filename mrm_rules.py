@@ -64,12 +64,26 @@ ALL_TICKERS = sorted({t for m in REGIME_ETF_MAP.values() for t in m.values()})
 # ─────────────────────────────────────────────────────────────────────────────
 # Pesos
 # ─────────────────────────────────────────────────────────────────────────────
-# Fora de Critical as percentagens vêm da newsletter semanal. Em Critical passam
-# a vir daqui: decisão de Set 2026, depois do backtest 2007-2026 (ver
-# backtest/README.md), onde trocar só os instrumentos capturava menos de metade
-# da protecção — 2008 fechava a −9,8% com a troca de ETF apenas, contra +1,5% com
-# instrumentos e pesos, e a quebra máxima ficava em −20,8% em vez de −16,4%.
-# Custo declarado: ~0,30 pp de CAGR em 19 anos.
+# TODOS os pesos vivem aqui, um vector por regime. Até Set 2026 só os de Critical
+# viviam: fora de Critical as percentagens vinham da tabela da newsletter, escrita
+# semana a semana por um LLM e lida de volta pelo motor. Isso punha um modelo de
+# linguagem dentro da cadeia de decisão no único momento em que os pesos mudam, e
+# explica a maioria dos defeitos com dinheiro em risco que as auditorias 7-14
+# encontraram: a alocação a somar 95, a coluna escolhida por palavra-chave, o
+# "45% → 30%" lido como 45, a classe de activo não reconhecida. Nenhum era um
+# defeito de regime — eram todos falhas a ler aquela tabela.
+#
+# Os vectores de Resilient e Turbulence são os que o backtest 2007-2026 sempre
+# usou (ver backtest/final_backtest.py, que agora os importa daqui em vez de os
+# repetir). Estavam nos dois sítios com valores DIFERENTES: o backtest publicava
+# 6,56% de CAGR e −16,4% de quebra máxima sobre um vector que o sistema vivo
+# nunca executou. Uma constante em dois sítios diverge sempre, e esta divergia
+# em 22 pontos percentuais de acções.
+#
+# Os de Critical: decisão de Set 2026, depois do mesmo backtest, onde trocar só
+# os instrumentos capturava menos de metade da protecção — 2008 fechava a −9,8%
+# com a troca de ETF apenas, contra +1,5% com instrumentos e pesos, e a quebra
+# máxima ficava em −20,8% em vez de −16,4%. Custo declarado: ~0,30 pp de CAGR.
 
 CRITICAL_WEIGHTS = {
     "Critical_FTQ": {
@@ -80,6 +94,29 @@ CRITICAL_WEIGHTS = {
         "US_EQUITIES": 15.0, "US_TREASURIES": 20.0, "IG_CREDIT": 20.0,
         "COMMODITIES": 15.0, "CASH": 25.0, "ALTERNATIVES": 5.0,
     },
+}
+
+
+def _para_percentagem(bruto):
+    """Normaliza um vector de pesos a 100%. Os pesos de Turbulence estão escritos
+    como as proporções do backtest (somam 96,5), e é a normalização — e não uma
+    segunda cópia arredondada — que os torna percentagens. Arredondar aqui era
+    mudar os números que o backtest publica."""
+    total = sum(bruto.values())
+    return {b: v / total * 100 for b, v in bruto.items()}
+
+
+_RESILIENT_RAW  = {"US_EQUITIES": 55.0, "US_TREASURIES": 5.0, "IG_CREDIT": 15.0,
+                   "COMMODITIES": 5.0, "CASH": 5.0, "ALTERNATIVES": 15.0}
+_TURBULENCE_RAW = {"US_EQUITIES": 40.0, "US_TREASURIES": 19.0, "IG_CREDIT": 15.0,
+                   "COMMODITIES": 6.0, "CASH": 14.0, "ALTERNATIVES": 2.5}
+
+# A tabela única: regime (ou sub-regime de Critical) -> percentagens. As chaves
+# são as mesmas do REGIME_ETF_MAP, e o `resolve_etf_map_key` resolve as duas.
+REGIME_WEIGHTS = {
+    "Resilient":  _para_percentagem(_RESILIENT_RAW),
+    "Turbulence": _para_percentagem(_TURBULENCE_RAW),
+    **{k: dict(v) for k, v in CRITICAL_WEIGHTS.items()},
 }
 
 # Envelope de sanidade para as percentagens escritas pela newsletter. Quem
@@ -186,6 +223,15 @@ def trade_cost(old_shares, new_shares, model="open_close"):
 
 
 REBALANCE_COPY = {
+    "adopt_regime_weights": (
+        "The portfolio adopted the fixed weight vector of its regime. Until this "
+        "week the weights came from the allocation table of the weekly edition; "
+        "they are now declared per regime in the rules, alongside the instrument "
+        "map, and the same vectors the 2007-2026 backtest runs. This is a "
+        "one-off transition, not a tactical trade: from here the weights change "
+        "only when the regime changes or at the scheduled semi-annual "
+        "rebalance."
+    ),
     "stress_on": (
         "Gauge B fired. The portfolio moved to the Critical map: defensive "
         "instruments and the declared Critical weights, which override this "
@@ -547,8 +593,38 @@ def subregime_from_gauge(gauge_subregime, was_critical_last_week,
             "Stress-without-relief (defensive).")
 
 
+ADOPCAO_LIMIAR_PP = 1.0
+
+
+def pesos_por_adoptar(alocacao_actual, regime, critical_subregime=None,
+                      ja_adoptado=False, limiar_pp=ADOPCAO_LIMIAR_PP):
+    """A carteira ainda não está no vector do regime, e nunca foi migrada?
+
+    Existe para uma transição só, e desliga-se sozinha. Quando os pesos passaram
+    a viver aqui (Set 2026), a carteira em produção tinha as percentagens da
+    última tabela publicada por um modelo — 10% em acções contra os 41,5% do
+    vector de Turbulence — e o próximo gatilho programado estava a quatro meses e
+    meio de distância. Sem isto, o sistema declarava um vector e executava outro
+    até Janeiro, e a adopção dependia de uma pessoa se lembrar de disparar a
+    pipeline à mão numa sexta à noite. Um humano no caminho crítico de uma
+    transição não é uma transição automatizada.
+
+    NÃO é um rebalanceador de deriva: a comparação é com o que a carteira
+    DECLARA ter como alvo (`bucket_allocation_pct`), não com os pesos de mercado,
+    que derivam todas as semanas por definição. Depois da adopção os dois valores
+    coincidem, o `ja_adoptado` fica escrito no ficheiro, e este predicado nunca
+    mais devolve True — nem que o mercado mova a carteira toda."""
+    if ja_adoptado:
+        return False
+    alvo = REGIME_WEIGHTS[resolve_etf_map_key(regime, critical_subregime)]
+    if not alocacao_actual:
+        return True
+    return any(abs(float(alocacao_actual.get(b, 0.0)) - alvo[b]) > limiar_pp
+               for b in BUCKETS)
+
+
 def decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
-                     semestral, emergency_reason=None):
+                     semestral, emergency_reason=None, adoptar_pesos=False):
     """Motivo do rebalanceamento, ou None para manter as posições.
 
     Precedência: entrada e saída de Critical primeiro — é o evento a que a
@@ -601,6 +677,13 @@ def decide_rebalance(regime, was_regime, critical_subregime, was_subregime,
         return emergency_reason
     if regime == "Critical" and critical_subregime != was_subregime:
         return f"critical_subregime_switch:{was_subregime or 'none'}->{critical_subregime}"
+    # A adopcao vem DEPOIS dos factos e ANTES do calendario, pela mesma razao que
+    # a emergencia: um facto especifico sobre o que mudou vale mais, como etiqueta
+    # publicada, do que uma data. E se coincidir com o semestral, o
+    # rebalanceamento acontece uma vez so — nao dois — porque isto e um `elif` da
+    # mesma cadeia.
+    if adoptar_pesos:
+        return "adopt_regime_weights"
     if semestral:
         return "semestral_rebalance"
     return None
@@ -643,13 +726,61 @@ def rebalance_copy(reason):
     return reason
 
 
-def effective_bucket_alloc(regime, critical_subregime, newsletter_alloc):
-    """(alocação por bucket, origem). Em Critical o vector fixo passa à frente
-    das percentagens da newsletter; fora de Critical mandam as da newsletter."""
+def effective_bucket_alloc(regime, critical_subregime, newsletter_alloc=None):
+    """(alocação por bucket, origem). Sai sempre do `REGIME_WEIGHTS`: o regime
+    escolhe o vector, e nada mais o escolhe.
+
+    `newsletter_alloc` continua na assinatura e é DELIBERADAMENTE ignorado — o
+    parâmetro sobrevive para que um chamador antigo não rebente em silêncio, e
+    para que este comentário apanhe quem o for procurar. Uma tabela escrita por
+    um modelo pode ser publicada e verificada; não pode ser executada."""
     key = resolve_etf_map_key(regime, critical_subregime)
-    if key in CRITICAL_WEIGHTS:
-        return dict(CRITICAL_WEIGHTS[key]), f"critical override ({key})"
-    return dict(newsletter_alloc or {}), "newsletter"
+    return dict(REGIME_WEIGHTS[key]), f"rules ({key})"
+
+
+def allocation_matches(publicada, esperada, tolerancia_pp=1.0):
+    """(bate certo, problemas). Compara uma tabela PUBLICADA com uma alocação de
+    referência, bucket a bucket.
+
+    A referência é um argumento e não `REGIME_WEIGHTS` por uma razão que custou
+    uma tarde a descobrir: o vector das regras e o que a carteira TEM na mão só
+    coincidem depois de um rebalanceamento. Entre a mudança dos pesos e o
+    gatilho seguinte — que pode estar a meses de distância — a carteira continua
+    legitimamente com as posições antigas, e a edição tem de reportar ESSAS. Uma
+    verificação contra as regras rejeitaria todas as edições nesse intervalo,
+    exigindo que a newsletter mentisse para passar."""
+    if not publicada:
+        return False, ["a edição não publicou uma tabela de alocação legível"]
+    if not esperada:
+        return True, []
+    problemas = []
+    for bucket in BUCKETS:
+        if bucket not in publicada:
+            problemas.append(f"{bucket} não aparece na tabela publicada")
+            continue
+        desvio = abs(publicada[bucket] - esperada.get(bucket, 0.0))
+        if desvio > tolerancia_pp:
+            problemas.append(
+                f"{bucket}: a edição diz {publicada[bucket]:.1f}%, a carteira "
+                f"tem {esperada.get(bucket, 0.0):.1f}% ({desvio:.1f} pp de desvio)")
+    for bucket in publicada:
+        if bucket not in BUCKETS:
+            problemas.append(f"a tabela publicada tem um bucket desconhecido: {bucket!r}")
+    return (not problemas), problemas
+
+
+def allocation_matches_rules(publicada, regime, critical_subregime=None,
+                             tolerancia_pp=1.0):
+    """(bate certo, problemas). Compara uma tabela PUBLICADA com o vector que o
+    motor executou. Não decide nada: serve para a edição e a carteira dizerem o
+    mesmo, e para dar o alarme quando não dizem.
+
+    A tolerância é em pontos percentuais e existe porque a tabela é escrita para
+    ser lida por uma pessoa — 41,45% aparece como 41%, e arredondar ao inteiro
+    chega a desviar meio ponto."""
+    return allocation_matches(
+        publicada, REGIME_WEIGHTS[resolve_etf_map_key(regime, critical_subregime)],
+        tolerancia_pp)
 
 
 def validate_allocation(alloc):
