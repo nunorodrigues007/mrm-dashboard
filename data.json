@@ -1,11 +1,11 @@
 {
   "meta": {
-    "lastUpdated": "2026-09-11T23:44:47Z",
-    "generatedAt": "2026-09-11T23:44:47Z",
+    "lastUpdated": "2026-09-12T19:46:24Z",
+    "generatedAt": "2026-09-12T19:46:24Z",
     "source": "FRED API (Live)",
     "version": "3.1.0",
     "freshness": {
-      "generatedAt": "2026-09-11T23:44:47Z",
+      "generatedAt": "2026-09-12T19:46:24Z",
       "warnAfterHours": 30,
       "refuseAfterHours": 48,
       "degraded": false,
@@ -23,16 +23,17 @@
       "TDSP": "2026-01-01",
       "ICSA": "2026-09-05",
       "UNRATE": "2026-08-01",
-      "SP500": "2026-09-10"
+      "SP500": "2026-09-11"
     },
     "fredSeriesStale": {},
     "gaugeNote": "Gauge A (globalResilienceScore) is a LEADING fragility measure on a 6-18 month horizon: in a downturn three of its five pillars mechanically improve, so the composite cannot signal concurrent stress. Concurrent stress detection lives in stressGauge, which is not averaged into Gauge A.",
-    "deltaBasis": "vs. 2026-09-04",
+    "deltaBasis": "vs. 2026-09-11",
     "liquidityNote": "Liquidity pillar redefined from discontinued Wilshire 5000 proxy to Buffett Indicator (Total Corp. Equities / GDP), percentile-scored against full history. See fetch_data.py comments."
   },
   "rules": {
     "rebalanceReasons": [
       "aborted_invalid_shares",
+      "adopt_regime_weights",
       "critical_subregime_switch",
       "emergency_resilient",
       "hold",
@@ -623,7 +624,7 @@
         "decides": "regime",
         "threshold": 0.5,
         "fired": false,
-        "ageDays": 41,
+        "ageDays": 42,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 120,
@@ -636,7 +637,7 @@
         "decides": "regime",
         "threshold": 0.81,
         "fired": false,
-        "ageDays": 163,
+        "ageDays": 164,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 330,
@@ -655,7 +656,7 @@
         "note": "3-month change in the 10Y, in basis points. Decides Flight-to-Quality against Stress-without-relief WITHIN Critical; it does not decide Critical itself."
       }
     },
-    "computedAt": "2026-09-11T23:44:47Z"
+    "computedAt": "2026-09-12T19:46:24Z"
   },
   "pillars": [
     {
@@ -679,8 +680,8 @@
       "scoredValue": 0.33,
       "nextBandEdge": 0.0,
       "distanceToNextBand": 0.33,
-      "delta": "\u2014",
-      "deltaDirection": null,
+      "delta": "+0.00%",
+      "deltaDirection": "flat",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
     },
@@ -705,8 +706,8 @@
       "scoredValue": 100.0,
       "nextBandEdge": null,
       "distanceToNextBand": null,
-      "delta": "\u2014",
-      "deltaDirection": null,
+      "delta": "+0.0 pp",
+      "deltaDirection": "flat",
       "m2YoyGrowthPct": 5.41,
       "percentileRank": 100.0,
       "description": "Buffett Indicator (Total US Corporate Equities / GDP) at 336.3% \u2014 100.0th percentile vs. its own history since 1947-10-01 (303 quarters). Total corporate equities $109.2T vs. GDP $32.5T (quarter ending 2026-04-01). M2 YoY growth: +5.4%. Updates quarterly with each Fed Z.1 / BEA GDP release, not weekly \u2014 a change from the prior (non-functional) daily Wilshire proxy.",
@@ -719,24 +720,24 @@
       "metric": "Equity Risk Premium",
       "fredSeries": "DGS10",
       "score": 10.0,
-      "value": "-1.06%",
+      "value": "-1.10%",
       "epEstimated": true,
-      "epValue": 3.89,
+      "epValue": 3.85,
       "epAsOf": "2026-08-31",
       "epAnchor": {
         "refYieldPct": 3.84,
         "refDate": "2026-08-31",
         "indexRef": 7686.14,
-        "indexNow": 7591.7,
-        "indexNowDate": "2026-09-10",
+        "indexNow": 7656.98,
+        "indexNowDate": "2026-09-11",
         "basis": "earnings held from the reference date, price marked to the latest close",
         "indexRefDate": "2026-08-31",
         "earningsPerIndexUnit": 295.15,
-        "ageDays": 11,
+        "ageDays": 12,
         "stale": false
       },
       "trend": "compressed",
-      "metricValue": -1.06,
+      "metricValue": -1.1,
       "band": {
         "lo": null,
         "hi": 0.0,
@@ -745,12 +746,12 @@
         "context": "Equities yield less than the 10-year Treasury",
         "reading": "No compensation whatsoever for holding equity risk. The bond is the higher-yielding asset."
       },
-      "scoredValue": -1.06,
+      "scoredValue": -1.1,
       "nextBandEdge": null,
       "distanceToNextBand": null,
-      "delta": "\u2014",
-      "deltaDirection": null,
-      "description": "ERP = E/P (3.89%) minus the 10Y yield (4.95%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
+      "delta": "-0.04%",
+      "deltaDirection": "flat",
+      "description": "ERP = E/P (3.85%) minus the 10Y yield (4.95%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
       "status": "critical"
     },
     {
@@ -774,8 +775,8 @@
       "scoredValue": 1.38,
       "nextBandEdge": 1.5,
       "distanceToNextBand": 0.12,
-      "delta": "\u2014",
-      "deltaDirection": null,
+      "delta": "+0.00 pp",
+      "deltaDirection": "flat",
       "description": "FRED DRALACBN delinquency rate at 1.38%. Systemic banking plumbing functioning normally.",
       "status": "stable"
     },
@@ -800,8 +801,8 @@
       "scoredValue": 11.164138,
       "nextBandEdge": 11.5,
       "distanceToNextBand": 0.3359,
-      "delta": "\u2014",
-      "deltaDirection": null,
+      "delta": "+0.0 pp",
+      "deltaDirection": "flat",
       "description": "Household debt service ratio at 11.2%. Consumer balance sheet strain increasing.",
       "status": "caution"
     }
@@ -826,16 +827,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -1.06,
+      "value": -1.1,
       "unit": "%",
-      "displayValue": "-1.06%",
+      "displayValue": "-1.10%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "\u2014",
+      "delta": "-0.04%",
       "alert": true,
-      "description": "ERP at -1.06%. Red alert triggers below 0.80%."
+      "description": "ERP at -1.10%. Red alert triggers below 0.80%."
     },
     {
       "id": "unemployment",
