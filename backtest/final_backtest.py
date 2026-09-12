@@ -16,20 +16,44 @@ import mrm_rules as rules
 
 # ── precos mensais e substituicoes declaradas ────────────────────────────────
 def load(p):
+    """Le uma serie mensal. Duas formas de linha, ambas usadas nos ficheiros:
+
+        <ano> <v1> ... <v12>        o ano comeca em Janeiro
+        <ano> <mes> <v1> ... <vN>   o ano comeca nesse mes (o primeiro da serie)
+
+    A segunda forma so e reconhecida quando o numero de precos fecha certo com o
+    mes declarado. Antes so o caso de um unico preco era tratado, e uma linha
+    como "2007 02 81.14 81.45 ..." entrava como se comecasse em Janeiro, pondo o
+    proprio numero do mes no lugar de um preco.
+    """
     px = {}
     for line in open(p):
         t = line.split()
-        if len(t) == 3 and len(t[1]) == 2:
-            px[f"{t[0]}-{t[1]}"] = float(t[2]); continue
-        for i, v in enumerate(t[1:], 1):
-            px[f"{t[0]}-{i:02d}"] = float(v)
+        if not t:
+            continue
+        ano, resto = t[0], t[1:]
+        m0 = 1
+        if (len(resto) > 1 and resto[0].isdigit() and len(resto[0]) == 2
+                and 1 <= int(resto[0]) <= 12
+                and int(resto[0]) + len(resto) - 2 <= 12):
+            m0, resto = int(resto[0]), resto[1:]
+        for i, v in enumerate(resto, m0):
+            px[f"{ano}-{i:02d}"] = float(v)
     return px
 
-PX = {t: load(DATA / "px" / f"{t}.txt") for t in ("SPY", "IEF", "LQD", "DBC", "SHV", "VNQ", "TLT", "GLD")}
-for line in open(DATA / "px" / "RESIL2021.txt"):
-    t = line.split(); PX.setdefault(t[0], {})
-    for i in range(1, len(t), 2):
-        PX[t[0]][t[i]] = float(t[i + 1])
+PX = {t: load(DATA / "px" / f"{t}.txt")
+      for t in ("SPY", "IEF", "LQD", "DBC", "SHV", "VNQ", "TLT", "GLD",
+                "QQQ", "SHY", "HYG", "IWO")}
+# O HYG so cotou a partir de 2007-04. Os dois primeiros meses do periodo tomam os
+# RETORNOS do LQD, encadeados para tras a partir do primeiro preco real do HYG —
+# nao o preco do LQD, que esta noutro nivel e inventaria uma queda de 36% em
+# Abril. E a mesma regra declarada das substituicoes abaixo: credito de empresas,
+# o de qualidade em vez do de alto rendimento. O HYG so entra na carteira em
+# Resilient, um regime que nunca dispara, por isso isto nao toca em resultado
+# nenhum publicado — existe para que a grelha do resilient_grid.py nao leia uma
+# descontinuidade como se fosse mercado.
+for _m, _seg in (("2007-03", "2007-04"), ("2007-02", "2007-03")):
+    PX["HYG"].setdefault(_m, PX["HYG"][_seg] * PX["LQD"][_m] / PX["LQD"][_seg])
 
 # Nem todos os ETF de producao existem em 2007. As substituicoes sao declaradas,
 # nao escondidas, e nenhuma delas favorece o sistema novo:
@@ -39,7 +63,6 @@ SUBSTITUTIONS = {
     "SGOV": "SHV",   # SGOV desde 2020-05 -> SHV
     "USMV": "SPY",   # USMV (baixa volatilidade) desde 2011-10 -> SPY, o indice.
                      # Penaliza o sistema novo: em Critical fica com beta total.
-    "SHY":  "SHV",   # sem serie completa de SHY -> SHV, ainda mais curto
 }
 sub = lambda t: SUBSTITUTIONS.get(t, t)
 

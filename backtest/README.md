@@ -31,7 +31,7 @@ Uma diferença que não é detalhe: o v1 usa o score com o **E/P congelado** e o
 score com o **E/P marcado a mercado**, porque foi isso que mudou na produção em
 Setembro de 2026 — os earnings ficam ancorados numa referência trimestral e o preço
 é marcado ao fecho diário. A comparação é antes contra depois, incluindo esta
-diferença e não apesar dela. O efeito isolado é pequeno: 6,60% contra 6,57% de CAGR,
+diferença e não apesar dela. O efeito isolado é pequeno: 6,62% contra 6,59% de CAGR,
 quebra máxima igual, 2008 igual. Muda uma coisa só — com o E/P a responder ao preço
 o score nunca desce a 4,0 nesta amostra, e o episódio Resilient de 2021 desaparece.
 
@@ -53,8 +53,8 @@ Há duas leituras honestas de "custo por posição", e ambas são publicadas:
 
 | Modelo | O que cobra | v2 paga | v1 paga |
 |---|---|---|---|
-| `open_close` | Literal: abrir e fechar. Um rebalanceamento semestral que só mexe nos pesos dos mesmos seis instrumentos não paga nada. | **$400** | $200 |
-| `every_trade` | Realista: qualquer linha tocada é uma ordem executada, incluindo o acerto de peso de um instrumento já detido. | $3.120 | $2.580 |
+| `open_close` | Literal: abrir e fechar. Um rebalanceamento semestral que só mexe nos pesos dos mesmos seis instrumentos não paga nada. | **$540** | $220 |
+| `every_trade` | Realista: qualquer linha tocada é uma ordem executada, incluindo o acerto de peso de um instrumento já detido. | $3.300 | $2.600 |
 
 As dezasseis transacções do v2 que abrem ou fecham posições, em dezanove anos e
 meio:
@@ -62,15 +62,15 @@ meio:
 | Quando | Custo | Porquê |
 |---|---|---|
 | 2007-02 | $60 | abertura inicial, seis posições |
-| 2008-03 · 2020-05 · 2024-08 | $40 cada | entrada em stress: fecham IEF, LQD e PDBC, abre GLD |
-| 2010-12 · 2021-05 | $40 cada | saída de stress |
-| 2024-11 | $50 | saída de stress a partir de FTQ: sai também o TLT |
-| nove trocas de sub-regime | $10 cada | **só a manga de duração muda de instrumento** |
+| 2008-03 · 2020-05 · 2024-08 | $50 cada | entrada em stress: fecham IEF, LQD e PDBC, abrem GLD e a manga curta |
+| 2010-12 · 2021-05 · 2024-11 | $50 cada | saída de stress, pelo caminho inverso |
+| nove trocas de sub-regime | $20 cada | **só a manga de duração muda de instrumento: fecha o TLT, abre o SHY** |
 
 Aquele último número responde à questão que este README deixava em aberto: as
 seis trocas de sub-regime entre 2008 e 2010, apontadas como a omissão que mais
-pesava, custam **sessenta dólares no total** — e as nove de todo o período, noventa.
-A porta assimétrica FTQ/Stress troca um instrumento, não a carteira.
+pesava, custam **cento e vinte dólares no total** — e as nove de todo o período,
+cento e oitenta. A porta assimétrica FTQ/Stress troca um instrumento, não a
+carteira.
 
 **Nota sobre o Sortino.** Até Setembro de 2026 este backtest calculava o
 Sortino com o desvio-padrão da sub-amostra de meses negativos, e não com o
@@ -92,15 +92,15 @@ Sensibilidade, sobre o modelo `every_trade`:
 
 | Custo proporcional | v2 CAGR | v2 custo total | v1 CAGR | Custo do seguro |
 |---|---|---|---|---|
-| 0 bp (só comissão) | 6,47% | $3.120 | 6,84% | 0,37 pp |
-| 5 bp | 6,43% | $4.651 | 6,83% | 0,40 pp |
-| 10 bp | 6,38% | $6.167 | 6,81% | 0,43 pp |
-| 20 bp | 6,29% | $9.153 | 6,78% | 0,49 pp |
+| 0 bp (só comissão) | 6,48% | $3.300 | 6,84% | 0,36 pp |
+| 5 bp | 6,44% | $4.834 | 6,83% | 0,39 pp |
+| 10 bp | 6,40% | $6.352 | 6,81% | 0,41 pp |
+| 20 bp | 6,31% | $9.343 | 6,78% | 0,47 pp |
 
 Duas leituras. A comissão está resolvida e é irrelevante a esta escala. O spread
 não está medido — está modelado como sensibilidade — e como o sistema novo
 negoceia mais do que o antigo, é ele que paga a diferença: o preço do seguro
-alarga de 0,36 para 0,49 pp entre 0 e 20 pontos base.
+alarga de 0,36 para 0,47 pp entre 0 e 20 pontos base.
 
 **Impostos não estão modelados de todo**, em nenhuma jurisdição. Num regime que
 tribute mais-valias realizadas, cada saída de stress é um evento fiscal, e a
@@ -135,12 +135,19 @@ declaradas no código e nenhuma favorece o sistema novo:
 | BIL | SHV | BIL desde 2007-05; bilhetes do Tesouro 0-1 ano |
 | SGOV | SHV | SGOV desde 2020-05 |
 | USMV | SPY | USMV (baixa volatilidade) desde 2011-10. **Penaliza o v2**: em Critical fica com beta total em vez de um fator defensivo |
-| SHY | SHV | Sem série completa; SHV é ainda mais curto, logo mais conservador |
 
-Fora de Critical, as percentagens vêm em produção da newsletter semanal, que não
-existe antes de Março de 2026. O backtest usa um vector fixo, **igual nos dois
-sistemas**, para que a comparação isole o efeito do medidor B e não o do
-julgamento semanal.
+O SHY deixou de ser substituído: tem série própria desde 2006-12 e é agora
+carregada. O HYG só começou a cotar em 2007-04, e os dois primeiros meses do
+período (2007-02 e 2007-03) tomam o LQD — crédito de empresas, o de qualidade em
+vez do de alto rendimento, pela mesma regra das linhas acima. O HYG só entra na
+carteira em Resilient, um regime que nunca dispara no período, pelo que estes
+dois meses não tocam em nenhum resultado publicado.
+
+Os pesos de cada regime vêm do `mrm_rules.REGIME_WEIGHTS`, o mesmo dicionário
+que a produção usa para montar a carteira. O backtest não tem constantes
+próprias: se os pesos mudarem em produção, mudam aqui, e a comparação entre v1 e
+v2 continua a isolar o efeito do medidor B porque ambos usam o mesmo vector fora
+de Critical.
 
 ## Resultados
 
@@ -150,19 +157,19 @@ Capital inicial $100.000, composto, com a corretagem de $10/$10 aplicada.
 
 | | CAGR | Vol | Sharpe | Sortino | Quebra máx. | (mês) | Valor final |
 |---|---|---|---|---|---|---|---|
-| v1 — sistema anterior | 6,92% | 8,17% | 0,671 | 0,991 | −23,9% | 2009-02 | $368.663 |
-| **v2 — sistema actual** | **6,56%** | **7,46%** | **0,681** | **1,028** | **−16,4%** | **2022-09** | **$345.165** |
+| v1 — sistema anterior | 6,92% | 8,17% | 0,671 | 0,991 | −23,9% | 2009-02 | $368.554 |
+| **v2 — sistema actual** | **6,58%** | **7,46%** | **0,683** | **1,031** | **−16,4%** | **2022-09** | **$346.055** |
 | SPY buy & hold | 11,10% | 15,45% | 0,661 | 0,986 | −50,8% | 2009-02 | $778.729 |
 | 60/40 SPY-IEF anual | 8,39% | 9,38% | 0,742 | 1,118 | −27,3% | 2009-02 | $480.890 |
 
-Sem corretagem os mesmos números são 6,93% e 6,57% — a diferença é de um
+Sem corretagem os mesmos números são 6,92% e 6,59% — a diferença é de um
 centésimo de ponto percentual, e está aqui só para se ver que é isso mesmo.
 
 Anos que decidem a diferença:
 
 | Ano | v1 | v2 | SPY | Medidor B |
 |---|---|---|---|---|
-| 2008 | −13,8% | **+1,5%** | −36,8% | ON 10/12 meses |
+| 2008 | −13,8% | **+1,4%** | −36,8% | ON 10/12 meses |
 | 2009 | +13,5% | +2,2% | +26,4% | ON 12/12 meses |
 | 2020 | +11,2% | +5,9% | +18,4% | ON 8/12 meses |
 | 2022 | −12,7% | −12,8% | −18,2% | — |
@@ -172,8 +179,8 @@ e 2024-08 a 2024-11. Ficou calado em 2011, 2018 e 2022.
 
 ## O que estes números dizem, e o que não dizem
 
-**O seguro funciona e tem preço.** 2008 passa de −13,8% para +1,5% e a quebra
-máxima cai de −23,9% para −16,4%. Custa 0,36 pontos percentuais de CAGR ao longo
+**O seguro funciona e tem preço.** 2008 passa de −13,8% para +1,4% e a quebra
+máxima cai de −23,9% para −16,4%. Custa 0,34 pontos percentuais de CAGR ao longo
 de dezanove anos, quase todos pagos nas recuperações: 2009 rende +2,2% contra
 +13,5%, porque a regra de Sahm continua acima do limiar muito depois de o mercado
 ter feito o fundo.
@@ -184,15 +191,15 @@ falha do medidor: 2022 foi um bear market sem recessão, e o medidor existe para
 separar as duas coisas. Mas é a consequência honesta da escolha: o sistema não
 protege contra quedas de mercado sem deterioração do emprego e do crédito.
 
-**O v2 continua a perder muito para o SPY.** 6,57% contra 11,10%, com um terço
+**O v2 continua a perder muito para o SPY.** 6,59% contra 11,10%, com um terço
 da volatilidade e menos de um terço da quebra máxima. Quem compara só o CAGR
 está a comparar coisas diferentes.
 
 **Seis trocas de sub-regime entre 2008 e 2010** (nove em todo o período). Cada
-uma é uma transacção real, e agora está paga: dez dólares cada, sessenta no
-período de crise e noventa no total, porque a porta assimétrica troca um
-instrumento e não a carteira. O que continua por medir é o spread — e os
-impostos, que não estão modelados de todo.
+uma é uma transacção real, e agora está paga: vinte dólares cada — fecha o TLT,
+abre o SHY —, cento e vinte no período de crise e cento e oitenta no total,
+porque a porta assimétrica troca um instrumento e não a carteira. O que continua
+por medir é o spread — e os impostos, que não estão modelados de todo.
 
 ## Sensibilidade dos limiares
 
@@ -202,29 +209,74 @@ importa saber quão frágil é o resultado:
 
 | Sahm | ΔNPL | FTQ | CAGR | Sortino | Quebra máx. | 2008 | Meses ON |
 |---|---|---|---|---|---|---|---|
-| **0,50** | **0,81** | **−0,10** | **6,57%** | **1,030** | **−16,4%** | **+1,5%** | **48** |
-| 0,40 | 0,81 | −0,10 | 6,71% | 1,061 | −16,4% | +1,6% | 55 |
-| 0,60 | 0,81 | −0,10 | 6,66% | 1,047 | −16,4% | +1,5% | 45 |
-| 0,50 | 0,60 | −0,10 | 6,57% | 1,030 | −16,4% | +1,5% | 48 |
-| 0,50 | 1,00 | −0,10 | 6,85% | 1,084 | −16,4% | +3,5% | 43 |
-| 0,50 | 0,81 | −0,05 | 6,53% | 1,021 | −16,4% | +0,7% | 48 |
-| 0,50 | 0,81 | −0,20 | 6,26% | 0,975 | −16,4% | −3,9% | 48 |
-| só Sahm | — | −0,10 | 6,80% | 1,073 | −16,4% | +3,5% | 41 |
-| — | só ΔNPL | −0,10 | 7,10% | 1,126 | −16,4% | +1,5% | 33 |
+| **0,50** | **0,81** | **−0,10** | **6,59%** | **1,034** | **−16,4%** | **+1,5%** | **48** |
+| 0,40 | 0,81 | −0,10 | 6,76% | 1,070 | −16,4% | +1,9% | 55 |
+| 0,60 | 0,81 | −0,10 | 6,68% | 1,051 | −16,4% | +1,5% | 45 |
+| 0,50 | 0,60 | −0,10 | 6,59% | 1,034 | −16,4% | +1,5% | 48 |
+| 0,50 | 1,00 | −0,10 | 6,89% | 1,091 | −16,4% | +3,7% | 43 |
+| 0,50 | 0,81 | −0,05 | 6,55% | 1,027 | −16,4% | +0,7% | 48 |
+| 0,50 | 0,81 | −0,20 | 6,28% | 0,980 | −16,4% | −3,8% | 48 |
+| só Sahm | — | −0,10 | 6,84% | 1,081 | −16,4% | +3,7% | 41 |
+| — | só ΔNPL | −0,10 | 7,11% | 1,130 | −16,4% | +1,5% | 33 |
 
 Duas leituras honestas desta tabela.
 
 A primeira: o resultado é robusto. Em nenhuma variante a quebra máxima muda, o
-CAGR fica entre 6,26% e 7,10%, e 2008 fica entre −3,9% e +3,5% — muito acima dos
+CAGR fica entre 6,28% e 7,11%, e 2008 fica entre −3,8% e +3,7% — muito acima dos
 −13,8% do sistema anterior em qualquer configuração.
 
 A segunda: **a configuração escolhida não é a melhor desta amostra.** Usar só a
-aceleração da delinquência daria 7,10% e Sortino 1,126. Mantemos os dois gatilhos
+aceleração da delinquência daria 7,11% e Sortino 1,130. Mantemos os dois gatilhos
 na mesma. A regra de Sahm é publicada, validada por terceiros e desenhada para
 sobreviver a revisões; o limiar da delinquência é nosso, tirado dos mesmos dados.
 Escolher o que ganha nesta amostra é exactamente o exercício de sobreajuste que o
 resto do framework tenta evitar — e dois gatilhos independentes protegem contra
 uma série falhar, ser revista ou ser descontinuada.
+
+## O regime Resilient nunca dispara
+
+O `score_real` — o mesmo que a produção publica, com o E/P marcado ao preço —
+tem **mínimo de 4,38 em 21 anos** e **zero meses em 4,0 ou abaixo**. O limiar do
+Resilient nunca é atingido, e as 15 mudanças de estado do período são todas de
+entrada ou saída de Critical. Na prática o sistema tem dois regimes, não três.
+
+A pergunta natural é se o limiar devia subir. O `resilient_grid.py` corre a
+grelha (limiar × confirmação de N leituras consecutivas), com as séries reais de
+QQQ, SHY, HYG e IWO:
+
+| limiar | confirmação | CAGR | Vol | Sharpe | Sortino | Quebra máx. | meses em Resilient | entradas |
+|---|---|---|---|---|---|---|---|---|
+| **4,0 (actual)** | — | **6,58%** | 7,5% | **0,683** | **1,031** | **−16,4%** | 0 | 0 |
+| 4,4 | — | 6,34% | 7,7% | 0,639 | 0,947 | −19,8% | 5 | 1 |
+| 4,4 | 2 | 6,28% | 7,7% | 0,630 | 0,933 | −20,6% | 6 | 1 |
+| 4,4 | 3 | 6,38% | 7,7% | 0,642 | 0,952 | −19,2% | 7 | 1 |
+| 5,0 | — | 6,33% | 7,7% | 0,635 | 0,941 | −20,7% | 8 | 1 |
+| 5,0 | 2 | 6,43% | 7,7% | 0,646 | 0,960 | −19,2% | 9 | 1 |
+| 5,5 | — | 6,86% | 9,2% | 0,602 | 0,904 | −22,6% | 54 | 8 |
+| 5,5 | 2 | 7,24% | 9,2% | 0,636 | 0,960 | −23,0% | 64 | 7 |
+| 5,5 | 3 | 7,48% | 9,4% | 0,650 | 0,981 | −24,4% | 72 | 5 |
+
+**Nenhuma variante melhora o Sharpe ou o Sortino, e todas pioram a quebra
+máxima** — entre 2,8 e 8,0 pontos percentuais. A 5,5 há mais retorno, comprado
+com mais volatilidade e mais oito pontos de quebra: o oposto do que o sistema
+existe para fazer.
+
+A razão é estrutural, não uma peculiaridade da amostra. O mapa Resilient carrega
+**75% em activos de risco** contra 50% em Turbulence, e o momento em que dispara
+é sempre o mesmo — 2021-08 nos limiares baixos, 2021-05/06 a 5,0, meses antes do
+mercado de 2022. A quebra máxima acontece em 2022-09 em todas as variantes. O
+score mede o risco *corrente*, não o futuro: o seu valor mais baixo é o mercado
+mais complacente, que é historicamente o pior momento para adicionar risco. Um
+ramo risk-on accionado por um mínimo de risco percebido compra no topo da calma.
+
+Confirmar a mudança com duas ou três leituras consecutivas não salva nada: adia
+a entrada, e a entrada é que é o problema.
+
+**O limiar fica em 4,0.** Um ramo que nunca dispara é inofensivo; qualquer
+versão que dispare piora exactamente o que interessa. Fica registado que os
+limiares de 4,4 a 5,0 produzem **um único episódio** — é uma anedota, não uma
+amostra; só a linha dos 5,5, com oito entradas, tem algum conteúdo estatístico, e
+é a que mostra pior Sharpe de forma consistente.
 
 ## Limitações
 

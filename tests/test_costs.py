@@ -75,11 +75,11 @@ close(fb.value(sh_paid, m0), 99_940.0, 0.01, "com custos investem-se 99.940")
 ser, log, led = fb.run_v2("open_close")
 close(sum(c for _, _, c in led["events"]), led["total"], 0.01,
       "a soma dos eventos e o total do ledger")
-close(led["total"], 400.0, 0.01, "o v2 paga 400 USD de corretagem em 19,5 anos")
+close(led["total"], 540.0, 0.01, "o v2 paga 540 USD de corretagem em 19,5 anos")
 eq(led["n_rebal"], 54, "54 rebalanceamentos no v2 (15 mudancas de estado + semestrais)")
 
 ser1, _, led1 = fb.run_v1("open_close")
-close(led1["total"], 200.0, 0.01, "o v1 paga 200 USD")
+close(led1["total"], 220.0, 0.01, "o v1 paga 220 USD")
 eq(led1["n_rebal"], 42, "42 rebalanceamentos no v1")
 true(led["total"] > led1["total"], "o sistema que negoceia mais paga mais")
 
@@ -118,11 +118,11 @@ close((totais[2] - totais[0]) / (totais[1] - totais[0]), 2.0, 0.02,
 
 # ── 8. sem custos, os numeros publicados antes mantem-se ────────────────────
 s2 = fb.stats(free2); s1 = fb.stats(free1)
-close(s2["cagr"] * 100, 6.57, 0.05, "sem custos o v2 continua em 6,57%")
-close(s1["cagr"] * 100, 6.93, 0.05, "sem custos o v1 continua em 6,93%")
+close(s2["cagr"] * 100, 6.59, 0.05, "sem custos o v2 continua em 6,59%")
+close(s1["cagr"] * 100, 6.92, 0.05, "sem custos o v1 continua em 6,92%")
 close(s2["mdd"] * 100, -16.4, 0.1, "a quebra maxima nao depende dos custos")
 d2 = dict(ser)
-close((d2["2008-12"] / d2["2007-12"] - 1) * 100, 1.5, 0.2, "2008 com custos continua positivo")
+close((d2["2008-12"] / d2["2007-12"] - 1) * 100, 1.4, 0.2, "2008 com custos continua positivo")
 
 # ── A carteira REAL cobra os mesmos custos que o backtest ────────────────
 # Enquanto os custos viveram so no backtest, o site publicava lado a lado um
