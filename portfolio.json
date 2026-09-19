@@ -1739,30 +1739,136 @@
       "alpha_vs_benchmark_pct": -9.14,
       "rebalance_triggered": false,
       "rebalance_reason": "hold"
+    },
+    {
+      "issue": 28,
+      "date": "2026-09-18",
+      "mrm_score": 6.97,
+      "score_nd_pillars": [],
+      "score_complete": true,
+      "regime": "Turbulence",
+      "regime_signalled": "Turbulence",
+      "critical_subregime": null,
+      "critical_subregime_signalled": null,
+      "critical_subregime_note": null,
+      "prices": {
+        "BIL": 91.5,
+        "VNQ": 94.8,
+        "PDBC": 19.79,
+        "LQD": 104.32,
+        "SPY": 764.29,
+        "IEF": 91.01
+      },
+      "prices_confirmed": {
+        "BIL": false,
+        "VNQ": false,
+        "PDBC": false,
+        "LQD": false,
+        "SPY": false,
+        "IEF": false
+      },
+      "data_stale": true,
+      "portfolio_value_pre_rebalance": 10631.41,
+      "bucket_allocation_pct": {
+        "US_EQUITIES": 41.45077720207254,
+        "US_TREASURIES": 19.689119170984455,
+        "IG_CREDIT": 15.544041450777202,
+        "COMMODITIES": 6.217616580310881,
+        "CASH": 14.507772020725387,
+        "ALTERNATIVES": 2.5906735751295336
+      },
+      "newsletter_bucket_allocation_pct": {
+        "US_EQUITIES": 15.0,
+        "US_TREASURIES": 25.0,
+        "IG_CREDIT": 15.0,
+        "COMMODITIES": 15.0,
+        "CASH": 20.0,
+        "ALTERNATIVES": 10.0
+      },
+      "newsletter_alloc_issue": 27,
+      "regime_weights_adopted": true,
+      "stress_gauge_active": false,
+      "stress_gauge_basis": "no trigger active",
+      "data_refused": false,
+      "valuation_frozen": [],
+      "valuation_frozen_days": {},
+      "valuation_frozen_dates": {},
+      "valuation_not_credible": [],
+      "price_frozen_after_days": 21,
+      "valuation_missing": [],
+      "valuation_complete": true,
+      "benchmark_frozen": true,
+      "score_basis": "data.json is 0.0h old",
+      "allocation_pct": {
+        "BIL": 14.507772020725387,
+        "IEF": 19.689119170984455,
+        "LQD": 15.544041450777202,
+        "PDBC": 6.217616580310881,
+        "SPY": 41.45077720207254,
+        "VNQ": 2.5906735751295336
+      },
+      "active_etf_map": {
+        "US_EQUITIES": "SPY",
+        "US_TREASURIES": "IEF",
+        "IG_CREDIT": "LQD",
+        "COMMODITIES": "PDBC",
+        "CASH": "BIL",
+        "ALTERNATIVES": "VNQ"
+      },
+      "shares": {
+        "SPY": 5.7659,
+        "IEF": 23.0,
+        "LQD": 15.8412,
+        "PDBC": 33.4017,
+        "BIL": 16.8566,
+        "VNQ": 2.9053
+      },
+      "transaction_cost_usd": 0.0,
+      "transaction_cost_detail": {
+        "opened": [],
+        "closed": [],
+        "adjusted": [
+          "BIL",
+          "IEF",
+          "LQD",
+          "PDBC",
+          "SPY",
+          "VNQ"
+        ],
+        "model": "open_close"
+      },
+      "portfolio_value": 10631.41,
+      "portfolio_pnl_pct": 6.31,
+      "benchmark_spy_value": 11545.14,
+      "benchmark_spy_pnl_pct": 15.45,
+      "alpha_vs_benchmark_pct": -9.14,
+      "rebalance_triggered": true,
+      "rebalance_reason": "adopt_regime_weights",
+      "rebalance_executed_on_run": 1
     }
   ],
   "current": {
-    "issue": 27,
-    "date": "2026-09-11",
+    "issue": 28,
+    "date": "2026-09-18",
     "regime": "Turbulence",
     "critical_subregime": null,
     "critical_subregime_note": null,
     "shares": {
-      "SPY": 1.427,
-      "IEF": 21.8934,
-      "LQD": 14.2502,
-      "PDBC": 98.3238,
-      "BIL": 34.0587,
-      "VNQ": 10.5429
+      "SPY": 5.7659,
+      "IEF": 23.0,
+      "LQD": 15.8412,
+      "PDBC": 33.4017,
+      "BIL": 16.8566,
+      "VNQ": 2.9053
     },
     "transaction_cost_usd": 0.0,
     "bucket_allocation_pct": {
-      "US_EQUITIES": 10.0,
-      "US_TREASURIES": 20.0,
-      "IG_CREDIT": 15.0,
-      "COMMODITIES": 15.0,
-      "CASH": 30.0,
-      "ALTERNATIVES": 10.0
+      "US_EQUITIES": 41.45077720207254,
+      "US_TREASURIES": 19.689119170984455,
+      "IG_CREDIT": 15.544041450777202,
+      "COMMODITIES": 6.217616580310881,
+      "CASH": 14.507772020725387,
+      "ALTERNATIVES": 2.5906735751295336
     },
     "newsletter_bucket_allocation_pct": {
       "US_EQUITIES": 15.0,
@@ -1772,15 +1878,15 @@
       "CASH": 20.0,
       "ALTERNATIVES": 10.0
     },
-    "macro_echo_discarded": false,
-    "macro_echo_issue": null,
+    "newsletter_alloc_issue": 27,
+    "regime_weights_adopted": true,
     "allocation_pct": {
-      "BIL": 30.0,
-      "IEF": 20.0,
-      "LQD": 15.0,
-      "PDBC": 15.0,
-      "SPY": 10.0,
-      "VNQ": 10.0
+      "BIL": 14.507772020725387,
+      "IEF": 19.689119170984455,
+      "LQD": 15.544041450777202,
+      "PDBC": 6.217616580310881,
+      "SPY": 41.45077720207254,
+      "VNQ": 2.5906735751295336
     },
     "valuation_frozen": [],
     "valuation_frozen_days": {},
