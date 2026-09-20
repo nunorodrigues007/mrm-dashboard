@@ -1347,6 +1347,42 @@ def main():
     # veredicto publicado que nao muda o comportamento e pior do que nao o
     # publicar.
     _nao_valorizavel = sorted(set(valuation_missing) | set(valuation_not_credible))
+
+    # Um preco de recurso ainda dentro do PRICE_FROZEN_AFTER_DAYS nao e
+    # "ausente" nem "nao credivel", por isso escapa a guarda abaixo — e o
+    # rebalanceamento executa sobre ele. Foi o que aconteceu a 18 de Setembro de
+    # 2026: os seis instrumentos vieram todos com `prices_confirmed: false` e
+    # datados de 11 de Setembro, e a adopcao dos pesos dimensionou as posicoes a
+    # precos de uma semana antes, com o valor da carteira e o P&L congelados na
+    # mesma corrida.
+    #
+    # A guarda NAO pode ser geral. Quando o medidor B dispara, ficar exposto
+    # mais uma semana e pior do que dimensionar com um preco de ha dias — ha um
+    # ensaio que prende isso de proposito. So os gatilhos SEM PRESSA esperam: os
+    # do `rules.GATILHOS_ADIAVEIS`, que nao respondem a stress nenhum.
+    #
+    # Consequencia deliberada: `rebalance_triggered` fica a False, por isso o
+    # `regime_weights_adopted` NAO e escrito e a adopcao volta a tentar na semana
+    # seguinte. Um gatilho adiado nao e um gatilho perdido.
+    #
+    # Cede o lugar a guarda do valor nao credivel quando as duas se aplicam:
+    # "nao ha preco nenhum" e um diagnostico mais preciso do que "o preco nao e
+    # desta semana", e e esse que deve ser publicado.
+    _precos_de_recurso = sorted(t for t in tickers_needed if stale.get(t))
+    if (_precos_de_recurso and trigger and not _nao_valorizavel
+            and rules.gatilho_adiavel(trigger)):
+        log.error("Rebalanceamento adiado: %s sem cotacao desta semana (preco de "
+                  "recurso). O gatilho '%s' nao responde a stress e pode esperar; "
+                  "dimensionar posicoes sobre precos velhos poe quantidades "
+                  "erradas na carteira. Posicoes mantidas, gatilho reavaliado na "
+                  "proxima corrida.", ", ".join(_precos_de_recurso), trigger)
+        rebalance_triggered = False
+        rebalance_reason = "stale_prices_held"
+        final_regime = held_regime
+        final_critical_subregime = held_subregime
+        final_bucket_alloc = current.get("bucket_allocation_pct", {}) or {}
+        trigger = None
+
     if _nao_valorizavel and trigger:
         log.error("Rebalanceamento cancelado: %s sem preco utilizavel (ausente ou "
                   "congelado alem do limite), o valor da carteira nao esta "

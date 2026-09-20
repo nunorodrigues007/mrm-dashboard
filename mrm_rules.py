@@ -295,6 +295,13 @@ REBALANCE_COPY = {
         "A rebalance was due but this week's allocation could not be read. "
         "Positions held rather than traded on an unverified allocation."
     ),
+    "stale_prices_held": (
+        "A rebalance was due, but at least one instrument had no quote from this "
+        "week and fell back to an older price. Position sizes computed from stale "
+        "prices are wrong by whatever the market did in between, and the error is "
+        "largest precisely when markets move. Positions were held; the trigger is "
+        "re-evaluated on the next run, against prices that exist."
+    ),
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -593,6 +600,35 @@ def subregime_from_gauge(gauge_subregime, was_critical_last_week,
             "Stress-without-relief (defensive).")
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Gatilhos que podem esperar por precos a serio
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Dimensionar posicoes sobre um preco de recurso poe quantidades erradas na
+# carteira — erradas por tudo o que o mercado fez entre o preco usado e hoje.
+# Isso NAO e razao para bloquear tudo: quando o medidor B dispara, ficar exposto
+# mais uma semana e pior do que comprar com um preco de ha dias. A cobertura
+# tardia custa mais do que o dimensionamento imperfeito, e ha um ensaio que
+# prende essa decisao (test_audit, "com um recurso de 7 dias, a rotacao
+# executa-se").
+#
+# Os gatilhos ABAIXO sao os que nao tem pressa nenhuma. Nao respondem a stress:
+# aplicam um vector que ja era o vector, ou cumprem uma data no calendario.
+# Adiar uma semana nao custa nada, e executar sobre precos velhos custa. Foi o
+# que aconteceu a 18 de Setembro de 2026 — a adopcao dos pesos dimensionou seis
+# posicoes a precos de 11 de Setembro, com o valor da carteira e o P&L
+# congelados na mesma corrida.
+GATILHOS_ADIAVEIS = frozenset({
+    "adopt_regime_weights",
+    "semestral_rebalance",
+})
+
+
+def gatilho_adiavel(motivo):
+    """True quando este gatilho pode esperar por cotacoes desta semana."""
+    return bool(motivo) and str(motivo).split(":")[0] in GATILHOS_ADIAVEIS
+
+
 ADOPCAO_LIMIAR_PP = 1.0
 
 
@@ -736,6 +772,56 @@ def effective_bucket_alloc(regime, critical_subregime, newsletter_alloc=None):
     um modelo pode ser publicada e verificada; não pode ser executada."""
     key = resolve_etf_map_key(regime, critical_subregime)
     return dict(REGIME_WEIGHTS[key]), f"rules ({key})"
+
+
+def percentagens_para_exibir(pesos, casas=1):
+    """Arredonda um vector de pesos para exibição e GARANTE que soma 100.
+
+    O arredondamento individual não garante nada. O vector de Turbulence —
+    41,4508 / 19,6891 / 15,5440 / 6,2176 / 14,5078 / 2,5907 — arredondado a zero
+    casas dá 41+20+16+6+15+3 = **101%**. Foi isso que fechou o portão na
+    primeira semana em que a carteira passou a usá-lo: a edição 28 de 18 de
+    Setembro de 2026 nunca chegou a ser publicada nem enviada.
+
+    A diferença é distribuída pelos maiores restos (método de Hamilton), na
+    ordem canónica dos `BUCKETS` para desempatar — a saída é determinística, e a
+    mesma entrada dá sempre a mesma tabela. Funciona para qualquer vector, não
+    só para os quatro que existem hoje: uma alteração de pesos amanhã não
+    reintroduz o defeito.
+
+    Devolve um dicionário {bucket: percentagem arredondada}, na ordem em que os
+    pesos vieram.
+    """
+    if not pesos:
+        return {}
+    escala = 10 ** int(casas)
+    unidades = {b: int(v * escala) for b, v in pesos.items()}     # trunca
+    falta = round(100 * escala) - sum(unidades.values())
+    # Ordem: maior resto primeiro; a ordem canónica dos buckets desempata, e a
+    # chave entra como último critério para um bucket desconhecido não tornar a
+    # ordenação dependente da ordem de inserção do dicionário.
+    def _ordem(b):
+        resto = pesos[b] * escala - unidades[b]
+        canonica = BUCKETS.index(b) if b in BUCKETS else len(BUCKETS)
+        return (-resto, canonica, str(b))
+    por_resto = sorted(pesos, key=_ordem)
+    for i in range(abs(falta)):
+        if not por_resto:
+            break
+        b = por_resto[i % len(por_resto)] if falta > 0 else por_resto[-1 - (i % len(por_resto))]
+        unidades[b] += 1 if falta > 0 else -1
+    return {b: unidades[b] / escala for b in pesos}
+
+
+def linha_de_percentagens(pesos, casas=1):
+    """A mesma coisa, já escrita: "US_EQUITIES: 41.5% | US_TREASURIES: 19.7% …".
+
+    Uma única função a produzir a linha significa que o prompt da newsletter e
+    o que a validação espera de volta não podem divergir por arredondamento.
+    """
+    arred = percentagens_para_exibir(pesos, casas)
+    ordem = [b for b in BUCKETS if b in arred] + [b for b in arred if b not in BUCKETS]
+    return " | ".join(f"{b}: {arred[b]:.{int(casas)}f}%" for b in ordem)
 
 
 def allocation_matches(publicada, esperada, tolerancia_pp=1.0):

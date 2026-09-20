@@ -281,9 +281,14 @@ has(p, "resumes when Gauge B stands down",
 _i_ef = p.index("Effective allocation now")
 _i_ma = p.index("Macro allocation on record")
 true(_i_ef != _i_ma, "sao duas linhas distintas, nao a mesma")
+_macro_arred = rules.percentagens_para_exibir(rules.REGIME_WEIGHTS["Turbulence"])
 for _b in rules.BUCKETS:
-    has(c["macro_line"], f"{_b}: {rules.REGIME_WEIGHTS['Turbulence'][_b]:.0f}%",
+    has(c["macro_line"], f"{_b}: {_macro_arred[_b]:.1f}%",
         f"a macro anunciada e a das regras, em {_b}")
+# E a linha soma 100. Arredondada a zero casas somava 101 — a edicao 28 de 18 de
+# Setembro de 2026 nao chegou a ser publicada por causa disso.
+eq(round(sum(float(x.split(": ")[1].rstrip("%")) for x in c["macro_line"].split(" | ")), 6),
+   100.0, "a linha da macro soma 100%")
 has(p, "-0.07 (fires at >= 0.5", "valor do gatilho de Sahm")
 hasnt(p, "No structural regime change detected", "texto legado desapareceu")
 hasnt(p, "EMERGENCY REBALANCE ACTIVATED", "decisao legada por score desapareceu")
@@ -298,7 +303,7 @@ eq(c2["rb_color"], "#2d1515", "caixa vermelha na entrada")
 eq(c2["port_etfs"], "USMV | SHY | SGOV | GLD | BIL | VNQ",
    "instrumentos de Critical_Stress — SHY, nao TLT")
 eq(c2["rb_done"], True, "houve transaccoes")
-has(c2["alloc_line"], "US_EQUITIES: 15%", "alocacao efectiva e o vector de Critical")
+has(c2["alloc_line"], "US_EQUITIES: 15.0%", "alocacao efectiva e o vector de Critical")
 
 p2 = sn.build_prompt(c2)
 has(p2, "Operative regime: Critical · No Relief", "o modelo ve o sub-regime")
