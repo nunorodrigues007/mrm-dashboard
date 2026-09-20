@@ -1,11 +1,11 @@
 {
   "meta": {
-    "lastUpdated": "2026-09-20T19:30:18Z",
-    "generatedAt": "2026-09-20T19:30:18Z",
+    "lastUpdated": "2026-09-20T19:54:18Z",
+    "generatedAt": "2026-09-20T19:54:18Z",
     "source": "FRED API (Live)",
     "version": "3.1.0",
     "freshness": {
-      "generatedAt": "2026-09-20T19:30:18Z",
+      "generatedAt": "2026-09-20T19:54:18Z",
       "warnAfterHours": 30,
       "refuseAfterHours": 48,
       "degraded": false,
@@ -27,7 +27,7 @@
     },
     "fredSeriesStale": {},
     "gaugeNote": "Gauge A (globalResilienceScore) is a LEADING fragility measure on a 6-18 month horizon: in a downturn three of its five pillars mechanically improve, so the composite cannot signal concurrent stress. Concurrent stress detection lives in stressGauge, which is not averaged into Gauge A.",
-    "deltaBasis": "vs. 2026-09-11",
+    "deltaBasis": "vs. 2026-09-20",
     "liquidityNote": "Liquidity pillar redefined from discontinued Wilshire 5000 proxy to Buffett Indicator (Total Corp. Equities / GDP), percentile-scored against full history. See fetch_data.py comments."
   },
   "rules": {
@@ -657,7 +657,7 @@
         "note": "3-month change in the 10Y, in basis points. Decides Flight-to-Quality against Stress-without-relief WITHIN Critical; it does not decide Critical itself."
       }
     },
-    "computedAt": "2026-09-20T19:30:17Z"
+    "computedAt": "2026-09-20T19:54:18Z"
   },
   "pillars": [
     {
@@ -681,7 +681,7 @@
       "scoredValue": 0.25,
       "nextBandEdge": 0.0,
       "distanceToNextBand": 0.25,
-      "delta": "-0.08%",
+      "delta": "+0.00%",
       "deltaDirection": "flat",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
@@ -750,7 +750,7 @@
       "scoredValue": -1.08,
       "nextBandEdge": null,
       "distanceToNextBand": null,
-      "delta": "-0.02%",
+      "delta": "+0.00%",
       "deltaDirection": "flat",
       "description": "ERP = E/P (3.86%) minus the 10Y yield (4.94%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
       "status": "critical"
@@ -835,7 +835,7 @@
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-0.02%",
+      "delta": "+0.00%",
       "alert": true,
       "description": "ERP at -1.08%. Red alert triggers below 0.80%."
     },
