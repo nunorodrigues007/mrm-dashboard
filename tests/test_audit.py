@@ -1538,6 +1538,77 @@ eq(pf_ad2["history"][-1]["rebalance_triggered"], False,
    "e nao se negoceia por deriva: isto nunca foi um rebalanceador de deriva")
 shutil.rmtree(tmp_ad, ignore_errors=True)
 
+# ── 19p-bis. A adopcao ESPERA por cotacoes desta semana ──────────────────
+#
+# A 18 de Setembro de 2026 a adopcao executou-se com os seis instrumentos a
+# virem do recurso, datados de 11 de Setembro: quantidades dimensionadas a
+# precos de uma semana antes, e a marca `regime_weights_adopted` escrita na
+# mesma corrida, o que impedia a repeticao com precos a serio.
+#
+# Um gatilho sem pressa espera. E o que NAO pode acontecer e a marca ficar
+# escrita: um gatilho adiado nao e um gatilho perdido.
+def _corre_com_tudo_em_recurso(tmp):
+    """Como `corre_recorrida`, mas com `stale=True` em todos os tickers: ha
+    numeros, e nenhum e desta semana."""
+    guardados = (up.fetch_prices, up.get_last_friday, up.adjust_for_market_holiday,
+                 up.FORCE_REBALANCE)
+    _antes = str(SEXTA - _td_topo(days=7))
+    up.fetch_prices = lambda t, d, retries=3: (
+        {x: PRECOS.get(x, 100.0) for x in t},
+        {x: _antes for x in t},
+        {x: True for x in t})
+    up.get_last_friday = lambda: SEXTA
+    up.adjust_for_market_holiday = lambda d: d
+    up.FORCE_REBALANCE = True
+    cwd = os.getcwd(); os.chdir(tmp)
+    logging.disable(logging.CRITICAL)
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            try:
+                up.main()
+            except SystemExit:
+                pass
+        return json.loads((tmp / "portfolio.json").read_text())
+    finally:
+        logging.disable(logging.NOTSET)
+        os.chdir(cwd)
+        (up.fetch_prices, up.get_last_friday, up.adjust_for_market_holiday,
+         up.FORCE_REBALANCE) = guardados
+
+tmp_adv = estado(Path(tempfile.mkdtemp()), com_data=True)
+_p_adv = json.loads((tmp_adv / "portfolio.json").read_text())
+_p_adv["current"]["bucket_allocation_pct"] = dict(_ANTIGA)
+_p_adv["current"].pop("regime_weights_adopted", None)
+_d_adv = json.loads((tmp_adv / "data.json").read_text())
+_d_adv.setdefault("meta", {})["generatedAt"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+_d_adv["stressGauge"] = {"active": False, "subregime": None, "basis": "no trigger active",
+                         "label": "Stress OFF", "triggers": {}}
+(tmp_adv / "data.json").write_text(json.dumps(_d_adv))
+(tmp_adv / "portfolio.json").write_text(json.dumps(_p_adv))
+pf_adv = _corre_com_tudo_em_recurso(tmp_adv)
+_h_adv = pf_adv["history"][-1]
+eq(_h_adv["rebalance_triggered"], False,
+   f"com tudo em recurso, a adopcao NAO executa ({_h_adv.get('rebalance_reason')})")
+eq(_h_adv["rebalance_reason"], "stale_prices_held",
+   "e a semana diz porque e que nao executou")
+eq(pf_adv["current"]["bucket_allocation_pct"], dict(_ANTIGA),
+   "a carteira fica onde estava, nao a meio caminho")
+eq(bool(pf_adv["current"].get("regime_weights_adopted")), False,
+   "e a marca NAO fica escrita — senao a adopcao perdia-se para sempre")
+true("stale_prices_held" in rules.REBALANCE_COPY,
+     "e o motivo tem texto publicavel")
+shutil.rmtree(tmp_adv, ignore_errors=True)
+
+# O simetrico, e e ele que impede a guarda de virar um bloqueio geral: com
+# cotacoes desta semana a adopcao executa-se na mesma. A guarda e sobre precos
+# velhos, nao sobre a adopcao.
+eq(rules.gatilho_adiavel("adopt_regime_weights"), True, "a adopcao pode esperar")
+eq(rules.gatilho_adiavel("semestral_rebalance"), True, "o semestral tambem")
+eq(rules.gatilho_adiavel("stress_on"), False,
+   "entrar em Critical NAO espera: ficar exposto e pior do que dimensionar mal")
+eq(rules.gatilho_adiavel("critical_subregime_switch:Critical_Stress->Critical_FTQ"), False,
+   "trocar a manga de duracao sob stress tambem nao espera")
+
 # E uma carteira ja alinhada, sem marca nenhuma, tambem nao dispara: o predicado
 # olha para os numeros, nao so para a marca.
 tmp_al = estado(Path(tempfile.mkdtemp()), com_data=True)

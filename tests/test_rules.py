@@ -845,4 +845,64 @@ for _wcl in (True, False):
              f"subregime_from_gauge devolve sempre um sub-regime real "
              f"({_gs!r}, was_critical={_wcl}) -> {_s_pr!r}")
 
+# ── As percentagens que vao para a newsletter somam 100 ──────────────────────
+#
+# A 18 de Setembro de 2026 a edicao 28 nao foi publicada nem enviada. O motivo
+# nao foi o motor nem os dados: a tabela era renderizada com zero casas decimais
+# e o vector de Turbulence — 41,4508 / 19,6891 / 15,5440 / 6,2176 / 14,5078 /
+# 2,5907 — arredondado bucket a bucket da 41+20+16+6+15+3 = 101%. Nenhum dos
+# outros tres vectores tem esse defeito, e por isso ele so apareceu na primeira
+# semana em que a carteira passou a usar o de Turbulence.
+#
+# A guarda nao e sobre o vector de hoje: e sobre QUALQUER vector. Mexer nos
+# pesos amanha nao pode reintroduzir isto.
+for _nome, _vec in rules.REGIME_WEIGHTS.items():
+    for _casas in (0, 1, 2, 3):
+        _arred = rules.percentagens_para_exibir(_vec, _casas)
+        eq(round(sum(_arred.values()), 9), 100.0,
+           f"{_nome} a {_casas} casas soma 100% ({_arred})")
+        eq(sorted(_arred), sorted(_vec), f"{_nome} a {_casas} casas nao perde buckets")
+        # E cada valor fica a menos de uma unidade do peso real: distribuir a
+        # diferenca nao pode virar licenca para inventar numeros.
+        for _b in _vec:
+            true(abs(_arred[_b] - _vec[_b]) <= 10 ** -_casas,
+                 f"{_nome}/{_b} a {_casas} casas nao se afasta do peso real")
+
+# Vectores inventados, incluindo os que ja somam certo e os que nao sao
+# normalizaveis por arredondamento simples.
+for _caso in ({"A": 33.333, "B": 33.333, "C": 33.334},
+              {"A": 100.0},
+              {"A": 16.666, "B": 16.667, "C": 16.667, "D": 16.667, "E": 16.667, "F": 16.666},
+              {"A": 0.04, "B": 99.96},
+              dict(rules.CRITICAL_WEIGHTS["Critical_FTQ"])):
+    for _casas in (0, 1, 2):
+        eq(round(sum(rules.percentagens_para_exibir(_caso, _casas).values()), 9), 100.0,
+           f"um vector qualquer a {_casas} casas tambem soma 100% ({_caso})")
+eq(rules.percentagens_para_exibir({}), {}, "um vector vazio nao rebenta")
+eq(rules.linha_de_percentagens({}), "", "e a linha de um vector vazio e vazia")
+
+# A linha escrita: e ela que vai no prompt e e contra ela que a validacao
+# compara. Uma unica funcao a produzi-la impede as duas de divergirem.
+_linha = rules.linha_de_percentagens(rules.REGIME_WEIGHTS["Turbulence"])
+eq(_linha,
+   "US_EQUITIES: 41.5% | US_TREASURIES: 19.7% | IG_CREDIT: 15.5% | "
+   "COMMODITIES: 6.2% | CASH: 14.5% | ALTERNATIVES: 2.6%",
+   "a linha de Turbulence e exactamente esta")
+eq(round(sum(float(x.split(": ")[1].rstrip("%")) for x in _linha.split(" | ")), 9), 100.0,
+   "e soma 100 quando lida de volta do texto")
+# A ordem e a canonica dos buckets, nao a de insercao do dicionario.
+_baralhado = {b: rules.REGIME_WEIGHTS["Turbulence"][b] for b in reversed(rules.BUCKETS)}
+eq(rules.linha_de_percentagens(_baralhado), _linha,
+   "a ordem da linha e a dos BUCKETS, nao a do dicionario que entrou")
+
+# ── Os gatilhos que podem esperar por precos ────────────────────────────────
+true(rules.GATILHOS_ADIAVEIS <= set(rules.REBALANCE_COPY),
+     "todo o gatilho adiavel tem texto publicavel")
+for _m in ("stress_on", "stress_off", "critical_subregime_switch:a->b",
+           "emergency_resilient_4.0", "resilient_off", "hold", "", None):
+    eq(rules.gatilho_adiavel(_m), False,
+       f"{_m!r} nao e adiavel: responde a stress ou nao e um gatilho")
+for _m in ("adopt_regime_weights", "semestral_rebalance"):
+    eq(rules.gatilho_adiavel(_m), True, f"{_m} pode esperar por precos a serio")
+
 print(f"TODOS OS {ok} TESTES PASSARAM")

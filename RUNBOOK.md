@@ -140,6 +140,39 @@ que uma corrida fora de horas decida a semana outra vez.
 
 ---
 
+## Caso 3b — o portão fechou: `a suite falhou — o portao esta fechado`
+
+O `send-newsletter` morre no passo dos testes, **antes de gerar ou enviar seja o
+que for**. Ninguém recebeu nada e não há edição publicada. É o Caso 3 com uma
+causa específica, e trata-se de forma diferente: re-correr sem mais nada dá
+exactamente o mesmo erro, porque o que falhou não foi a rede nem os dados — foi
+uma asserção.
+
+Aconteceu a 18 de Setembro de 2026. A tabela da newsletter era renderizada com
+zero casas decimais e o vector de Turbulence, arredondado bucket a bucket, dava
+101%. A carteira tinha acabado de adoptar esse vector; foi a primeira semana em
+que o defeito podia aparecer, e apareceu.
+
+1. Abrir a corrida falhada no GitHub e ler o log do job `send-newsletter`.
+   A linha que interessa é o `AssertionError`, não o `::error::` final.
+2. Reproduzir localmente com os ficheiros de produção — é o que prova a causa:
+
+   ```
+   curl -sS https://raw.githubusercontent.com/nunorodrigues007/mrm-dashboard/main/portfolio.json -o portfolio.json
+   curl -sS https://raw.githubusercontent.com/nunorodrigues007/mrm-dashboard/main/data.json -o data.json
+   bash tests/portao.sh
+   ```
+
+   Vários testes leem o `portfolio.json` e o `data.json` commitados. Uma suite
+   que passa no PR pode fechar-se na sexta seguinte só porque o estado mudou —
+   e é isso que o portão existe para apanhar.
+3. Corrigir, fazer passar a suite, e só então re-correr o workflow.
+
+**Não desligar o portão para a edição sair.** O portão fechou-se por a edição
+estar errada; fazê-la sair na mesma é publicar o erro.
+
+---
+
 ## Caso 4 — `MarcaIlegivel`
 
 O job para logo no início com `sent_issues.json existe mas nao se consegue ler`.

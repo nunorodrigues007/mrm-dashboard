@@ -79,6 +79,9 @@ REBALANCE_STYLE = {          # (fundo, borda, ícone) por classe de motivo
     "valuation_not_credible_held": ("#2d1f0a", "#F98C4F", "\u26a0"),
     "no_allocation_available":    ("#2d1f0a", "#F98C4F", "\u26a0"),
     "stale_allocation_held":      ("#2d1f0a", "#F98C4F", "\u26a0"),
+    # Gatilho adiado por falta de cotacoes desta semana. E um aviso, nao um
+    # sucesso: a carteira devia ter-se mexido e nao se mexeu.
+    "stale_prices_held":          ("#2d1f0a", "#F98C4F", "\u26a0"),
     "hold":                      ("#14181d", "#8B96A3", "\u25cf"),
 }
 # Neutro, nao verde: um motivo que este mapa nao conhece nao pode ser desenhado
@@ -740,8 +743,12 @@ def build_context(data, portfolio_data, prev_data, today, issue_number, agora=No
         "rb_done": bool(hist.get("rebalance_triggered", False)),
         "rb_color": style[0], "rb_border": style[1], "rb_icon": style[2],
         "port_etfs": " | ".join(etf_map.get(b, "?") for b in rules.BUCKETS),
-        "alloc_line": (" | ".join(f"{b}: {alloc.get(b, 0):.0f}%" for b in rules.BUCKETS)
-                       if alloc else "n/a"),
+        # Uma casa decimal, e a soma garantida em 100 pelo maior resto. A zero
+        # casas o vector de Turbulence dava 101% e a validacao recusava a
+        # edicao — foi o que impediu a edicao 28 de sair a 18 de Setembro de
+        # 2026. O arredondamento vive nas regras para o prompt e a validacao
+        # nao poderem divergir.
+        "alloc_line": (rules.linha_de_percentagens(alloc) if alloc else "n/a"),
         # O mesmo vector em numeros, para a validacao comparar com a tabela que
         # o modelo escrever. A linha acima e para o prompt ler; esta e para o
         # motor verificar. Sao a mesma coisa de proposito: o que se manda
@@ -752,9 +759,7 @@ def build_context(data, portfolio_data, prev_data, today, issue_number, agora=No
         # Turbulence das regras, que e o que a carteira VAI executar. O prompt
         # mostra-o para a edicao o poder dizer aos subscritores; o motor nao o
         # le de volta de lado nenhum.
-        "macro_line": " | ".join(
-            f"{b}: {rules.REGIME_WEIGHTS['Turbulence'][b]:.0f}%"
-            for b in rules.BUCKETS),
+        "macro_line": rules.linha_de_percentagens(rules.REGIME_WEIGHTS["Turbulence"]),
         "port_value": cur.get("portfolio_value", "N/A"),
         # None quando o motor suprimiu o P&L por a valorizacao estar incompleta.
         # Publicar "n/d" e o comportamento certo; publicar um numero calculado

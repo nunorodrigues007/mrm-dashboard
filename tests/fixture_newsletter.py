@@ -29,10 +29,18 @@ _NOMES_ALLOC = [
 ]
 
 
-def linhas_de(regime="Turbulence"):
-    """As seis linhas da tabela, com as percentagens do vector desse regime."""
-    v = _rules.REGIME_WEIGHTS[regime]
-    return [(nome, round(v[bucket])) for nome, bucket in _NOMES_ALLOC]
+def linhas_de(regime="Turbulence", casas=1):
+    """As seis linhas da tabela, com as percentagens do vector desse regime.
+
+    Arredondadas pelo MESMO caminho que a producao usa. Com `round()` por bucket
+    o vector de Turbulence dava 101% e o fixture escrevia uma edicao que o motor
+    recusa — exactamente o defeito que este ficheiro existe para exercitar, mas
+    escondido dentro do proprio ensaio.
+    """
+    v = _rules.percentagens_para_exibir(_rules.REGIME_WEIGHTS[regime], casas)
+    return [(nome, f"{v[bucket]:.{int(casas)}f}".rstrip("0").rstrip(".")
+             if casas else int(v[bucket]))
+            for nome, bucket in _NOMES_ALLOC]
 
 
 LINHAS_ALLOC = linhas_de("Turbulence")

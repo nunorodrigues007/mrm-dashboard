@@ -198,8 +198,12 @@ eq(cur["newsletter_bucket_allocation_pct"], _alloc_ant,
    "calmo: o que fica guardado e a alocacao lida da edicao N-1, nao um recurso")
 eq(round(sum(cur["newsletter_bucket_allocation_pct"].values())), 100,
    "calmo: a alocacao guardada soma 100%")
-eq(ctx["alloc_line"], " | ".join(f"{b}: {cur['bucket_allocation_pct'].get(b, 0):.0f}%" for b in rules.BUCKETS),
+eq(ctx["alloc_line"], rules.linha_de_percentagens(cur["bucket_allocation_pct"]),
    "calmo: a newsletter mostra a alocacao efectivamente detida")
+# E o que ela mostra tem de somar 100. A zero casas o vector de Turbulence dava
+# 101% e a edicao de 18 de Setembro de 2026 nunca saiu por causa disso.
+eq(round(sum(float(x.split(": ")[1].rstrip("%")) for x in ctx["alloc_line"].split(" | ")), 6),
+   100.0, "calmo: a linha da alocacao soma 100%")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Mundo sob stress
@@ -261,7 +265,9 @@ true("State: ON" in prompt2, "stress: o prompt declara o medidor ligado")
 true("Executed: yes" in prompt2, "stress: o prompt declara a execucao")
 true("No structural regime change detected" not in prompt2,
      "stress: a frase que contradizia a carteira desapareceu")
-true("US_EQUITIES: 15%" in ctx2["alloc_line"], "stress: newsletter mostra o corte para 15% em accoes")
+true("US_EQUITIES: 15.0%" in ctx2["alloc_line"], "stress: newsletter mostra o corte para 15% em accoes")
+eq(round(sum(float(x.split(": ")[1].rstrip("%")) for x in ctx2["alloc_line"].split(" | ")), 6),
+   100.0, "stress: a linha da alocacao tambem soma 100%")
 
 # ── o contrato entre quem PRODUZ o data.json e quem o le ────────────────────
 #
