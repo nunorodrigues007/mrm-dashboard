@@ -8,6 +8,15 @@
         "4caeaa0612fb743e"
       ],
       "complete": true
+    },
+    {
+      "issue": 28,
+      "recipients": 1,
+      "sentAt": "2026-09-20T19:33:45Z",
+      "served": [
+        "4caeaa0612fb743e"
+      ],
+      "complete": true
     }
   ]
 }
