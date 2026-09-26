@@ -1,11 +1,11 @@
 {
   "meta": {
-    "lastUpdated": "2026-09-25T20:49:14Z",
-    "generatedAt": "2026-09-25T20:49:14Z",
+    "lastUpdated": "2026-09-26T00:37:53Z",
+    "generatedAt": "2026-09-26T00:37:53Z",
     "source": "FRED API (Live)",
     "version": "3.1.0",
     "freshness": {
-      "generatedAt": "2026-09-25T20:49:14Z",
+      "generatedAt": "2026-09-26T00:37:53Z",
       "warnAfterHours": 30,
       "refuseAfterHours": 48,
       "degraded": false,
@@ -15,7 +15,7 @@
       "gaugeActive": false
     },
     "fredSeriesDates": {
-      "T10Y2Y": "2026-09-24",
+      "T10Y2Y": "2026-09-25",
       "M2SL": "2026-08-01",
       "NCBEILQ027S_FBCELLQ027S_GDP": "2026-04-01",
       "DGS10": "2026-09-24",
@@ -23,7 +23,7 @@
       "TDSP": "2026-04-01",
       "ICSA": "2026-09-19",
       "UNRATE": "2026-08-01",
-      "SP500": "2026-09-24"
+      "SP500": "2026-09-25"
     },
     "fredSeriesStale": {},
     "gaugeNote": "Gauge A (globalResilienceScore) is a LEADING fragility measure on a 6-18 month horizon: in a downturn three of its five pillars mechanically improve, so the composite cannot signal concurrent stress. Concurrent stress detection lives in stressGauge, which is not averaged into Gauge A.",
@@ -625,7 +625,7 @@
         "decides": "regime",
         "threshold": 0.5,
         "fired": false,
-        "ageDays": 55,
+        "ageDays": 56,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 120,
@@ -638,7 +638,7 @@
         "decides": "regime",
         "threshold": 0.81,
         "fired": false,
-        "ageDays": 177,
+        "ageDays": 178,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 330,
@@ -657,7 +657,7 @@
         "note": "3-month change in the 10Y, in basis points. Decides Flight-to-Quality against Stress-without-relief WITHIN Critical; it does not decide Critical itself."
       }
     },
-    "computedAt": "2026-09-25T20:49:13Z"
+    "computedAt": "2026-09-26T00:37:53Z"
   },
   "pillars": [
     {
@@ -667,9 +667,9 @@
       "metric": "10Y\u20132Y Yield Curve",
       "fredSeries": "T10Y2Y",
       "score": 5.5,
-      "value": "+0.31%",
+      "value": "+0.36%",
       "trend": "steepening",
-      "metricValue": 0.31,
+      "metricValue": 0.36,
       "band": {
         "lo": 0.0,
         "hi": 0.5,
@@ -678,10 +678,10 @@
         "context": "2007\u201308, 2024\u201325",
         "reading": "Post-inversion steepening \u2014 historically the phase immediately preceding recession onset, not an all-clear."
       },
-      "scoredValue": 0.31,
+      "scoredValue": 0.36,
       "nextBandEdge": 0.0,
-      "distanceToNextBand": 0.31,
-      "delta": "+0.06%",
+      "distanceToNextBand": 0.36,
+      "delta": "+0.11%",
       "deltaDirection": "flat",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
@@ -721,24 +721,24 @@
       "metric": "Equity Risk Premium",
       "fredSeries": "DGS10",
       "score": 10.0,
-      "value": "-1.35%",
+      "value": "-1.37%",
       "epEstimated": true,
-      "epValue": 3.83,
+      "epValue": 3.81,
       "epAsOf": "2026-08-31",
       "epAnchor": {
         "refYieldPct": 3.84,
         "refDate": "2026-08-31",
         "indexRef": 7686.14,
-        "indexNow": 7704.13,
-        "indexNowDate": "2026-09-24",
+        "indexNow": 7743.41,
+        "indexNowDate": "2026-09-25",
         "basis": "earnings held from the reference date, price marked to the latest close",
         "indexRefDate": "2026-08-31",
         "earningsPerIndexUnit": 295.15,
-        "ageDays": 25,
+        "ageDays": 26,
         "stale": false
       },
       "trend": "compressed",
-      "metricValue": -1.35,
+      "metricValue": -1.37,
       "band": {
         "lo": null,
         "hi": 0.0,
@@ -747,12 +747,12 @@
         "context": "Equities yield less than the 10-year Treasury",
         "reading": "No compensation whatsoever for holding equity risk. The bond is the higher-yielding asset."
       },
-      "scoredValue": -1.35,
+      "scoredValue": -1.37,
       "nextBandEdge": null,
       "distanceToNextBand": null,
-      "delta": "-0.27%",
+      "delta": "-0.29%",
       "deltaDirection": "flat",
-      "description": "ERP = E/P (3.83%) minus the 10Y yield (5.18%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
+      "description": "ERP = E/P (3.81%) minus the 10Y yield (5.18%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
       "status": "critical"
     },
     {
@@ -828,16 +828,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -1.35,
+      "value": -1.37,
       "unit": "%",
-      "displayValue": "-1.35%",
+      "displayValue": "-1.37%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-0.27%",
+      "delta": "-0.29%",
       "alert": true,
-      "description": "ERP at -1.35%. Red alert triggers below 0.80%."
+      "description": "ERP at -1.37%. Red alert triggers below 0.80%."
     },
     {
       "id": "unemployment",
