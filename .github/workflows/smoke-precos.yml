@@ -9,6 +9,14 @@ name: 🔍 Teste de fumo às cotações
 
 on:
   workflow_dispatch:
+    inputs:
+      fonte:
+        description: "Que fontes usar"
+        type: choice
+        default: cascata
+        options:
+          - cascata
+          - so_recurso
 
 # Só leitura: este workflow não escreve no repositório, e a permissão diz isso
 # em vez de o prometer num comentário.
@@ -39,4 +47,14 @@ jobs:
       - name: 🔍 Que fonte serve cada instrumento
         env:
           ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
+          # `so_recurso` desliga a Yahoo de propósito. Serve para o ensaio que
+          # a cascata sozinha nunca faz: quando a fonte principal responde — e
+          # é o que se quer — a de recurso é saltada, e fica por saber se ela
+          # sequer arranca a partir deste runner. Um pneu suplente que nunca foi
+          # montado só se descobre furado na noite em que é preciso.
+          #
+          # O parâmetro entra como variável de ambiente e é o Python que decide.
+          # Um `if:` aqui seria uma maneira de saltar o passo em silêncio, e a
+          # suite recusa-o em qualquer passo depois do portão.
+          SMOKE_FONTE: ${{ inputs.fonte }}
         run: python smoke_precos.py
