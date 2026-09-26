@@ -25,6 +25,7 @@ import json, os, sys, time, re, math, logging
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+import requests
 import yfinance as yf
 
 import mrm_rules as rules
@@ -357,60 +358,175 @@ def _preco_utilizavel(p):
     return not (math.isnan(p) or math.isinf(p)) and p > 0
 
 
+# ── As fontes de preco, por ordem ────────────────────────────────────────────
+#
+# Isto era UMA fonte: `yf.Ticker(t).history()`, e mais nada. A 11 de Setembro de
+# 2026 os runners do GitHub deixaram de conseguir falar com a Yahoo e o sistema
+# ficou TRES SEMANAS a publicar o mesmo preco ao centimo — 10.631,42 e +6,31% —
+# com o job verde e a newsletter a sair. A mesma versao da biblioteca
+# (`yfinance~=1.7.0`, fixada no requirements.txt) e o mesmo codigo, corridos
+# fora do runner, devolviam os seis fechos todos: nao era a versao, nao era a
+# API da Yahoo a mudar, era o ACESSO daquele IP.
+#
+# Uma fonte unica para o unico dado que este sistema nao consegue derivar de
+# mais nada e um ponto de falha que ja provou que falha. A cascata nao adivinha
+# qual das fontes esta de pe: tenta por ordem, e a primeira que devolva um fecho
+# que passe as guardas ganha. A Alpha Vantage so entra se houver chave —
+# `ALPHAVANTAGE_API_KEY` — e sem ela a cascata degrada exactamente para o
+# comportamento antigo, em vez de partir.
+ALPHAVANTAGE_URL     = "https://www.alphavantage.co/query"
+ALPHAVANTAGE_TIMEOUT = 20
+
+# Que fonte serviu cada ticker na ultima corrida do `fetch_prices`. Publicado no
+# snapshot como `price_sources`, e por uma razao que custou tres semanas: quando
+# a fonte principal cai, tem de dar para ver no ficheiro QUAL respondeu, sem
+# abrir o log de um runner que o GitHub apaga ao fim de 90 dias.
+ULTIMAS_FONTES = {}
+
+
+def _serie_yahoo(ticker, start, end):
+    """Observacoes {data: fecho} da Yahoo, via yfinance."""
+    hist = yf.Ticker(ticker).history(start=str(start), end=str(end))
+    if hist.empty:
+        raise ValueError(f"No data for {ticker}")
+    hist.index = hist.index.date
+    return {d: hist.loc[d]["Close"] for d in hist.index}
+
+
+def _serie_alphavantage(ticker, start, end):
+    """Observacoes {data: fecho} da Alpha Vantage, via a API REST.
+
+    Devolve vazio — nao levanta — quando nao ha chave configurada: "esta fonte
+    nao esta ligada" nao e o mesmo que "esta fonte falhou", e so a segunda
+    merece uma tentativa outra vez.
+    """
+    chave = (os.environ.get("ALPHAVANTAGE_API_KEY") or "").strip()
+    if not chave:
+        return {}
+    resp = requests.get(
+        ALPHAVANTAGE_URL,
+        params={"function": "TIME_SERIES_DAILY", "symbol": ticker,
+                "outputsize": "compact", "datatype": "json", "apikey": chave},
+        timeout=ALPHAVANTAGE_TIMEOUT,
+    )
+    resp.raise_for_status()
+    corpo = resp.json()
+    # A Alpha Vantage responde 200 com uma mensagem em vez da serie quando
+    # estoura o limite de pedidos ou quando o simbolo nao existe. Tratar isso
+    # como "serie vazia" seria dar o limite de pedidos por resposta legitima e
+    # nunca voltar a tentar; e uma FALHA, e levanta.
+    serie = corpo.get("Time Series (Daily)")
+    if not isinstance(serie, dict) or not serie:
+        motivo = (corpo.get("Note") or corpo.get("Information")
+                  or corpo.get("Error Message") or f"resposta inesperada: {sorted(corpo)[:4]}")
+        raise ValueError(f"Alpha Vantage nao devolveu serie para {ticker}: {motivo}")
+    fora = {}
+    for dia, campos in serie.items():
+        try:
+            d = date.fromisoformat(str(dia))
+        except (ValueError, TypeError):
+            continue
+        if not (start <= d <= end):
+            continue
+        try:
+            fora[d] = float(campos["4. close"])
+        except (KeyError, TypeError, ValueError):
+            continue
+    if not fora:
+        raise ValueError(f"Alpha Vantage nao tem fechos para {ticker} em {start}..{end}")
+    return fora
+
+
+# A ordem E a politica: a Yahoo primeiro porque nao consome quota nenhuma, a
+# Alpha Vantage a seguir porque tem limite diario no plano gratuito. Uma tupla
+# de modulo, e nao uma cadeia de `if` dentro do `fetch_prices`, para um ensaio
+# poder fixar as fontes que quer exercitar sem tocar na rede.
+FONTES_DE_PRECO = (("yahoo", _serie_yahoo), ("alphavantage", _serie_alphavantage))
+
+
+def _escolhe_fecho(serie, target_date, ticker):
+    """O fecho utilizavel de um conjunto de observacoes, ou None se nao houver.
+
+    As guardas vivem AQUI, uma vez, e nao dentro de cada fonte. Uma guarda
+    copiada por fonte e uma guarda que diverge — foi a licao do `_preco_utilizavel`,
+    que existia em tres copias e era a errada que decidia o benchmark. A fonte
+    nova passa exactamente pelo mesmo crivo que a antiga: mesma janela de
+    frescura (`MAX_STALE_DAYS`), mesma recusa de precos absurdos.
+    """
+    if not serie:
+        return None
+    used_date = target_date if target_date in serie else max(serie)
+    price = serie[used_date]
+    # NAO se coage com `float()` antes da guarda. O `float("764.29")` tem exito,
+    # e uma fonte que devolva o preco como TEXTO — a Alpha Vantage devolve
+    # exactamente isso no JSON — passava a valer por numero validado sem nunca
+    # ter passado pelo `_preco_utilizavel`, que recusa o que nao e numero de
+    # propósito. Normalizar e trabalho da FONTE; aqui so se julga.
+    if not _preco_utilizavel(price):
+        raise ValueError(
+            f"{ticker} devolveu um preco nao utilizavel ({price!r}) — tratado "
+            f"como falha de cotacao, nao como valor real")
+    price = float(price)
+    # Um preco tem de ser positivo e finito, e a guarda acima ja o afirmou.
+    # Toda a arquitectura de declaracao assume "preco EM FALTA"; "preco presente
+    # e absurdo" nao tinha guarda nenhuma. Um 0.0 passava por bom,
+    # `calculate_value` somava `qty * 0`, e a posicao desaparecia da carteira com
+    # `valuation_complete: true`, `data_stale: false` e zero avisos —
+    # 10.605 -> 9.109, +6,06% -> -8,90%.
+    staleness_days = (target_date - used_date).days
+    if staleness_days > MAX_STALE_DAYS:
+        raise ValueError(
+            f"Latest available close for {ticker} is {used_date} "
+            f"({staleness_days}d before target {target_date}) — treating as fetch failure")
+    return used_date, round(price, 4)
+
+
 def fetch_prices(tickers, target_date, retries=3):
-    """Returns (prices, price_dates, stale). `stale[ticker]` is True whenever the
-    close actually used is older than MAX_STALE_DAYS relative to target_date — in
-    that case prices[ticker] is set to None so the caller's existing last_prices
-    fallback (and its staleness check) takes over, instead of silently treating
-    a week-old close as if it were fresh."""
+    """Returns (prices, price_dates, stale). `stale[ticker]` is True whenever no
+    source produced a close that passes the guards — in that case
+    prices[ticker] is set to None so the caller's existing last_prices fallback
+    (and its staleness check) takes over, instead of silently treating a
+    week-old close as if it were fresh.
+
+    Percorre `FONTES_DE_PRECO` por ordem e para na primeira que sirva. Qual
+    serviu fica em `ULTIMAS_FONTES`."""
     prices = {}
     price_dates = {}
     stale = {}
+    ULTIMAS_FONTES.clear()
     start = target_date - timedelta(days=10)
     end   = target_date + timedelta(days=1)
     for ticker in tickers:
-        for attempt in range(retries):
-            try:
-                hist = yf.Ticker(ticker).history(start=str(start), end=str(end))
-                if hist.empty:
-                    raise ValueError(f"No data for {ticker}")
-                hist.index = hist.index.date
-                if target_date in hist.index:
-                    used_date = target_date
-                else:
-                    used_date = max(hist.index)
-                price = float(hist.loc[used_date]["Close"])
-                if math.isnan(price) or math.isinf(price):
-                    raise ValueError(f"Invalid price for {ticker}")
-                staleness_days = (target_date - used_date).days
-                if staleness_days > MAX_STALE_DAYS:
-                    raise ValueError(
-                        f"Latest available close for {ticker} is {used_date} "
-                        f"({staleness_days}d before target {target_date}) — treating as fetch failure"
-                    )
-                # Um preco tem de ser positivo. Toda a arquitectura de
-                # declaracao assume "preco EM FALTA"; "preco presente e
-                # absurdo" nao tinha guarda nenhuma. Um 0.0 passava por bom,
-                # `calculate_value` somava `qty * 0`, e a posicao desaparecia
-                # da carteira com `valuation_complete: true`, `data_stale:
-                # false` e zero avisos — 10.605 -> 9.109, +6,06% -> -8,90%.
-                if not (price > 0):
-                    raise ValueError(
-                        f"{ticker} devolveu um preco nao positivo ({price!r}) — "
-                        f"tratado como falha de cotacao, nao como valor real")
-                prices[ticker] = round(price, 4)
+        escolhido = None
+        for nome_fonte, fonte in FONTES_DE_PRECO:
+            for attempt in range(retries):
+                try:
+                    serie = fonte(ticker, start, end)
+                    escolhido = _escolhe_fecho(serie, target_date, ticker)
+                    if escolhido is None:
+                        raise ValueError(f"No data for {ticker}")
+                    break
+                except Exception as e:
+                    log.warning(f"  {ticker} via {nome_fonte} attempt {attempt+1} failed: {e}")
+                    # Nao dormir depois da ultima tentativa: o sono antes de
+                    # desistir nao espera por nada.
+                    if attempt < retries - 1:
+                        time.sleep(2 ** attempt)
+            if escolhido is not None:
+                used_date, price = escolhido
+                prices[ticker] = price
                 price_dates[ticker] = str(used_date)
                 stale[ticker] = False
-                log.info(f"  {ticker}: ${price:.4f} (as of {used_date})")
+                ULTIMAS_FONTES[ticker] = nome_fonte
+                log.info(f"  {ticker}: ${price:.4f} (as of {used_date}, via {nome_fonte})")
                 break
-            except Exception as e:
-                log.warning(f"  {ticker} attempt {attempt+1} failed: {e}")
-                time.sleep(2 ** attempt)
-        else:
+        if escolhido is None:
             prices[ticker] = None
             price_dates[ticker] = None
             stale[ticker] = True
-            log.error(f"  {ticker}: all retries failed or only stale data available")
+            log.error(f"  {ticker}: NENHUMA das {len(FONTES_DE_PRECO)} fontes deu "
+                      f"um fecho utilizavel — a valorizacao desta semana vai ter "
+                      f"de usar o preco de recurso.")
     return prices, price_dates, stale
 
 
@@ -1528,6 +1644,12 @@ def main():
         "prices":                        {t: prices[t] for t in tickers_needed if prices.get(t) is not None},
         "prices_confirmed":              {t: not stale.get(t, False) for t in tickers_needed if prices.get(t) is not None},
         "data_stale":                    any(stale.get(t, False) for t in tickers_needed),
+        # QUAL fonte deu cada preco. Sem isto, "os precos vieram" e "os
+        # precos vieram da fonte de recurso porque a principal esta em
+        # baixo desde o mes passado" sao indistinguiveis no ficheiro, e a
+        # segunda e uma avaria a decorrer que ninguem esta a ver.
+        "price_sources":                 {t: ULTIMAS_FONTES[t] for t in tickers_needed
+                                          if t in ULTIMAS_FONTES},
         # O valor ANTES do rebalanceamento e o valor DEPOIS sao numeros
         # diferentes na semana em que ha transaccoes: as posicoes novas foram
         # dimensionadas sobre `valor - custo`, e publicar o valor pre-custo como
@@ -1655,6 +1777,8 @@ def main():
                                       if t in tickers_needed},
                                    **{t: price_dates.get(t) for t in tickers_needed
                                       if prices.get(t) is not None}},
+        "price_sources":          {t: ULTIMAS_FONTES[t] for t in tickers_needed
+                                   if t in ULTIMAS_FONTES},
         "portfolio_value":        round(portfolio_value - custo_transaccao, 2),
         "portfolio_pnl_pct":      pnl_pct,
         "benchmark_spy_shares":   bench_shares,
