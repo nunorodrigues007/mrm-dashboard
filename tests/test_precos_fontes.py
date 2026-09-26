@@ -235,4 +235,56 @@ pr, _, st = _com_resposta({"Note": "call frequency"}, lambda: _com_fontes(
 eq(pr["SPY"], None, "com as duas fontes em baixo nao ha preco")
 eq(st["SPY"], True, "e declara-se velho")
 
+
+# ── 10. O espacamento dos pedidos a Alpha Vantage ────────────────────────
+#
+# Encontrado pelo ensaio de 26 de Setembro de 2026, nao por leitura do codigo:
+# com a Yahoo desligada, os seis instrumentos foram pedidos seguidos e o sexto
+# levou com `Burst pattern detected`. A repeticao salvou a corrida — mas
+# depender da repeticao para nao falhar e diferente de nao provocar o limite.
+#
+# A aritmetica e afirmada sobre a funcao PURA, com um relogio de mentira: um
+# ensaio que dormisse a serio ou era lento ou nao existia, e um espacamento por
+# afirmar e um espacamento que se descobre errado no dia em que a Yahoo cair.
+I = up.ALPHAVANTAGE_INTERVALO_S
+true(I > 0, "ha um intervalo declarado entre pedidos a Alpha Vantage")
+
+eq(up._quanto_esperar_av(100.0, None), 0.0,
+   "o primeiro pedido nao espera por nada")
+eq(up._quanto_esperar_av(100.0, 100.0), I,
+   "dois pedidos no mesmo instante esperam o intervalo inteiro")
+eq(up._quanto_esperar_av(100.0 + I, 100.0), 0.0,
+   "passado o intervalo exacto ja nao se espera — a fronteira, nao so a volta dela")
+eq(up._quanto_esperar_av(100.0 + I + 5, 100.0), 0.0,
+   "e muito depois tambem nao")
+eq(up._quanto_esperar_av(100.0 + I / 2, 100.0), I / 2,
+   "a meio do intervalo espera-se a outra metade")
+true(up._quanto_esperar_av(100.0, 100.0, intervalo=9.0) == 9.0,
+     "o intervalo e um parametro, nao um numero preso no corpo da funcao")
+
+# Nunca um negativo: um `sleep` de negativo levanta, e um `max(0, ...)` mal
+# posto so se ve quando ja e tarde.
+for _agora, _ultimo in ((100.0, 100.0), (100.0, 50.0), (100.0, 99.999),
+                        (0.0, 0.0), (1e9, 1e9 - 1)):
+    true(up._quanto_esperar_av(_agora, _ultimo) >= 0.0,
+         f"a espera nunca e negativa ({_agora}, {_ultimo})")
+
+# E se o relogio andar para tras — acerto de hora, monotonic trocado — espera-se
+# o intervalo INTEIRO. Devolver o negativo seria nao esperar nada exactamente
+# quando nao se sabe ha quanto tempo foi o ultimo pedido.
+eq(up._quanto_esperar_av(100.0, 200.0), I,
+   "com o relogio para tras espera-se o intervalo inteiro, nao zero")
+
+# A fonte chama o espacamento. Sem isto, a funcao existia e nao era usada — que
+# e o modo de falha mais silencioso que ha.
+import inspect
+true("_espera_a_vez_da_alphavantage" in inspect.getsource(up._serie_alphavantage),
+     "a fonte da Alpha Vantage espaca os pedidos antes de os fazer")
+
+# Mas NAO antes de verificar a chave: sem chave nao ha pedido nenhum, e dormir
+# antes de nao fazer nada e so tornar a suite e as corridas mais lentas.
+_src = inspect.getsource(up._serie_alphavantage)
+true(_src.index("if not chave") < _src.index("_espera_a_vez_da_alphavantage"),
+     "e a fonte desligada sai ANTES de esperar — sem chave nao ha pedido a espacar")
+
 print(f"TODOS OS {ok} TESTES PASSARAM")

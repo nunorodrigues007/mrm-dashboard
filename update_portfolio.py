@@ -377,6 +377,25 @@ def _preco_utilizavel(p):
 ALPHAVANTAGE_URL     = "https://www.alphavantage.co/query"
 ALPHAVANTAGE_TIMEOUT = 20
 
+# Intervalo minimo entre dois pedidos a Alpha Vantage.
+#
+# Descoberto no ensaio de 26 de Setembro de 2026, e so por causa dele: com a
+# Yahoo desligada de proposito, os seis instrumentos foram pedidos seguidos em
+# meio segundo e o sexto levou com `Burst pattern detected. Please consider
+# spreading out your API requests more evenly across a 1-minute window`. A
+# repeticao salvou a corrida — mas depender da repeticao para nao falhar e
+# diferente de nao provocar o limite, e a diferenca so aparece na sexta-feira em
+# que a fonte principal esta em baixo, que e quando nao se querem surpresas.
+#
+# A cortesia fica na FONTE e nao em quem a chama: qualquer caminho que peca a
+# Alpha Vantage herda o espacamento sem ter de se lembrar dele. Seis
+# instrumentos a 1,5 s sao ~9 s de corrida, uma vez por semana — irrelevante
+# ao lado de uma valorizacao errada.
+ALPHAVANTAGE_INTERVALO_S = 1.5
+
+# Quando foi o ultimo pedido. `None` = nunca, e o primeiro nao espera por nada.
+_ULTIMO_PEDIDO_AV = None
+
 # Que fonte serviu cada ticker na ultima corrida do `fetch_prices`. Publicado no
 # snapshot como `price_sources`, e por uma razao que custou tres semanas: quando
 # a fonte principal cai, tem de dar para ver no ficheiro QUAL respondeu, sem
@@ -393,6 +412,34 @@ def _serie_yahoo(ticker, start, end):
     return {d: hist.loc[d]["Close"] for d in hist.index}
 
 
+def _quanto_esperar_av(agora, ultimo, intervalo=None):
+    """Segundos a esperar antes do proximo pedido. Funcao PURA, de proposito:
+    a aritmetica do espacamento tem de ser afirmavel sem ninguem dormir, senao
+    o ensaio ou e lento ou nao existe — e um espacamento por afirmar e um
+    espacamento que se descobre errado no dia em que a fonte principal cai."""
+    if intervalo is None:
+        intervalo = ALPHAVANTAGE_INTERVALO_S
+    if ultimo is None:
+        return 0.0                      # o primeiro pedido nao espera por nada
+    decorrido = agora - ultimo
+    if decorrido < 0:
+        # O relogio andou para tras (acerto de hora, monotonic trocado). Esperar
+        # o intervalo inteiro e a leitura conservadora; devolver um negativo
+        # seria nao esperar nada exactamente quando nao se sabe ha quanto tempo
+        # foi o ultimo pedido.
+        return intervalo
+    return max(0.0, intervalo - decorrido)
+
+
+def _espera_a_vez_da_alphavantage():
+    global _ULTIMO_PEDIDO_AV
+    espera = _quanto_esperar_av(time.monotonic(), _ULTIMO_PEDIDO_AV)
+    if espera > 0:
+        log.info(f"  (a espacar {espera:.1f}s o pedido a Alpha Vantage)")
+        time.sleep(espera)
+    _ULTIMO_PEDIDO_AV = time.monotonic()
+
+
 def _serie_alphavantage(ticker, start, end):
     """Observacoes {data: fecho} da Alpha Vantage, via a API REST.
 
@@ -403,6 +450,7 @@ def _serie_alphavantage(ticker, start, end):
     chave = (os.environ.get("ALPHAVANTAGE_API_KEY") or "").strip()
     if not chave:
         return {}
+    _espera_a_vez_da_alphavantage()
     resp = requests.get(
         ALPHAVANTAGE_URL,
         params={"function": "TIME_SERIES_DAILY", "symbol": ticker,
