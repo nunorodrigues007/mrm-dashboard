@@ -173,6 +173,53 @@ estar errada; fazê-la sair na mesma é publicar o erro.
 
 ---
 
+## Caso 5 — issue `precos-congelados`: a valorização publicada não é desta semana
+
+**O pipeline está verde e este alerta abriu.** Isso não é contradição: o motor
+publica com aviso em vez de parar, de propósito — parar a publicação para sempre
+porque um ETF saiu de bolsa é pior do que publicar com o aviso. O que o alerta
+diz é que o valor da carteira e o P&L que o site e a newsletter mostram são o do
+**último preço conhecido**, não o desta semana.
+
+O número que mais engana é o **alpha**. O benchmark congela no mesmo instante que
+a carteira, por isso o défice aparece menor do que é. A 25 de Setembro de 2026 a
+edição publicou −9,14 pp quando o real era −10,39 pp.
+
+**Por esta ordem:**
+
+1. **O segredo `ALPHAVANTAGE_API_KEY` está configurado?** Settings → Secrets and
+   variables → Actions. Sem ele a cascata de preços degrada para a Yahoo
+   sozinha, e foi essa dependência única que congelou a valorização três semanas
+   em Setembro de 2026.
+2. **Correr o yfinance FORA do runner:**
+   `python3 -c "import yfinance as yf; print(yf.download(['SPY','IEF','BIL'], start='AAAA-MM-DD', progress=False)['Close'])"`
+   Se der os fechos, os dados existem e o problema é o **acesso do runner** —
+   não a biblioteca nem a API. Foi exactamente este o diagnóstico a 20 e a 26 de
+   Setembro de 2026, com a versão fixada no `requirements.txt`.
+3. **Ler o log do job `update-portfolio`.** Ele diz, por ticker e por fonte, o
+   que falhou: `via yahoo attempt N failed: ...`, `via alphavantage attempt N
+   failed: ...`. `price_sources` no `portfolio.json` diz quem serviu cada um.
+
+**Corrigir a valorização de uma semana já publicada** (só depois de as fontes
+voltarem): `FORCE_REBALANCE=true python update_portfolio.py`. Contorna **apenas**
+a guarda de data — não força transacções nenhumas. O motor substitui a entrada
+do mesmo issue no histórico em vez de duplicar, e toma o estado anterior da
+edição N−1, por isso a decisão é a mesma da primeira passagem. Correr a suite
+antes de publicar: ela lê o `portfolio.json` de produção, e o portão do
+`send-newsletter` é função do estado da carteira.
+
+**Não** re-correr o job da newsletter para "corrigir" os números de uma edição já
+enviada — ver a regra que está acima de todas as outras. A edição enviada fica
+como está; o site é que passa a mostrar a valorização corrigida.
+
+## Caso 5b — issue `precos-degradados`: a fonte principal caiu
+
+Os preços desta semana **vieram e estão certos** — mas não da Yahoo. O sistema
+está a correr sobre uma única fonte: se a de recurso também cair, a semana
+seguinte publica preços congelados (Caso 5). Não há nada a corrigir na carteira;
+há que perceber porque a principal falhou antes de a de recurso esgotar a quota
+diária do plano gratuito.
+
 ## Caso 4 — `MarcaIlegivel`
 
 O job para logo no início com `sent_issues.json existe mas nao se consegue ler`.

@@ -160,6 +160,11 @@ jobs:
       - name: Run portfolio updater
         env:
           FORCE_REBALANCE: ${{ github.event.inputs.force_rebalance }}
+          # A segunda fonte de preços. Sem este segredo a cascata degrada para a
+          # Yahoo sozinha — exactamente o estado que congelou a valorização
+          # durante três semanas em Setembro de 2026 — e o passo de alerta mais
+          # abaixo passa a dizê-lo em cada corrida.
+          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
         run: python update_portfolio.py
 
       - name: Commit portfolio.json
@@ -200,6 +205,23 @@ jobs:
             echo "::error::não foi possível publicar portfolio.json após 3 tentativas"
             exit 1
           fi
+
+
+      # O silêncio era o bug maior. O motor publica com aviso em vez de parar —
+      # e essa decisão está certa, porque parar para sempre porque um ETF saiu de
+      # bolsa é pior do que publicar com o aviso. Mas a consequência era que
+      # NADA ficava vermelho: o `alert-on-failure` corre `if: failure()` e este
+      # job teve ÊXITO nas três semanas em que publicou o preço de 11 de
+      # Setembro. Dava-se pela avaria indo ver o ficheiro à mão.
+      #
+      # Sem `if:` de propósito, e o `test_workflows.py` exige-o: um `if:` num
+      # passo depois do portão quebra a cadeia que faz uma suite vermelha parar o
+      # job. A condição vive no Python — o script decide se há algo a dizer e
+      # sai sempre com 0 quando não há. A propriedade é executada, não lida.
+      - name: 🧊 Alertar se a valorização não é desta semana
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python alerta_precos.py
 
   # ── JOB 2: gerar e enviar a newsletter ───────────────────────────────────
   send-newsletter:
