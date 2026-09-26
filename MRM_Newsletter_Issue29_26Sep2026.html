@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MRM Weekly Audit — Issue #29 — 26 September 2026</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#F2F4F7;font-family:Arial,sans-serif;font-size:14px;color:#1A1D20;}
+a{color:#388BFD;text-decoration:none;}
+.wrapper{max-width:640px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);}
+.header{background:#0D1117;}
+.header-top{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid #21262D;}
+.logo{font-size:15px;font-weight:800;color:#E8ECF0;letter-spacing:0.08em;text-transform:uppercase;}
+.logo span{color:#388BFD;}
+.header-meta{font-family:'Courier New',monospace;font-size:9px;color:#586068;letter-spacing:0.12em;text-transform:uppercase;text-align:right;line-height:1.6;}
+.header-subject{padding:18px 28px 20px;}
+.header-subject .tag{font-family:'Courier New',monospace;font-size:9px;color:#388BFD;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:6px;}
+.header-subject h1{font-size:22px;font-weight:800;color:#E8ECF0;line-height:1.2;}
+.score-band{background:#161B22;padding:20px 28px;display:flex;align-items:center;gap:24px;border-bottom:3px solid #F98C4F;}
+.score-circle{width:72px;height:72px;border-radius:50%;border:3px solid #F98C4F;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.score-num{font-family:'Courier New',monospace;font-size:26px;font-weight:700;color:#F98C4F;line-height:1;}
+.score-info .regime{font-family:'Courier New',monospace;font-size:9px;color:#F98C4F;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:4px;}
+.score-info .score-label{font-size:16px;font-weight:700;color:#E8ECF0;margin-bottom:4px;}
+.score-info .score-sub{font-family:'Courier New',monospace;font-size:10px;color:#586068;}
+.content{padding:28px;}
+.section-label{font-family:'Courier New',monospace;font-size:9px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8B949E;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #E5E8EC;}
+.summary p{font-size:13px;color:#2D3139;line-height:1.75;margin-bottom:10px;}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px;}
+thead tr{background:#1A1D20;}
+thead th{padding:8px 10px;text-align:left;font-family:'Courier New',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#8B949E;border-bottom:2px solid #388BFD;}
+tbody tr:nth-child(odd){background:#F8F9FB;}
+td{padding:9px 10px;border-bottom:1px solid #E5E8EC;vertical-align:middle;}
+.pill{display:inline-block;padding:2px 7px;border-radius:4px;font-family:'Courier New',monospace;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;}
+.red{background:#FFEBEE;color:#D73A49;} .orange{background:#FFF3E0;color:#F98C4F;} .yellow{background:#FFF8E1;color:#E6A817;} .green{background:#E8F5E9;color:#2E7D32;}
+.deep-dive{background:#FFF8E1;border-left:3px solid #F98C4F;padding:14px 16px;border-radius:0 6px 6px 0;margin-bottom:4px;}
+.deep-dive p{font-size:12.5px;color:#2D3139;line-height:1.7;margin-bottom:8px;}
+.page-divider{margin:28px 0;border:none;border-top:2px dashed #E5E8EC;}
+.page-label{text-align:center;font-family:'Courier New',monospace;font-size:9px;color:#8B949E;letter-spacing:0.14em;text-transform:uppercase;margin:12px 0 20px;}
+.sector-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sector-col-ow{background:#F1FAF3;border:1px solid #C8E6C9;border-radius:8px;overflow:hidden;}
+.sector-col-uw{background:#FFF5F5;border:1px solid #FFCDD2;border-radius:8px;overflow:hidden;}
+.sector-col-header{padding:8px 12px;font-family:'Courier New',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;}
+.sector-col-ow .sector-col-header{background:#E8F5E9;color:#2E7D32;}
+.sector-col-uw .sector-col-header{background:#FFEBEE;color:#C62828;}
+.sector-item{padding:7px 12px;border-bottom:1px solid rgba(0,0,0,0.05);}
+.sector-item:last-child{border-bottom:none;}
+.sector-name{font-size:11.5px;font-weight:600;margin-bottom:1px;}
+.sector-col-ow .sector-name{color:#1B5E20;} .sector-col-uw .sector-name{color:#B71C1C;}
+.sector-rationale{font-size:10px;color:#586068;line-height:1.4;}
+.alloc-pct{font-family:'Courier New',monospace;font-size:14px;font-weight:700;color:#388BFD;}
+.verdict-box{background:#FFF8E1;border:2px solid #F98C4F;border-radius:8px;padding:16px 18px;}
+.verdict-box p{font-size:13px;color:#2D3139;line-height:1.75;}
+.footer{background:#0D1117;padding:20px 28px;text-align:center;}
+.footer-logo{font-size:13px;font-weight:800;color:#8B949E;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;}
+.footer-logo span{color:#388BFD;}
+.footer-links{margin-bottom:10px;}
+.footer-links a{font-family:'Courier New',monospace;font-size:10px;color:#586068;margin:0 8px;}
+.footer-disclaimer{font-family:'Courier New',monospace;font-size:9px;color:#3D4450;line-height:1.6;max-width:480px;margin:0 auto;}
+.spacer{height:20px;}
+.data-quality-box{background:#14181d;border-left:4px solid #F98C4F;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0;font-family:'Courier New',monospace;font-size:11px;color:#F98C4F;line-height:1.7;}
+.rebalance-box{background:#14181d;border-left:4px solid #8B96A3;padding:16px 18px;border-radius:0 6px 6px 0;margin:20px 0;}
+.rebalance-box .rb-title{font-family:'Courier New',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B96A3;margin-bottom:10px;font-weight:700;}
+.rebalance-box .rb-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #21262D;font-size:12px;color:#C9D1D9;}
+.rebalance-box .rb-row:last-child{border-bottom:none;}
+.rebalance-box .rb-label{font-family:'Courier New',monospace;font-size:10px;color:#8B949E;text-transform:uppercase;letter-spacing:0.08em;}
+.rebalance-box .rb-value{font-family:'Courier New',monospace;font-size:12px;color:#E8ECF0;font-weight:600;}
+.gauge-b-box{background:#161B22;border-left:4px solid #388BFD;padding:14px 16px;border-radius:0 6px 6px 0;margin:16px 0 20px;}
+.gauge-b-box p{font-size:12.5px;color:#C9D1D9;line-height:1.7;margin-bottom:6px;}
+.gauge-b-box p:last-child{margin-bottom:0;}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<div class="header">
+<div class="header-top">
+<div class="logo">US<span>MRM</span></div>
+<div class="header-meta">MRM WEEKLY AUDIT<br>26 September 2026 · ISSUE #29</div>
+</div>
+<div class="header-subject">
+<div class="tag">Subject: Regime Diagnosis &amp; Tactical Execution</div>
+<h1>US Macro-Resilience Matrix<br>Weekly Institutional Memo</h1>
+</div>
+</div>
+
+<div class="score-band">
+<div class="score-circle">
+<div class="score-num" data-mrm-score="7.0">7.0</div>
+</div>
+<div class="score-info">
+<div class="regime">● TURBULENCE REGIME</div>
+<div class="score-label">Global Resilience Score</div>
+<div class="score-sub">Updated: 26 September 2026 · FRED API Live · 5/5 Pillars Active · WoW: — 0.0</div>
+</div>
+</div>
+
+<div class="content">
+
+<!-- EXECUTIVE SUMMARY -->
+<div class="section-label">Executive Summary</div>
+<div class="summary">
+<p>The Global Resilience Score holds at 7.0/10 for a second consecutive week, unchanged across all five pillars. No week-over-week movement in any component. The composite remains deep in the Turbulence band — an elevated reading driven primarily by two pillars at or near ceiling: the equity risk premium, which is negative, and aggregate liquidity, which registers a 336.3% ratio. These are measures of fragility accumulation, not of present distress.</p>
+<p>Crucially, Gauge B — the concurrent stress overlay that governs portfolio regime — remains OFF. Neither the Sahm rule nor bank delinquency data has breached its respective threshold. The portfolio therefore continues to operate under the Turbulence allocation without defensive override. A 7.0 fragility score coexisting with an inactive stress trigger is the system working as designed: the market is priced for very little adversity, but adversity has not arrived.</p>
+<p>The week produced no rebalance. All positions were held. The portfolio stands at $10,631.42, representing a 6.31% cumulative return against a −9.14% alpha deficit relative to the broad equity benchmark. That underperformance is the cost of the risk budget the system imposes during Turbulence — a cost that is only meaningful in retrospect if the fragility the score measures never materialises.</p>
+</div>
+
+<div class="spacer"></div>
+
+<!-- PILLARS TABLE -->
+<div class="section-label">Gauge A — Pillar Breakdown</div>
+<table>
+<thead>
+<tr>
+<th>Pillar</th>
+<th>Raw Value</th>
+<th>Score</th>
+<th>WoW</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="font-weight:600;">Cycle</td>
+<td>+0.36%</td>
+<td>5.5 / 10</td>
+<td>— 0.0</td>
+<td><span class="pill yellow">Caution</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Liquidity</td>
+<td>336.3%</td>
+<td>9.5 / 10</td>
+<td>— 0.0</td>
+<td><span class="pill red">Critical</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Premium (ERP)</td>
+<td>-1.37%</td>
+<td>10.0 / 10</td>
+<td>— 0.0</td>
+<td><span class="pill red">Critical</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Solvency</td>
+<td>1.4%</td>
+<td>2.5 / 10</td>
+<td>— 0.0</td>
+<td><span class="pill green">Stable</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Debt</td>
+<td>11.1%</td>
+<td>5.5 / 10</td>
+<td>— 0.0</td>
+<td><span class="pill yellow">Caution</span></td>
+</tr>
+<tr style="background:#F0F3F6;font-weight:700;">
+<td>COMPOSITE</td>
+<td></td>
+<td>7.0 / 10</td>
+<td>— 0.0</td>
+<td><span class="pill orange">Turbulence</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="spacer"></div>
+
+<!-- DEEP DIVE -->
+<div class="section-label">Deep Dive — Equity Risk Premium</div>
+<div class="deep-dive">
+<p><strong>No pillar moved this week.</strong> In the absence of a week-over-week mover, the standing deep-dive defaults to the pillar carrying the highest absolute fragility contribution: the equity risk premium, which scores a ceiling 10.0/10.</p>
+<p>The ERP sits at −1.37%, meaning the trailing earnings yield on broad US equities is 137 basis points <em>below</em> the risk-free rate. By this measure, investors are paying for the privilege of bearing equity risk rather than being compensated for it. The sentinel threshold of 0.80% — the floor at which the premium historically provided a minimal cushion — was breached long ago; the reading is now firmly negative and the sentinel flag remains True.</p>
+<p>A negative ERP does not predict the timing of a drawdown. It measures the size of the cushion that does not exist. Every percentage point of earnings disappointment, margin compression, or discount-rate repricing arrives unpadded. The Premium pillar has held at 10.0 for multiple consecutive issues. Until either equity prices decline or earnings grow materially, it will remain there — a structural fragility, not a trading signal.</p>
+<p>In a downturn scenario, this pillar would mechanically improve as valuations compress and the premium widens, pulling the composite score <em>down</em> even as conditions worsen. That is why Gauge A measures fragility accumulation, not crisis detection — and why Gauge B exists as a separate instrument.</p>
+</div>
+
+</div>
+
+<hr class="page-divider">
+<div class="page-label">— Tactical Execution —</div>
+
+<div class="content" style="padding-top:0;">
+
+<!-- EARLY WARNING SENTINELS -->
+<div class="section-label">Early Warning Sentinels</div>
+<table>
+<thead>
+<tr>
+<th>Sentinel</th>
+<th>Current</th>
+<th>Threshold</th>
+<th>WoW</th>
+<th>Alert</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="font-weight:600;">Initial Jobless Claims</td>
+<td>197K</td>
+<td>275K</td>
+<td>— 0.0</td>
+<td><span class="pill green">No</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Equity Risk Premium</td>
+<td>-1.37%</td>
+<td>0.80%</td>
+<td>— 0.0</td>
+<td><span class="pill red">Yes</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Unemployment Rate</td>
+<td>4.1%</td>
+<td>5.2%</td>
+<td>— 0.0</td>
+<td><span class="pill green">No</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="spacer"></div>
+
+<!-- SECTOR MATRIX -->
+<div class="section-label">Sector &amp; Factor Matrix</div>
+<div class="sector-grid">
+<div class="sector-col-ow">
+<div class="sector-col-header">▲ Overweight Factors</div>
+<div class="sector-item">
+<div class="sector-name">Sovereign Duration</div>
+<div class="sector-rationale">Treasury allocation provides ballast against equity drawdown risk; curve still modestly positive.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">Investment-Grade Credit</div>
+<div class="sector-rationale">Spread carry in a solvency-stable environment; pillar at 2.5/10 supports credit quality.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">Cash &amp; Near-Cash</div>
+<div class="sector-rationale">14.5% cash weight reflects optionality premium in a Turbulence regime; preserves dry powder.</div>
+</div>
+</div>
+<div class="sector-col-uw">
+<div class="sector-col-header">▼ Underweight Factors</div>
+<div class="sector-item">
+<div class="sector-name">Broad Equity Beta</div>
+<div class="sector-rationale">Negative ERP and 10.0 premium score warrant reduced equity exposure versus a full-risk allocation.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">Real Assets &amp; Alternatives</div>
+<div class="sector-rationale">Commodities and alternatives at combined 8.8%; minimal allocation reflects limited diversification benefit at current liquidity ratios.</div>
+</div>
+<div class="sector-item">
+<div class="sector-name">High-Yield &amp; Sub-IG Credit</div>
+<div class="sector-rationale">Zero allocation; Turbulence regime excludes lower-quality credit given liquidity pillar at 9.5.</div>
+</div>
+</div>
+</div>
+
+<div class="spacer"></div>
+
+<!-- ALLOCATION TABLE -->
+<div class="section-label">Regime Allocation — Turbulence</div>
+<table>
+<thead>
+<tr>
+<th>Asset Class</th>
+<th>Regime Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="font-weight:600;">US Equities</td>
+<td><span class="alloc-pct">41.5%</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">US Treasuries</td>
+<td><span class="alloc-pct">19.7%</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">IG Credit</td>
+<td><span class="alloc-pct">15.5%</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Commodities</td>
+<td><span class="alloc-pct">6.2%</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Cash</td>
+<td><span class="alloc-pct">14.5%</span></td>
+</tr>
+<tr>
+<td style="font-weight:600;">Alternatives</td>
+<td><span class="alloc-pct">2.6%</span></td>
+</tr>
+<tr style="background:#F0F3F6;font-weight:700;">
+<td>Total</td>
+<td><span class="alloc-pct">100.0%</span></td>
+</tr>
+</tbody>
+</table>
+<p style="font-size:11px;color:#586068;line-height:1.6;margin-top:6px;">This table reports the allocation the engine has already executed. It is not an instruction. The weights are fixed in the regime rules and cannot be altered by this commentary. The macro allocation on record — to which the portfolio would revert if Gauge B were to fire and subsequently stand down — is identical to the effective allocation shown above.</p>
+
+<!-- DATA QUALITY BOX -->
+<div class="data-quality-box">
+⚠ DATA QUALITY: this week's portfolio value uses the last known price for BIL, IEF, LQD, PDBC, SPY, VNQ, because the fresh quote failed. The published profit and loss is an approximation until the price source is fixed.
+</div>
+
+<div class="spacer"></div>
+
+<!-- GAUGE B -->
+<div class="section-label">Gauge B — Concurrent Stress</div>
+<div class="gauge-b-box">
+<p><strong>State: OFF.</strong> The Sahm rule real-time vintage reads −0.07, well below its 0.50 firing threshold (as of 1 August 2026). Bank delinquency four-quarter change stands at −0.06 percentage points, below its 0.81 pp threshold (as of 1 April 2026). Neither trigger is active; the portfolio remains in its Turbulence allocation without defensive override.</p>
+<p>The coexistence of a 7.0 Gauge A score and an inactive Gauge B is the system operating as designed: fragility is elevated on a forward-looking basis, but the real economy has not produced the concurrent deterioration that would warrant a regime shift.</p>
+</div>
+
+<div class="spacer"></div>
+
+<!-- CIO VERDICT -->
+<div class="section-label">CIO Verdict</div>
+<div class="verdict-box">
+<p><strong>Flat week, unresolved tension.</strong> Nothing changed in the data — every pillar, every sentinel, every trigger returned the same reading as seven days ago. That absence of movement is itself informative: the fragility embedded in a negative equity risk premium and extreme liquidity ratios is not dissipating, but it is also not converting into realised stress. The system is designed to tolerate exactly this state of affairs — elevated forward risk, no present crisis — without forcing the portfolio into premature defence.</p>
+<p>The 9.14-point alpha deficit versus broad equities is the accumulated cost of carrying 14.5% cash and 19.7% in sovereign duration while equities continue to compound against a negative risk premium. That cost is real. It is also the price of a hedge that has not yet been needed. Whether it is ultimately justified depends on whether the fragility the score measures ever converts into drawdown — a question Gauge A is designed to flag but not to time.</p>
+<p>Were I unconstrained by the rules engine, I would consider trimming the investment-grade credit allocation modestly in favour of additional cash, given that spread compression has left IG offering limited incremental carry over bills. The rules do not permit that adjustment within the Turbulence vector, and the allocation stands as executed. No action is required or recommended this week.</p>
+</div>
+
+<div class="spacer"></div>
+
+<!-- PORTFOLIO REBALANCE STATUS -->
+<div class="section-label">Portfolio Rebalance Status</div>
+<div class="rebalance-box">
+<div class="rb-title">● Portfolio Rebalance Status</div>
+<div class="rb-row">
+<span class="rb-label">Operative Regime</span>
+<span class="rb-value">Turbulence</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Rebalance Outcome</span>
+<span class="rb-value">HOLD — No trigger this week. Positions held; no transactions.</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Executed Transactions</span>
+<span class="rb-value">None</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Active Instruments</span>
+<span class="rb-value">SPY · IEF · LQD · PDBC · BIL · VNQ</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Effective Allocation</span>
+<span class="rb-value">US Eq 41.5% · UST 19.7% · IG 15.5% · Cmdty 6.2% · Cash 14.5% · Alt 2.6%</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Next Semi-Annual Rebalance</span>
+<span class="rb-value">29 January 2027</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Portfolio Value</span>
+<span class="rb-value">$10,631.42</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Cumulative P&amp;L</span>
+<span class="rb-value">+6.31%</span>
+</div>
+<div class="rb-row">
+<span class="rb-label">Alpha vs Broad Equity</span>
+<span class="rb-value">−9.14%</span>
+</div>
+</div>
+
+</div>
+
+<div class="footer">
+<div class="footer-logo">US<span>MRM</span> Intelligence Hub</div>
+<div class="footer-links">
+<a href="https://usmrm.net">Live Terminal</a>
+<a href="https://usmrm.net">Newsletter</a>
+<a href="https://usmrm.net">BDCs</a>
+<a href="mailto:usmrm@proton.me">Contact</a>
+</div>
+<div class="footer-disclaimer">This newsletter is produced for educational and personal analysis purposes only. It does not constitute financial advice.<br>All data sourced from FRED API · © 2026 US MRM Intelligence Hub · usmrm.net</div>
+</div>
+
+</div>
+</body>
+</html>
