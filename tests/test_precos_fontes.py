@@ -146,4 +146,93 @@ finally:
 eq([n for n, _ in up.FONTES_DE_PRECO], ["yahoo", "alphavantage"],
    "a Yahoo primeiro (nao consome quota), a Alpha Vantage a seguir")
 
+
+# ── 8. O parser da Alpha Vantage, contra um payload REAL ──────────────────
+#
+# Este era o unico ponto por afirmar, e e o que decide a sexta-feira em que a
+# Yahoo estiver em baixo: as outras afirmacoes usam fontes de teste, e uma fonte
+# de teste concorda sempre com o parser que a le. O corpo abaixo e uma resposta
+# verdadeira da API (SPY, 2026-09-25), com a forma que ela usa mesmo: chaves
+# numeradas, precos como TEXTO e datas como chaves do dicionario.
+_PAYLOAD_REAL = {
+    "Meta Data": {"1. Information": "Daily Prices (open, high, low, close) and Volumes",
+                  "2. Symbol": "SPY", "3. Last Refreshed": "2026-09-25",
+                  "4. Output Size": "Compact", "5. Time Zone": "US/Eastern"},
+    "Time Series (Daily)": {
+        "2026-09-25": {"1. open": "768.7800", "2. high": "772.2800",
+                       "3. low": "766.2900", "4. close": "771.3500",
+                       "5. volume": "36666733"},
+        "2026-09-24": {"1. open": "764.0650", "2. high": "768.9500",
+                       "3. low": "763.2450", "4. close": "767.1800",
+                       "5. volume": "43983659"},
+        "2026-09-18": {"1. open": "761.3100", "2. high": "762.0000",
+                       "3. low": "757.9710", "4. close": "761.6900",
+                       "5. volume": "65395148"},
+        # Fora da janela pedida: tem de ser descartado, senao o `max()` do
+        # `_escolhe_fecho` podia eleger um fecho que nao foi pedido.
+        "2026-05-05": {"1. open": "721.7700", "2. high": "725.0400",
+                       "3. low": "721.4898", "4. close": "723.7700",
+                       "5. volume": "36933226"},
+    },
+}
+
+class _RespostaFalsa:
+    def __init__(self, corpo): self._c = corpo
+    def raise_for_status(self): pass
+    def json(self): return self._c
+
+def _com_resposta(corpo, fn):
+    guarda_get = up.requests.get
+    guarda_chave = os.environ.get("ALPHAVANTAGE_API_KEY")
+    try:
+        os.environ["ALPHAVANTAGE_API_KEY"] = "chave-de-ensaio"
+        up.requests.get = lambda *a, **k: _RespostaFalsa(corpo)
+        return fn()
+    finally:
+        up.requests.get = guarda_get
+        if guarda_chave is None:
+            os.environ.pop("ALPHAVANTAGE_API_KEY", None)
+        else:
+            os.environ["ALPHAVANTAGE_API_KEY"] = guarda_chave
+
+_inicio, _fim = ALVO - timedelta(days=10), ALVO + timedelta(days=1)
+serie = _com_resposta(_PAYLOAD_REAL,
+                      lambda: up._serie_alphavantage("SPY", _inicio, _fim))
+eq(serie, {date(2026, 9, 25): 771.35, date(2026, 9, 24): 767.18,
+           date(2026, 9, 18): 761.69},
+   "o payload real da Alpha Vantage e lido, convertido para float e recortado "
+   "a janela pedida")
+eq(serie[ALVO], 771.35,
+   "e o fecho de 25 Set 2026 e o mesmo que a Yahoo deu (771.35) — duas fontes "
+   "independentes a concordar ao centimo")
+
+# E o preco vem como TEXTO no JSON: se a fonte nao o converter, o
+# `_escolhe_fecho` recusa-o (guarda 3 acima) e a cascata perde a segunda fonte
+# exactamente quando precisa dela. Esta afirmacao prende a conversao na FONTE.
+for _v in serie.values():
+    true(isinstance(_v, float), "a fonte devolve float, nao o texto do JSON")
+
+# ── 9. Limite de pedidos e simbolo inexistente sao FALHA, nao serie vazia ──
+# A Alpha Vantage responde 200 com uma mensagem. Tratar isso por "nao ha dados"
+# seria dar o limite de pedidos por resposta legitima e nunca voltar a tentar.
+for _corpo, _que in (({"Note": "call frequency"}, "limite de pedidos"),
+                     ({"Information": "premium endpoint"}, "endpoint pago"),
+                     ({"Error Message": "Invalid API call"}, "simbolo invalido"),
+                     ({}, "corpo vazio"),
+                     ({"Time Series (Daily)": {}}, "serie vazia")):
+    levantou = False
+    try:
+        _com_resposta(_corpo, lambda: up._serie_alphavantage("SPY", _inicio, _fim))
+    except Exception:
+        levantou = True
+    true(levantou, f"{_que}: a fonte levanta em vez de devolver vazio")
+
+# E na cascata, isso faz o ticket cair para `stale` em vez de passar por bom.
+pr, _, st = _com_resposta({"Note": "call frequency"}, lambda: _com_fontes(
+    [("yahoo", _fonte(ValueError("em baixo"))),
+     ("alphavantage", up._serie_alphavantage)],
+    lambda: up.fetch_prices(["SPY"], ALVO, retries=1)))
+eq(pr["SPY"], None, "com as duas fontes em baixo nao ha preco")
+eq(st["SPY"], True, "e declara-se velho")
+
 print(f"TODOS OS {ok} TESTES PASSARAM")
