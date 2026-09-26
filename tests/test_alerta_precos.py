@@ -114,4 +114,62 @@ true("nao e uma avaria na carteira" in corpo_d,
 true(ap.ETIQUETA_CONGELADO != ap.ETIQUETA_DEGRADADO,
      "cada avaria tem a sua etiqueta, senao a deduplicacao junta as duas")
 
+
+# ── 8. Na estreia, a etiqueta ainda nao existe ───────────────────────────
+#
+# A procura por um fio ja aberto filtra por etiqueta, e na PRIMEIRA vez que este
+# alerta dispara essa etiqueta nao existe no repositorio. Se um 404 nessa procura
+# impedisse a abertura do issue, o alerta falhava exactamente na estreia — a
+# corrida que mais importa, porque e a que conta a avaria pela primeira vez.
+import urllib.error
+
+_chamadas = []
+def _api_falsa(metodo, caminho, token, corpo=None):
+    _chamadas.append((metodo, caminho))
+    if metodo == "GET":
+        raise urllib.error.HTTPError(caminho, 404, "Not Found", {}, None)
+    return {"number": 12}
+
+_guarda = ap._api
+try:
+    ap._api = _api_falsa
+    r = ap.publica("dono/repo", "t", ap.ETIQUETA_CONGELADO, "titulo", "corpo")
+finally:
+    ap._api = _guarda
+true("aberto o issue #12" in r, "com a etiqueta ainda inexistente, abre-se o issue")
+eq([m for m, _ in _chamadas], ["GET", "POST"],
+   "procurou fio aberto e, nao achando, abriu um")
+
+# Mas um erro que NAO seja 404 continua a subir: engolir tudo transformava uma
+# credencial invalida num alerta que parecia ter saido e nao saiu.
+def _api_500(metodo, caminho, token, corpo=None):
+    raise urllib.error.HTTPError(caminho, 500, "Server Error", {}, None)
+_guarda = ap._api
+subiu = False
+try:
+    ap._api = _api_500
+    try:
+        ap.publica("dono/repo", "t", ap.ETIQUETA_CONGELADO, "titulo", "corpo")
+    except urllib.error.HTTPError:
+        subiu = True
+finally:
+    ap._api = _guarda
+true(subiu, "um erro que nao e 404 nao e engolido pela guarda da estreia")
+
+# E com um fio ja aberto, comenta em vez de abrir outro: tres semanas de avaria
+# davam tres issues iguais e a terceira ja nao se lia.
+def _api_com_fio(metodo, caminho, token, corpo=None):
+    _chamadas.append((metodo, caminho))
+    return [{"number": 7}] if metodo == "GET" else {"number": 99}
+_chamadas.clear()
+_guarda = ap._api
+try:
+    ap._api = _api_com_fio
+    r2 = ap.publica("dono/repo", "t", ap.ETIQUETA_CONGELADO, "titulo", "corpo")
+finally:
+    ap._api = _guarda
+true("comentado no issue #7" in r2, "havendo fio aberto, comenta-se nele")
+true(all("/issues/7/comments" in c for m, c in _chamadas if m == "POST"),
+     "e o comentario vai para esse fio, nao para um issue novo")
+
 print(f"TODOS OS {ok} TESTES PASSARAM")

@@ -153,8 +153,20 @@ def publica(repo, token, etiqueta, titulo, corpo):
     Sem esta deduplicacao, tres semanas de avaria davam tres issues iguais e a
     terceira ja nao se lia. Um fio por avaria, que cresce enquanto ela durar.
     """
-    abertos = _api("GET", f"/repos/{repo}/issues?state=open&labels={etiqueta}&per_page=1",
-                   token) or []
+    # Na PRIMEIRA vez que este alerta dispara, a etiqueta ainda nao existe no
+    # repositorio. Um filtro por etiqueta inexistente nao pode impedir o alerta
+    # de sair — seria falhar exactamente na estreia, que e a corrida que mais
+    # importa. Nao se encontrar fio aberto, seja porque nao ha seja porque a
+    # etiqueta nao existe, da no mesmo: abre-se um. (A etiqueta e criada pelo
+    # proprio `issues.create`, como ja acontece com `pipeline-failure`.)
+    try:
+        abertos = _api("GET",
+                       f"/repos/{repo}/issues?state=open&labels={etiqueta}&per_page=1",
+                       token) or []
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            raise
+        abertos = []
     if abertos:
         n = abertos[0]["number"]
         _api("POST", f"/repos/{repo}/issues/{n}/comments", token, {"body": corpo})
