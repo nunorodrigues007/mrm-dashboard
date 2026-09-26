@@ -1858,23 +1858,31 @@
       "critical_subregime_signalled": null,
       "critical_subregime_note": null,
       "prices": {
-        "SPY": 764.29,
-        "BIL": 91.5,
-        "VNQ": 94.8,
-        "IEF": 91.01,
-        "PDBC": 19.79,
-        "LQD": 104.32
+        "IEF": 90.0,
+        "BIL": 91.62,
+        "VNQ": 90.99,
+        "LQD": 103.21,
+        "PDBC": 19.5,
+        "SPY": 771.35
       },
       "prices_confirmed": {
-        "SPY": false,
-        "BIL": false,
-        "VNQ": false,
-        "IEF": false,
-        "PDBC": false,
-        "LQD": false
+        "IEF": true,
+        "BIL": true,
+        "VNQ": true,
+        "LQD": true,
+        "PDBC": true,
+        "SPY": true
       },
-      "data_stale": true,
-      "portfolio_value_pre_rebalance": 10631.42,
+      "data_stale": false,
+      "price_sources": {
+        "IEF": "yahoo",
+        "BIL": "yahoo",
+        "VNQ": "yahoo",
+        "LQD": "yahoo",
+        "PDBC": "yahoo",
+        "SPY": "yahoo"
+      },
+      "portfolio_value_pre_rebalance": 10612.59,
       "bucket_allocation_pct": {
         "US_EQUITIES": 41.45077720207254,
         "US_TREASURIES": 19.689119170984455,
@@ -1891,41 +1899,20 @@
         "CASH": 14.5,
         "ALTERNATIVES": 2.6
       },
-      "newsletter_alloc_issue": 28,
+      "newsletter_alloc_issue": 29,
       "regime_weights_adopted": true,
       "stress_gauge_active": false,
       "stress_gauge_basis": "no trigger active",
       "data_refused": false,
-      "valuation_frozen": [
-        "BIL",
-        "IEF",
-        "LQD",
-        "PDBC",
-        "SPY",
-        "VNQ"
-      ],
-      "valuation_frozen_days": {
-        "BIL": 14,
-        "IEF": 14,
-        "LQD": 14,
-        "PDBC": 14,
-        "SPY": 14,
-        "VNQ": 14
-      },
-      "valuation_frozen_dates": {
-        "BIL": "2026-09-11",
-        "IEF": "2026-09-11",
-        "LQD": "2026-09-11",
-        "PDBC": "2026-09-11",
-        "SPY": "2026-09-11",
-        "VNQ": "2026-09-11"
-      },
+      "valuation_frozen": [],
+      "valuation_frozen_days": {},
+      "valuation_frozen_dates": {},
       "valuation_not_credible": [],
       "price_frozen_after_days": 21,
       "valuation_missing": [],
       "valuation_complete": true,
-      "benchmark_frozen": true,
-      "score_basis": "data.json is 0.0h old",
+      "benchmark_frozen": false,
+      "score_basis": "data.json is 8.2h old",
       "allocation_pct": {
         "BIL": 14.507772020725387,
         "IEF": 19.689119170984455,
@@ -1952,13 +1939,14 @@
       },
       "transaction_cost_usd": 0.0,
       "transaction_cost_detail": {},
-      "portfolio_value": 10631.42,
-      "portfolio_pnl_pct": 6.31,
-      "benchmark_spy_value": 11545.14,
-      "benchmark_spy_pnl_pct": 15.45,
-      "alpha_vs_benchmark_pct": -9.14,
+      "portfolio_value": 10612.59,
+      "portfolio_pnl_pct": 6.13,
+      "benchmark_spy_value": 11651.78,
+      "benchmark_spy_pnl_pct": 16.52,
+      "alpha_vs_benchmark_pct": -10.39,
       "rebalance_triggered": false,
-      "rebalance_reason": "hold"
+      "rebalance_reason": "hold",
+      "rerun_count": 1
     }
   ],
   "current": {
@@ -1992,7 +1980,7 @@
       "CASH": 14.5,
       "ALTERNATIVES": 2.6
     },
-    "newsletter_alloc_issue": 28,
+    "newsletter_alloc_issue": 29,
     "regime_weights_adopted": true,
     "allocation_pct": {
       "BIL": 14.507772020725387,
@@ -2002,30 +1990,9 @@
       "SPY": 41.45077720207254,
       "VNQ": 2.5906735751295336
     },
-    "valuation_frozen": [
-      "BIL",
-      "IEF",
-      "LQD",
-      "PDBC",
-      "SPY",
-      "VNQ"
-    ],
-    "valuation_frozen_days": {
-      "BIL": 14,
-      "IEF": 14,
-      "LQD": 14,
-      "PDBC": 14,
-      "SPY": 14,
-      "VNQ": 14
-    },
-    "valuation_frozen_dates": {
-      "BIL": "2026-09-11",
-      "IEF": "2026-09-11",
-      "LQD": "2026-09-11",
-      "PDBC": "2026-09-11",
-      "SPY": "2026-09-11",
-      "VNQ": "2026-09-11"
-    },
+    "valuation_frozen": [],
+    "valuation_frozen_days": {},
+    "valuation_frozen_dates": {},
     "valuation_not_credible": [],
     "price_frozen_after_days": 21,
     "valuation_missing": [],
@@ -2039,26 +2006,34 @@
       "ALTERNATIVES": "VNQ"
     },
     "last_prices": {
-      "VNQ": 94.8,
-      "SPY": 764.29,
-      "BIL": 91.5,
-      "IEF": 91.01,
-      "PDBC": 19.79,
-      "LQD": 104.32
+      "VNQ": 90.99,
+      "SPY": 771.35,
+      "BIL": 91.62,
+      "IEF": 90.0,
+      "PDBC": 19.5,
+      "LQD": 103.21
     },
     "last_price_dates": {
-      "IEF": "2026-09-11",
-      "LQD": "2026-09-11",
-      "BIL": "2026-09-11",
-      "PDBC": "2026-09-11",
-      "SPY": "2026-09-11",
-      "VNQ": "2026-09-11"
+      "IEF": "2026-09-25",
+      "LQD": "2026-09-25",
+      "BIL": "2026-09-25",
+      "PDBC": "2026-09-25",
+      "SPY": "2026-09-25",
+      "VNQ": "2026-09-25"
     },
-    "portfolio_value": 10631.42,
-    "portfolio_pnl_pct": 6.31,
+    "price_sources": {
+      "IEF": "yahoo",
+      "BIL": "yahoo",
+      "VNQ": "yahoo",
+      "LQD": "yahoo",
+      "PDBC": "yahoo",
+      "SPY": "yahoo"
+    },
+    "portfolio_value": 10612.59,
+    "portfolio_pnl_pct": 6.13,
     "benchmark_spy_shares": 15.1057,
-    "benchmark_spy_value": 11545.14,
-    "benchmark_spy_pnl_pct": 15.45,
-    "alpha_vs_benchmark_pct": -9.14
+    "benchmark_spy_value": 11651.78,
+    "benchmark_spy_pnl_pct": 16.52,
+    "alpha_vs_benchmark_pct": -10.39
   }
 }
