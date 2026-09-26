@@ -73,7 +73,13 @@ eq(len(W), len(_FICHEIROS_WF),
    f"e dois workflows nao podem partilhar o mesmo nome sem extensao — o segundo "
    f"apagava o primeiro deste dicionario e ficava sem regras "
    f"({[f.name for f in _FICHEIROS_WF]})")
-eq(sorted(W), ["friday-pipeline", "test", "update"], "os tres workflows existem")
+# A lista e fixada para um workflow nao APARECER nem DESAPARECER sem que
+# alguem tenha reparado: um workflow novo entra a correr com os segredos do
+# repositorio, e um que sume leva com ele o que quer que garantisse.
+# O `smoke-precos` entrou a 26 de Setembro de 2026: arranque manual, so
+# leitura, responde se as cotacoes chegam ao runner sem publicar nada.
+eq(sorted(W), ["friday-pipeline", "smoke-precos", "test", "update"],
+   "os quatro workflows existem, e nenhum entrou ou saiu em silencio")
 
 # ── todos os jobs tem prazo ─────────────────────────────────────────────────
 for nome, doc in W.items():

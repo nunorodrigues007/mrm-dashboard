@@ -1,0 +1,42 @@
+# Arranque manual apenas. Responde a uma pergunta — as cotações chegam a este
+# runner? — sem publicar carteira, sem gerar edição e sem enviar nada.
+#
+# Existe porque a avaria de Setembro de 2026 só era observável à sexta-feira à
+# noite, depois de a carteira já ter sido publicada com preços de duas semanas
+# antes. Descobrir que o runner não fala com a Yahoo não tem de custar uma
+# semana de espera nem uma edição errada.
+name: 🔍 Teste de fumo às cotações
+
+on:
+  workflow_dispatch:
+
+# Só leitura: este workflow não escreve no repositório, e a permissão diz isso
+# em vez de o prometer num comentário.
+permissions:
+  contents: read
+
+jobs:
+  cotacoes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      # O portão corre aqui como em qualquer outro job, e a suite exige-o: um
+      # diagnóstico que corre sobre código por testar diz-te coisas sobre um
+      # sistema que não é o que está em produção.
+      - name: ✅ Toda a suite, antes de diagnosticar
+        run: bash tests/portao.sh
+
+      - name: 🔍 Que fonte serve cada instrumento
+        env:
+          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
+        run: python smoke_precos.py

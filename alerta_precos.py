@@ -113,7 +113,7 @@ def corpo_degradado(cur, degradados, dono):
     linhas = [
         f"@{dono}",
         "",
-        f"**Os precos desta semana vieram, mas nao da fonte principal.**",
+        "**Os precos desta semana vieram, mas nao da fonte principal.**",
         "",
         f"A corrida de {cur.get('date')} publicou uma valorizacao correcta — isto "
         f"nao e uma avaria na carteira. E o aviso de que o sistema esta a correr "
