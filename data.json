@@ -1,11 +1,11 @@
 {
   "meta": {
-    "lastUpdated": "2026-10-01T22:04:40Z",
-    "generatedAt": "2026-10-01T22:04:40Z",
+    "lastUpdated": "2026-10-02T21:31:19Z",
+    "generatedAt": "2026-10-02T21:31:19Z",
     "source": "FRED API (Live)",
     "version": "3.1.0",
     "freshness": {
-      "generatedAt": "2026-10-01T22:04:40Z",
+      "generatedAt": "2026-10-02T21:31:19Z",
       "warnAfterHours": 30,
       "refuseAfterHours": 48,
       "degraded": false,
@@ -15,15 +15,15 @@
       "gaugeActive": false
     },
     "fredSeriesDates": {
-      "T10Y2Y": "2026-10-01",
+      "T10Y2Y": "2026-10-02",
       "M2SL": "2026-08-01",
       "NCBEILQ027S_FBCELLQ027S_GDP": "2026-04-01",
-      "DGS10": "2026-09-30",
+      "DGS10": "2026-10-01",
       "DRALACBN": "2026-04-01",
       "TDSP": "2026-04-01",
       "ICSA": "2026-09-26",
-      "UNRATE": "2026-08-01",
-      "SP500": "2026-09-30"
+      "UNRATE": "2026-09-01",
+      "SP500": "2026-10-01"
     },
     "fredSeriesStale": {},
     "gaugeNote": "Gauge A (globalResilienceScore) is a LEADING fragility measure on a 6-18 month horizon: in a downturn three of its five pillars mechanically improve, so the composite cannot signal concurrent stress. Concurrent stress detection lives in stressGauge, which is not averaged into Gauge A.",
@@ -620,12 +620,12 @@
     "triggers": {
       "sahmRealtime": {
         "series": "SAHMREALTIME",
-        "value": -0.07,
-        "asOf": "2026-08-01",
+        "value": 0.0,
+        "asOf": "2026-09-01",
         "decides": "regime",
         "threshold": 0.5,
         "fired": false,
-        "ageDays": 61,
+        "ageDays": 31,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 120,
@@ -638,7 +638,7 @@
         "decides": "regime",
         "threshold": 0.81,
         "fired": false,
-        "ageDays": 183,
+        "ageDays": 184,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 330,
@@ -646,9 +646,9 @@
       },
       "tenY3m": {
         "series": "DGS10",
-        "value": 79.0,
-        "asOf": "2026-09-30",
-        "windowStart": "2026-06-23",
+        "value": 83.0,
+        "asOf": "2026-10-01",
+        "windowStart": "2026-06-24",
         "decides": "subregime",
         "threshold": -10.0,
         "fired": false,
@@ -657,7 +657,7 @@
         "note": "3-month change in the 10Y, in basis points. Decides Flight-to-Quality against Stress-without-relief WITHIN Critical; it does not decide Critical itself."
       }
     },
-    "computedAt": "2026-10-01T22:04:40Z"
+    "computedAt": "2026-10-02T21:31:19Z"
   },
   "pillars": [
     {
@@ -667,9 +667,9 @@
       "metric": "10Y\u20132Y Yield Curve",
       "fredSeries": "T10Y2Y",
       "score": 5.5,
-      "value": "+0.46%",
+      "value": "+0.45%",
       "trend": "steepening",
-      "metricValue": 0.46,
+      "metricValue": 0.45,
       "band": {
         "lo": 0.0,
         "hi": 0.5,
@@ -678,10 +678,10 @@
         "context": "2007\u201308, 2024\u201325",
         "reading": "Post-inversion steepening \u2014 historically the phase immediately preceding recession onset, not an all-clear."
       },
-      "scoredValue": 0.46,
+      "scoredValue": 0.45,
       "nextBandEdge": 0.0,
-      "distanceToNextBand": 0.46,
-      "delta": "+0.10%",
+      "distanceToNextBand": 0.45,
+      "delta": "+0.09%",
       "deltaDirection": "flat",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
@@ -721,24 +721,24 @@
       "metric": "Equity Risk Premium",
       "fredSeries": "DGS10",
       "score": 10.0,
-      "value": "-1.43%",
+      "value": "-1.39%",
       "epEstimated": true,
-      "epValue": 3.86,
+      "epValue": 3.85,
       "epAsOf": "2026-08-31",
       "epAnchor": {
         "refYieldPct": 3.84,
         "refDate": "2026-08-31",
         "indexRef": 7686.14,
-        "indexNow": 7651.54,
-        "indexNowDate": "2026-09-30",
+        "indexNow": 7666.45,
+        "indexNowDate": "2026-10-01",
         "basis": "earnings held from the reference date, price marked to the latest close",
         "indexRefDate": "2026-08-31",
         "earningsPerIndexUnit": 295.15,
-        "ageDays": 31,
+        "ageDays": 32,
         "stale": false
       },
       "trend": "compressed",
-      "metricValue": -1.43,
+      "metricValue": -1.39,
       "band": {
         "lo": null,
         "hi": 0.0,
@@ -747,12 +747,12 @@
         "context": "Equities yield less than the 10-year Treasury",
         "reading": "No compensation whatsoever for holding equity risk. The bond is the higher-yielding asset."
       },
-      "scoredValue": -1.43,
+      "scoredValue": -1.39,
       "nextBandEdge": null,
       "distanceToNextBand": null,
-      "delta": "-0.06%",
+      "delta": "-0.02%",
       "deltaDirection": "flat",
-      "description": "ERP = E/P (3.86%) minus the 10Y yield (5.29%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
+      "description": "ERP = E/P (3.85%) minus the 10Y yield (5.24%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
       "status": "critical"
     },
     {
@@ -828,31 +828,31 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -1.43,
+      "value": -1.39,
       "unit": "%",
-      "displayValue": "-1.43%",
+      "displayValue": "-1.39%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-0.06%",
+      "delta": "-0.02%",
       "alert": true,
-      "description": "ERP at -1.43%. Red alert triggers below 0.80%."
+      "description": "ERP at -1.39%. Red alert triggers below 0.80%."
     },
     {
       "id": "unemployment",
       "name": "Unemployment Rate",
       "fredSeries": "UNRATE",
-      "value": 4.1,
+      "value": 4.2,
       "unit": "%",
-      "displayValue": "4.1%",
+      "displayValue": "4.2%",
       "threshold": 5.2,
       "thresholdDisplay": "5.2%",
       "status": "normal",
-      "trend": "stable",
-      "delta": "+0.0%",
+      "trend": "rising",
+      "delta": "+0.1%",
       "alert": false,
-      "description": "US unemployment rate at 4.1%. BDC stagflation stress trigger activates at 5.2%."
+      "description": "US unemployment rate at 4.2%. BDC stagflation stress trigger activates at 5.2%."
     }
   ],
   "historicalScores": [
