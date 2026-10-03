@@ -1,11 +1,11 @@
 {
   "meta": {
-    "lastUpdated": "2026-10-02T21:31:19Z",
-    "generatedAt": "2026-10-02T21:31:19Z",
+    "lastUpdated": "2026-10-03T01:11:59Z",
+    "generatedAt": "2026-10-03T01:11:59Z",
     "source": "FRED API (Live)",
     "version": "3.1.0",
     "freshness": {
-      "generatedAt": "2026-10-02T21:31:19Z",
+      "generatedAt": "2026-10-03T01:11:59Z",
       "warnAfterHours": 30,
       "refuseAfterHours": 48,
       "degraded": false,
@@ -23,7 +23,7 @@
       "TDSP": "2026-04-01",
       "ICSA": "2026-09-26",
       "UNRATE": "2026-09-01",
-      "SP500": "2026-10-01"
+      "SP500": "2026-10-02"
     },
     "fredSeriesStale": {},
     "gaugeNote": "Gauge A (globalResilienceScore) is a LEADING fragility measure on a 6-18 month horizon: in a downturn three of its five pillars mechanically improve, so the composite cannot signal concurrent stress. Concurrent stress detection lives in stressGauge, which is not averaged into Gauge A.",
@@ -625,7 +625,7 @@
         "decides": "regime",
         "threshold": 0.5,
         "fired": false,
-        "ageDays": 31,
+        "ageDays": 32,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 120,
@@ -638,7 +638,7 @@
         "decides": "regime",
         "threshold": 0.81,
         "fired": false,
-        "ageDays": 184,
+        "ageDays": 185,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 330,
@@ -657,7 +657,7 @@
         "note": "3-month change in the 10Y, in basis points. Decides Flight-to-Quality against Stress-without-relief WITHIN Critical; it does not decide Critical itself."
       }
     },
-    "computedAt": "2026-10-02T21:31:19Z"
+    "computedAt": "2026-10-03T01:11:58Z"
   },
   "pillars": [
     {
@@ -721,24 +721,24 @@
       "metric": "Equity Risk Premium",
       "fredSeries": "DGS10",
       "score": 10.0,
-      "value": "-1.39%",
+      "value": "-1.42%",
       "epEstimated": true,
-      "epValue": 3.85,
+      "epValue": 3.82,
       "epAsOf": "2026-08-31",
       "epAnchor": {
         "refYieldPct": 3.84,
         "refDate": "2026-08-31",
         "indexRef": 7686.14,
-        "indexNow": 7666.45,
-        "indexNowDate": "2026-10-01",
+        "indexNow": 7722.72,
+        "indexNowDate": "2026-10-02",
         "basis": "earnings held from the reference date, price marked to the latest close",
         "indexRefDate": "2026-08-31",
         "earningsPerIndexUnit": 295.15,
-        "ageDays": 32,
+        "ageDays": 33,
         "stale": false
       },
       "trend": "compressed",
-      "metricValue": -1.39,
+      "metricValue": -1.42,
       "band": {
         "lo": null,
         "hi": 0.0,
@@ -747,12 +747,12 @@
         "context": "Equities yield less than the 10-year Treasury",
         "reading": "No compensation whatsoever for holding equity risk. The bond is the higher-yielding asset."
       },
-      "scoredValue": -1.39,
+      "scoredValue": -1.42,
       "nextBandEdge": null,
       "distanceToNextBand": null,
-      "delta": "-0.02%",
+      "delta": "-0.05%",
       "deltaDirection": "flat",
-      "description": "ERP = E/P (3.85%) minus the 10Y yield (5.24%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
+      "description": "ERP = E/P (3.82%) minus the 10Y yield (5.24%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
       "status": "critical"
     },
     {
@@ -828,16 +828,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -1.39,
+      "value": -1.42,
       "unit": "%",
-      "displayValue": "-1.39%",
+      "displayValue": "-1.42%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-0.02%",
+      "delta": "-0.05%",
       "alert": true,
-      "description": "ERP at -1.39%. Red alert triggers below 0.80%."
+      "description": "ERP at -1.42%. Red alert triggers below 0.80%."
     },
     {
       "id": "unemployment",
