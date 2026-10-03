@@ -21,6 +21,7 @@ se o proprio portfolio.json estiver ilegivel. Uma falha a FALAR sobre a avaria
 nao deve transformar-se numa segunda avaria.
 """
 import json, os, sys, urllib.error, urllib.request
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -34,6 +35,38 @@ ETIQUETA_CONGELADO = "precos-congelados"
 ETIQUETA_DEGRADADO = "precos-degradados"
 
 
+def sem_fonte_nenhuma(cur):
+    """Posicoes DETIDAS que nenhuma fonte serviu nesta corrida.
+
+    Isto existe porque `valuation_frozen` NAO cobre a primeira semana de avaria,
+    e era precisamente a primeira semana que este script tinha de apanhar.
+
+    O motor tem duas camadas de recurso. A de cima (`FALLBACK_MAX_AGE_DAYS`, 10
+    dias) aceita o fecho da semana anterior, poe `stale[t] = True` e NAO escreve
+    em `valuation_frozen`. A de baixo so actua quando o recurso ja passou os 10
+    dias — ou seja, a partir da SEGUNDA sexta de avaria. Resultado reproduzido
+    com as duas fontes em baixo sobre o estado de producao: `valuation_frozen`
+    vazio, `price_sources` vazio, `valuation_complete: true`, pipeline verde, e
+    este script a dizer "vieram todos da fonte principal" — o contrario exacto
+    da verdade, durante a semana em que a edicao sai com numeros da semana
+    anterior. A segunda semana disparava; a primeira nao, e e a primeira que vai
+    para a newsletter sem ninguem saber.
+
+    O sinal certo nao e `valuation_frozen` — e a AUSENCIA de fonte: `price_sources`
+    leva uma entrada por cada ticker que alguma fonte serviu, logo uma posicao
+    detida que nao esteja la foi valorizada ao preco de recurso, aconteca o que
+    acontecer nas camadas acima.
+
+    Um `price_sources` AUSENTE (nao vazio) e um snapshot anterior a existencia do
+    campo: ai nao se conclui nada, para nao inventar uma avaria retroactiva.
+    """
+    fontes = cur.get("price_sources")
+    if not isinstance(fontes, dict):
+        return []
+    detidas = {t for t, n in (cur.get("shares") or {}).items() if n}
+    return sorted(detidas - set(fontes))
+
+
 def diagnostica(cur):
     """(gravidade, congelados, degradados) a partir do bloco `current`.
 
@@ -41,7 +74,9 @@ def diagnostica(cur):
     recurso) ou "congelado" (nenhuma fonte deu preco — a valorizacao nao e
     desta semana).
     """
-    congelados = sorted(cur.get("valuation_frozen") or [])
+    # A uniao das duas leituras, e nao so a lista do motor: ver `sem_fonte_nenhuma`.
+    congelados = sorted(set(cur.get("valuation_frozen") or [])
+                        | set(sem_fonte_nenhuma(cur)))
     fontes = cur.get("price_sources") or {}
     degradados = sorted(t for t, f in fontes.items() if f != FONTE_PRINCIPAL)
     if congelados:
@@ -51,9 +86,29 @@ def diagnostica(cur):
     return None, congelados, degradados
 
 
+def _idade_em_dias(de, ate):
+    """Dias entre duas datas ISO, ou None se alguma nao for legivel."""
+    try:
+        return (date.fromisoformat(str(ate)) - date.fromisoformat(str(de))).days
+    except (ValueError, TypeError):
+        return None
+
+
 def corpo_congelado(cur, congelados, dono):
-    idades = cur.get("valuation_frozen_days") or {}
-    datas = cur.get("valuation_frozen_dates") or {}
+    idades = dict(cur.get("valuation_frozen_days") or {})
+    datas = dict(cur.get("valuation_frozen_dates") or {})
+    # Para os congelados que o motor nao declarou (a primeira semana de avaria),
+    # a data real do preco esta no `last_price_dates`. Sem isto a tabela do issue
+    # saia com "? / ? dias" exactamente na semana que este aviso passou a cobrir,
+    # e um aviso sem a idade do preco nao diz se ha uma semana ou um mes de atraso.
+    _ultimas = cur.get("last_price_dates") or {}
+    for _t in congelados:
+        if _t not in datas and _ultimas.get(_t):
+            datas[_t] = str(_ultimas[_t])
+        if _t not in idades:
+            _i = _idade_em_dias(datas.get(_t), cur.get("date"))
+            if _i is not None:
+                idades[_t] = _i
     limite = cur.get("price_frozen_after_days")
     pior = max((idades.get(t, 0) for t in congelados), default=0)
     linhas = [
