@@ -8,6 +8,26 @@
 name: 🔍 Teste de fumo às cotações
 
 on:
+  # Quinta-feira, 08:47 UTC. A sentinela semanal.
+  #
+  # Porque a quinta e nao a sexta: o que este ensaio responde — o runner alcanca
+  # as fontes e a chave e valida? — tem de ser sabido ANTES da corrida que
+  # decide a carteira, nao depois. Em Setembro de 2026 a resposta foi "nao"
+  # durante tres semanas, e so se soube abrindo o portfolio.json a mao.
+  #
+  # Porque esta hora: o agendador do GitHub atrasa entre 15 minutos e 5 horas,
+  # portanto a corrida aterra entre as 09:47 e as 13:47 em Lisboa. Sobra a tarde
+  # de quinta e a sexta inteira para corrigir. As 22:xx — a hora simetrica a da
+  # sexta — o email chegaria de madrugada, que e o mesmo que nao chegar. O
+  # minuto fora do zero e a mesma mitigacao do friday-pipeline.
+  #
+  # Sem `inputs.fonte`: numa corrida agendada esse campo vem vazio, o
+  # `SMOKE_FONTE` fica vazio e o `smoke_precos.py` cai em `cascata` sozinho. E o
+  # modo certo para a sentinela, porque e o que a sexta vai fazer: vermelho aqui
+  # significa "a sexta vai publicar precos congelados". O modo `so_recurso`
+  # continua a existir para arranque manual.
+  schedule:
+    - cron: "47 8 * * 4"
   workflow_dispatch:
     inputs:
       fonte:
