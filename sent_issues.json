@@ -26,6 +26,15 @@
         "4caeaa0612fb743e"
       ],
       "complete": true
+    },
+    {
+      "issue": 30,
+      "recipients": 1,
+      "sentAt": "2026-10-03T01:15:22Z",
+      "served": [
+        "4caeaa0612fb743e"
+      ],
+      "complete": true
     }
   ]
 }
