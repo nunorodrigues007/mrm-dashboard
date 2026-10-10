@@ -2048,11 +2048,112 @@
       "alpha_vs_benchmark_pct": -10.77,
       "rebalance_triggered": false,
       "rebalance_reason": "hold"
+    },
+    {
+      "issue": 31,
+      "date": "2026-10-09",
+      "mrm_score": 6.97,
+      "score_nd_pillars": [],
+      "score_complete": true,
+      "regime": "Turbulence",
+      "regime_signalled": "Turbulence",
+      "critical_subregime": null,
+      "critical_subregime_signalled": null,
+      "critical_subregime_note": null,
+      "prices": {
+        "IEF": 89.4,
+        "LQD": 102.41,
+        "SPY": 778.57,
+        "PDBC": 19.66,
+        "BIL": 91.51,
+        "VNQ": 90.65
+      },
+      "prices_confirmed": {
+        "IEF": true,
+        "LQD": true,
+        "SPY": true,
+        "PDBC": true,
+        "BIL": true,
+        "VNQ": true
+      },
+      "data_stale": false,
+      "price_sources": {
+        "IEF": "yahoo",
+        "LQD": "yahoo",
+        "SPY": "yahoo",
+        "PDBC": "yahoo",
+        "BIL": "yahoo",
+        "VNQ": "yahoo"
+      },
+      "portfolio_value_pre_rebalance": 10630.24,
+      "bucket_allocation_pct": {
+        "US_EQUITIES": 41.45077720207254,
+        "US_TREASURIES": 19.689119170984455,
+        "IG_CREDIT": 15.544041450777202,
+        "COMMODITIES": 6.217616580310881,
+        "CASH": 14.507772020725387,
+        "ALTERNATIVES": 2.5906735751295336
+      },
+      "newsletter_bucket_allocation_pct": {
+        "US_EQUITIES": 41.5,
+        "US_TREASURIES": 19.7,
+        "IG_CREDIT": 15.5,
+        "COMMODITIES": 6.2,
+        "CASH": 14.5,
+        "ALTERNATIVES": 2.6
+      },
+      "newsletter_alloc_issue": 30,
+      "regime_weights_adopted": true,
+      "stress_gauge_active": false,
+      "stress_gauge_basis": "no trigger active",
+      "data_refused": false,
+      "valuation_frozen": [],
+      "valuation_frozen_days": {},
+      "valuation_frozen_dates": {},
+      "valuation_not_credible": [],
+      "price_frozen_after_days": 21,
+      "valuation_missing": [],
+      "valuation_complete": true,
+      "benchmark_frozen": false,
+      "score_basis": "data.json is 0.0h old",
+      "allocation_pct": {
+        "BIL": 14.507772020725387,
+        "IEF": 19.689119170984455,
+        "LQD": 15.544041450777202,
+        "PDBC": 6.217616580310881,
+        "SPY": 41.45077720207254,
+        "VNQ": 2.5906735751295336
+      },
+      "active_etf_map": {
+        "US_EQUITIES": "SPY",
+        "US_TREASURIES": "IEF",
+        "IG_CREDIT": "LQD",
+        "COMMODITIES": "PDBC",
+        "CASH": "BIL",
+        "ALTERNATIVES": "VNQ"
+      },
+      "shares": {
+        "SPY": 5.7659,
+        "IEF": 23.0,
+        "LQD": 15.8412,
+        "PDBC": 33.4017,
+        "BIL": 16.8566,
+        "VNQ": 2.9053
+      },
+      "transaction_cost_usd": 0.0,
+      "transaction_cost_detail": {},
+      "portfolio_value": 10630.24,
+      "portfolio_pnl_pct": 6.3,
+      "benchmark_spy_value": 11760.84,
+      "benchmark_spy_pnl_pct": 17.61,
+      "alpha_vs_benchmark_pct": -11.31,
+      "rebalance_triggered": false,
+      "rebalance_reason": "hold"
     }
   ],
   "current": {
-    "issue": 30,
-    "date": "2026-10-02",
+    "issue": 31,
+    "date": "2026-10-09",
     "regime": "Turbulence",
     "critical_subregime": null,
     "critical_subregime_note": null,
@@ -2081,7 +2182,7 @@
       "CASH": 14.5,
       "ALTERNATIVES": 2.6
     },
-    "newsletter_alloc_issue": 29,
+    "newsletter_alloc_issue": 30,
     "regime_weights_adopted": true,
     "allocation_pct": {
       "BIL": 14.507772020725387,
@@ -2107,34 +2208,34 @@
       "ALTERNATIVES": "VNQ"
     },
     "last_prices": {
-      "VNQ": 89.5,
-      "SPY": 769.64,
-      "BIL": 91.43,
-      "IEF": 89.05,
-      "PDBC": 19.44,
-      "LQD": 101.83
+      "VNQ": 90.65,
+      "SPY": 778.57,
+      "BIL": 91.51,
+      "IEF": 89.4,
+      "PDBC": 19.66,
+      "LQD": 102.41
     },
     "last_price_dates": {
-      "IEF": "2026-10-02",
-      "LQD": "2026-10-02",
-      "BIL": "2026-10-02",
-      "PDBC": "2026-10-02",
-      "SPY": "2026-10-02",
-      "VNQ": "2026-10-02"
+      "IEF": "2026-10-09",
+      "LQD": "2026-10-09",
+      "BIL": "2026-10-09",
+      "PDBC": "2026-10-09",
+      "SPY": "2026-10-09",
+      "VNQ": "2026-10-09"
     },
     "price_sources": {
-      "IEF": "alphavantage",
-      "LQD": "alphavantage",
-      "SPY": "alphavantage",
-      "BIL": "alphavantage",
-      "PDBC": "alphavantage",
-      "VNQ": "alphavantage"
+      "IEF": "yahoo",
+      "LQD": "yahoo",
+      "SPY": "yahoo",
+      "PDBC": "yahoo",
+      "BIL": "yahoo",
+      "VNQ": "yahoo"
     },
-    "portfolio_value": 10549.48,
-    "portfolio_pnl_pct": 5.49,
+    "portfolio_value": 10630.24,
+    "portfolio_pnl_pct": 6.3,
     "benchmark_spy_shares": 15.1057,
-    "benchmark_spy_value": 11625.95,
-    "benchmark_spy_pnl_pct": 16.26,
-    "alpha_vs_benchmark_pct": -10.77
+    "benchmark_spy_value": 11760.84,
+    "benchmark_spy_pnl_pct": 17.61,
+    "alpha_vs_benchmark_pct": -11.31
   }
 }
