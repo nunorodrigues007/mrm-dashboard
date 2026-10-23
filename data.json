@@ -1,11 +1,11 @@
 {
   "meta": {
-    "lastUpdated": "2026-10-22T20:56:03Z",
-    "generatedAt": "2026-10-22T20:56:03Z",
+    "lastUpdated": "2026-10-23T20:43:44Z",
+    "generatedAt": "2026-10-23T20:43:44Z",
     "source": "FRED API (Live)",
     "version": "3.1.0",
     "freshness": {
-      "generatedAt": "2026-10-22T20:56:03Z",
+      "generatedAt": "2026-10-23T20:43:44Z",
       "warnAfterHours": 30,
       "refuseAfterHours": 48,
       "degraded": false,
@@ -15,10 +15,10 @@
       "gaugeActive": false
     },
     "fredSeriesDates": {
-      "T10Y2Y": "2026-10-21",
+      "T10Y2Y": "2026-10-22",
       "M2SL": "2026-08-01",
       "NCBEILQ027S_FBCELLQ027S_GDP": "2026-04-01",
-      "DGS10": "2026-10-21",
+      "DGS10": "2026-10-22",
       "DRALACBN": "2026-04-01",
       "TDSP": "2026-04-01",
       "ICSA": "2026-10-17",
@@ -625,7 +625,7 @@
         "decides": "regime",
         "threshold": 0.5,
         "fired": false,
-        "ageDays": 51,
+        "ageDays": 52,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 120,
@@ -638,7 +638,7 @@
         "decides": "regime",
         "threshold": 0.81,
         "fired": false,
-        "ageDays": 204,
+        "ageDays": 205,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 330,
@@ -646,9 +646,9 @@
       },
       "tenY3m": {
         "series": "DGS10",
-        "value": 55.0,
-        "asOf": "2026-10-21",
-        "windowStart": "2026-07-14",
+        "value": 41.0,
+        "asOf": "2026-10-22",
+        "windowStart": "2026-07-15",
         "decides": "subregime",
         "threshold": -10.0,
         "fired": false,
@@ -657,7 +657,7 @@
         "note": "3-month change in the 10Y, in basis points. Decides Flight-to-Quality against Stress-without-relief WITHIN Critical; it does not decide Critical itself."
       }
     },
-    "computedAt": "2026-10-22T20:56:02Z"
+    "computedAt": "2026-10-23T20:43:44Z"
   },
   "pillars": [
     {
@@ -667,9 +667,9 @@
       "metric": "10Y\u20132Y Yield Curve",
       "fredSeries": "T10Y2Y",
       "score": 5.5,
-      "value": "+0.32%",
+      "value": "+0.31%",
       "trend": "steepening",
-      "metricValue": 0.32,
+      "metricValue": 0.31,
       "band": {
         "lo": 0.0,
         "hi": 0.5,
@@ -678,10 +678,10 @@
         "context": "2007\u201308, 2024\u201325",
         "reading": "Post-inversion steepening \u2014 historically the phase immediately preceding recession onset, not an all-clear."
       },
-      "scoredValue": 0.32,
+      "scoredValue": 0.31,
       "nextBandEdge": 0.0,
-      "distanceToNextBand": 0.32,
-      "delta": "-0.03%",
+      "distanceToNextBand": 0.31,
+      "delta": "-0.04%",
       "deltaDirection": "flat",
       "description": "Yield curve spread between 10Y and 2Y Treasuries. Normalizing from inversion historically precedes credit stress by 6\u201318 months.",
       "status": "caution"
@@ -721,7 +721,7 @@
       "metric": "Equity Risk Premium",
       "fredSeries": "DGS10",
       "score": 10.0,
-      "value": "-1.33%",
+      "value": "-1.16%",
       "epEstimated": true,
       "epValue": 3.8,
       "epAsOf": "2026-08-31",
@@ -734,11 +734,11 @@
         "basis": "earnings held from the reference date, price marked to the latest close",
         "indexRefDate": "2026-08-31",
         "earningsPerIndexUnit": 295.15,
-        "ageDays": 52,
+        "ageDays": 53,
         "stale": false
       },
       "trend": "compressed",
-      "metricValue": -1.33,
+      "metricValue": -1.16,
       "band": {
         "lo": null,
         "hi": 0.0,
@@ -747,12 +747,12 @@
         "context": "Equities yield less than the 10-year Treasury",
         "reading": "No compensation whatsoever for holding equity risk. The bond is the higher-yielding asset."
       },
-      "scoredValue": -1.33,
+      "scoredValue": -1.16,
       "nextBandEdge": null,
       "distanceToNextBand": null,
-      "delta": "-0.08%",
+      "delta": "+0.09%",
       "deltaDirection": "flat",
-      "description": "ERP = E/P (3.8%) minus the 10Y yield (5.13%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
+      "description": "ERP = E/P (3.8%) minus the 10Y yield (4.96%). Earnings are held from the 2026-08-31 reference (3.84% E/P) and marked to the latest S&P 500 close, so the pillar moves with both the market and the 10Y. Aggregate earnings are updated by hand each quarter.",
       "status": "critical"
     },
     {
@@ -828,16 +828,16 @@
       "id": "erp",
       "name": "Equity Risk Premium",
       "fredSeries": "DGS10",
-      "value": -1.33,
+      "value": -1.16,
       "unit": "%",
-      "displayValue": "-1.33%",
+      "displayValue": "-1.16%",
       "threshold": 0.8,
       "thresholdDisplay": "0.80%",
       "status": "alert",
       "trend": "falling",
-      "delta": "-0.08%",
+      "delta": "+0.09%",
       "alert": true,
-      "description": "ERP at -1.33%. Red alert triggers below 0.80%."
+      "description": "ERP at -1.16%. Red alert triggers below 0.80%."
     },
     {
       "id": "unemployment",
