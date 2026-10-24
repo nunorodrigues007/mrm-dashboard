@@ -27,9 +27,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 PORTFOLIO = ROOT / "portfolio.json"
 
-# A fonte que nao consome quota e nao precisa de segredo. Um preco que venha de
-# qualquer outra significa que esta a correr sobre um unico motor.
-FONTE_PRINCIPAL = "yahoo"
+# A PRIMEIRA da cascata. Um preco que venha de qualquer outra significa que
+# esta a correr sobre um unico motor. Desde a inversao de Outubro de 2026 e a
+# Alpha Vantage: paga-se uma chave e uma quota para nao se pagar uma moeda ao ar
+# por semana. O `test_smoke_precos.py` prende este nome ao
+# `FONTES_DE_PRECO[0][0]` — mudar um sem o outro fecha o portao.
+FONTE_PRINCIPAL = "alphavantage"
 
 ETIQUETA_CONGELADO = "precos-congelados"
 ETIQUETA_DEGRADADO = "precos-degradados"

@@ -485,11 +485,26 @@ def _serie_alphavantage(ticker, start, end):
     return fora
 
 
-# A ordem E a politica: a Yahoo primeiro porque nao consome quota nenhuma, a
-# Alpha Vantage a seguir porque tem limite diario no plano gratuito. Uma tupla
-# de modulo, e nao uma cadeia de `if` dentro do `fetch_prices`, para um ensaio
-# poder fixar as fontes que quer exercitar sem tocar na rede.
-FONTES_DE_PRECO = (("yahoo", _serie_yahoo), ("alphavantage", _serie_alphavantage))
+# A ordem E a politica, e a razao mudou de CONTEUDO em Outubro de 2026, nao so
+# de ordem. Era "a Yahoo primeiro porque nao consome quota nenhuma". Deixou de
+# bastar: desde 11 de Setembro de 2026 a Yahoo recusa os IPs dos runners do
+# GitHub de forma INTERMITENTE — serviu as edicoes #29 e #31, falhou as #30, #32
+# e #33. Duas semanas em cinco. Uma fonte principal que falha mais semanas do
+# que serve e uma rede de recurso com o nome trocado, e deixava uma moeda ao ar
+# no caminho critico da sexta-feira.
+#
+# Agora: a Alpha Vantage primeiro, porque responde sempre; a Yahoo a seguir,
+# como rede de recurso gratuita — continua a servir duas semanas em cinco, e
+# duas em cinco e muito melhor do que nada quando a primeira cair.
+#
+# O custo e a quota diaria. Nao e um custo NOVO: nas semanas de recurso o motor
+# ja pedia os seis a Alpha Vantage, e passou tres vezes (#30, #32, #33). A
+# diferenca e que agora pede sempre, e deixa de pedir a Yahoo primeiro. Os
+# pedidos continuam espacados por `ALPHAVANTAGE_INTERVALO_S`.
+#
+# Uma tupla de modulo, e nao uma cadeia de `if` dentro do `fetch_prices`, para
+# um ensaio poder fixar as fontes que quer exercitar sem tocar na rede.
+FONTES_DE_PRECO = (("alphavantage", _serie_alphavantage), ("yahoo", _serie_yahoo))
 
 
 def _escolhe_fecho(serie, target_date, ticker):

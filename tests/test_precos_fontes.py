@@ -143,8 +143,9 @@ finally:
         os.environ["ALPHAVANTAGE_API_KEY"] = _guard_chave
 
 # ── 7. A ordem declarada e a que a politica exige ─────────────────────────
-eq([n for n, _ in up.FONTES_DE_PRECO], ["yahoo", "alphavantage"],
-   "a Yahoo primeiro (nao consome quota), a Alpha Vantage a seguir")
+eq([n for n, _ in up.FONTES_DE_PRECO], ["alphavantage", "yahoo"],
+   "a Alpha Vantage primeiro (responde sempre), a Yahoo como rede de recurso "
+   "(gratuita, mas intermitente nos runners do GitHub desde 11 Set 2026)")
 
 
 # ── 8. O parser da Alpha Vantage, contra um payload REAL ──────────────────

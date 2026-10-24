@@ -21,11 +21,16 @@ import update_portfolio as up
 
 
 # O ensaio de recurso. A cascata, quando trabalha bem, NUNCA exercita a segunda
-# fonte: a Yahoo responde e a de recurso e saltada, que e o comportamento certo.
-# A consequencia e que "temos segunda fonte" fica por verificar ate a noite em
-# que a primeira cair — e essa noite e a pior possivel para descobrir que o
-# runner tambem nao fala com a segunda. Aqui desliga-se a principal de proposito.
-FONTE_PRINCIPAL = "yahoo"
+# fonte: a principal responde e a de recurso e saltada, que e o comportamento
+# certo. A consequencia e que "temos segunda fonte" fica por verificar ate a
+# noite em que a primeira cair — e essa noite e a pior possivel para descobrir
+# que o runner tambem nao fala com a segunda. Aqui desliga-se a principal de
+# proposito.
+#
+# Desde a inversao de Outubro de 2026 a principal e a Alpha Vantage e a rede de
+# recurso e a Yahoo, portanto o `so_recurso` passa a exercitar a YAHOO. Continua
+# a ser o unico caminho que poe a segunda fonte a prova de proposito.
+FONTE_PRINCIPAL = "alphavantage"
 
 
 def _fontes_para(modo):
@@ -52,9 +57,9 @@ def main():
     print(f"ALPHAVANTAGE_API_KEY configurada: "
           f"{'SIM (' + str(len(chave)) + ' caracteres)' if chave else 'NAO'}")
     if not chave:
-        print("  -> sem ela a cascata corre com a Yahoo sozinha, que e a fonte "
-              "que falhou. Criar o segredo em Settings > Secrets and variables "
-              "> Actions.")
+        print("  -> sem ela a fonte PRINCIPAL esta desligada e a cascata corre "
+              "com a Yahoo sozinha, que e a intermitente. Criar o segredo em "
+              "Settings > Secrets and variables > Actions.")
     print(f"Fontes declaradas, por ordem: "
           f"{', '.join(n for n, _ in up.FONTES_DE_PRECO)}")
     fontes, nota = _fontes_para(modo)
@@ -93,7 +98,11 @@ def main():
             print(f"  {t:<{largura}}  SEM COTAÇÃO — nenhuma fonte respondeu")
             continue
         fonte = up.ULTIMAS_FONTES.get(t, "?")
-        if fonte != "yahoo":
+        # Contra a CONSTANTE, nunca contra um literal. Com "yahoo" escrito aqui
+        # a mao, a inversao de Outubro de 2026 teria trocado o significado do
+        # AMARELO e do VERDE sem fechar o portao: nenhum teste exercita esta
+        # linha, e o `test_smoke_precos.py` so prende as constantes.
+        if fonte != FONTE_PRINCIPAL:
             de_recurso.append(t)
         print(f"  {t:<{largura}}  {p:>10.4f}  de {price_dates[t]}  via {fonte}")
 
@@ -120,11 +129,12 @@ def main():
         return 0
     if de_recurso:
         print(f"AMARELO: tudo valorizado, mas {', '.join(de_recurso)} veio da "
-              f"fonte de recurso — a Yahoo continua em baixo neste runner. O "
-              f"sistema publicaria CORRECTO na mesma. É a cascata a trabalhar.")
+              f"fonte de recurso — a `{FONTE_PRINCIPAL}` nao serviu neste "
+              f"runner. O sistema publicaria CORRECTO na mesma. É a cascata a "
+              f"trabalhar.")
         return 0
-    print(f"VERDE: os {len(tickers)} vieram da Yahoo. O acesso do runner está "
-          f"restabelecido.")
+    print(f"VERDE: os {len(tickers)} vieram da `{FONTE_PRINCIPAL}`. O acesso do "
+          f"runner esta bom.")
     return 0
 
 
