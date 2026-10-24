@@ -87,4 +87,58 @@ try:
 finally:
     sp.up.FONTES_DE_PRECO = _guarda
 
+# ── 5. O VEREDICTO: o que cada semaforo devolve ─────────────────────────
+#
+# Esta seccao nao existia ate 24 de Outubro de 2026, e a sua ausencia deixou
+# passar duas coisas de uma vez: o literal "yahoo" na classificacao por fonte,
+# e o AMARELO a devolver 0 como se fosse VERDE. O veredicto e agora uma funcao
+# pura exactamente para poder ser afirmado aqui, caso a caso.
+P = sp.FONTE_PRINCIPAL
+
+# Sem cotacao nenhuma: VERMELHO e saida 1, nos dois modos.
+for _modo in ("cascata", "so_recurso"):
+    c, r, t = sp.veredicto(_modo, 6, ["SPY"], [], P)
+    eq(c, 1, f"{_modo}: sem cotacao e saida 1")
+    true(r.startswith("VERMELHO"), f"{_modo}: sem cotacao e VERMELHO")
+    true("SPY" in t, f"{_modo}: e o texto nomeia quem ficou sem preco")
+
+# O ensaio, quando corre bem: VERDE e saida 0. No `so_recurso` TODOS os
+# instrumentos vem do recurso por construcao — a principal foi desligada de
+# proposito. Se o `de_recurso` decidisse aqui, o ensaio dava sempre AMARELO.
+c, r, t = sp.veredicto("so_recurso", 6, [], ["SPY", "IEF"], P)
+eq(c, 0, "so_recurso sem falhas e saida 0")
+eq(r, "VERDE (ensaio)", "e o rotulo diz que foi um ensaio")
+
+# A cascata com tudo da principal: VERDE e saida 0.
+c, r, t = sp.veredicto("cascata", 6, [], [], P)
+eq(c, 0, "cascata com tudo da principal e saida 0")
+eq(r, "VERDE", "e e VERDE")
+true(P in t, "e o texto nomeia a fonte que serviu")
+
+# A CASCATA SERVIDA PELO RECURSO: AMARELO e saida 1.
+#
+# E esta a afirmacao que importa. Ate 24 de Outubro de 2026 o AMARELO devolvia
+# 0 e a corrida de quinta saia `success`: as quintas de 15 e de 22 de Outubro
+# passaram verdes, as duas seguidas de uma sexta servida pelo recurso. O aviso
+# existia e nao se via. Se alguem puser isto outra vez a zero "para a sentinela
+# nao chatear", e aqui que tem de o justificar.
+c, r, t = sp.veredicto("cascata", 6, [], ["SPY", "VNQ"], P)
+eq(c, 1, "cascata servida pelo recurso FECHA o portao da quinta (saida 1)")
+eq(r, "AMARELO", "e o rotulo e AMARELO, nem VERDE nem VERMELHO")
+true("SPY" in t and "VNQ" in t, "e o texto nomeia quem veio do recurso")
+true(P in t, "e nomeia a fonte principal que nao serviu")
+
+# O rotulo e o codigo nunca se contradizem, seja qual for o caso.
+for _caso in (("cascata", [], []), ("cascata", [], ["SPY"]),
+              ("cascata", ["SPY"], []), ("so_recurso", [], ["SPY"]),
+              ("so_recurso", ["SPY"], [])):
+    c, r, _t = sp.veredicto(_caso[0], 6, _caso[1], _caso[2], P)
+    eq(c == 0, r.startswith("VERDE"),
+       f"{_caso}: saida 0 se e so se o rotulo comecar por VERDE")
+
+# E a funcao e PURA: nao toca na rede nem no estado do modulo.
+_antes = dict(sp.up.ULTIMAS_FONTES)
+sp.veredicto("cascata", 6, [], ["SPY"], P)
+eq(dict(sp.up.ULTIMAS_FONTES), _antes, "o veredicto nao mexe em estado nenhum")
+
 print(f"TODOS OS {ok} TESTES PASSARAM")

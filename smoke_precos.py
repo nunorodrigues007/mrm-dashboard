@@ -46,6 +46,55 @@ def _fontes_para(modo):
                        f"seguranca arranca a partir deste runner.")
 
 
+# ── O VEREDICTO ───────────────────────────────────────────────────────────
+#
+# Uma funcao PURA: sem rede, sem impressao, sem estado. Existe por duas razoes,
+# as duas descobertas a 24 de Outubro de 2026.
+#
+# A primeira: ate essa data o veredicto vivia dentro do `main()`, entrelacado
+# com os `print`, e por isso nao tinha teste NENHUM — o proprio
+# `test_smoke_precos.py` dizia, na docstring, "so se testa a escolha das fontes
+# e os textos". Foi essa cegueira que deixou o literal "yahoo" da classificacao
+# por fonte sobreviver a tres inventarios da politica. Um semaforo por testar e
+# um semaforo que ninguem verificou.
+#
+# A segunda: o AMARELO devolvia 0, igual ao VERDE. Uma quinta-feira em que a
+# fonte principal ja estava em baixo saia `success`. Aconteceu nas quintas de
+# 15 e de 22 de Outubro de 2026 — as duas verdes, as duas seguidas de uma sexta
+# servida pelo recurso. Agora devolve 1.
+def veredicto(modo, n_instrumentos, sem_preco, de_recurso, principal=None):
+    """(codigo de saida, rotulo, texto de uma linha). Nao imprime nada."""
+    p = principal if principal is not None else FONTE_PRINCIPAL
+    if sem_preco:
+        if modo == "so_recurso":
+            return 1, "VERMELHO (ensaio)", (
+                f"{', '.join(sem_preco)} sem cotação com a `{p}` desligada. A "
+                f"carteira NÃO está em risco hoje — a principal continua a "
+                f"servir. Mas a rede de segurança não responde a partir deste "
+                f"runner, e é exactamente isso que este ensaio existe para "
+                f"descobrir ANTES de ser precisa. Ver se a chave é válida e se "
+                f"o runner alcança a fonte de recurso.")
+        return 1, "VERMELHO", (
+            f"{', '.join(sem_preco)} sem cotação nenhuma. Se isto acontecesse "
+            f"na sexta, a carteira seria publicada ao último preço conhecido e "
+            f"o alerta abriria um issue.")
+    if modo == "so_recurso":
+        return 0, "VERDE (ensaio)", (
+            f"a fonte de recurso valorizou os {n_instrumentos} instrumentos a "
+            f"partir deste runner, com a `{p}` desligada. A rede de segurança "
+            f"não é só uma declaração no código — arranca e responde.")
+    if de_recurso:
+        return 1, "AMARELO", (
+            f"tudo valorizado, mas {', '.join(de_recurso)} veio da fonte de "
+            f"recurso — a `{p}` não serviu neste runner. A carteira de sexta "
+            f"sairia CORRECTA, pela cascata; o que fica em risco é a semana "
+            f"SEGUINTE, porque o sistema passa a correr sobre uma fonte só. "
+            f"Devolve 1 de propósito: este aviso tem de se ver da lista de "
+            f"corridas, não só de dentro do log.")
+    return 0, "VERDE", (
+        f"os {n_instrumentos} vieram da `{p}`. O acesso do runner esta bom.")
+
+
 def main():
     chave = (os.environ.get("ALPHAVANTAGE_API_KEY") or "").strip()
     modo = (os.environ.get("SMOKE_FONTE") or "cascata").strip() or "cascata"
@@ -107,35 +156,16 @@ def main():
         print(f"  {t:<{largura}}  {p:>10.4f}  de {price_dates[t]}  via {fonte}")
 
     print("=" * 66)
-    if sem_preco:
-        if modo == "so_recurso":
-            print(f"VERMELHO (ensaio): {', '.join(sem_preco)} sem cotação com a "
-                  f"`{FONTE_PRINCIPAL}` desligada. A carteira NÃO está em risco "
-                  f"hoje — a principal continua a servir. Mas a rede de "
-                  f"segurança não responde a partir deste runner, e é exactamente "
-                  f"isso que este ensaio existe para descobrir ANTES de ser "
-                  f"precisa. Ver se a chave é válida e se o runner alcança a "
-                  f"fonte de recurso.")
-        else:
-            print(f"VERMELHO: {', '.join(sem_preco)} sem cotação nenhuma. Se isto "
-                  f"acontecesse na sexta, a carteira seria publicada ao último "
-                  f"preço conhecido e o alerta abriria um issue.")
-        return 1
-    if modo == "so_recurso":
-        print(f"VERDE (ensaio): a fonte de recurso valorizou os {len(tickers)} "
-              f"instrumentos a partir deste runner, com a `{FONTE_PRINCIPAL}` "
-              f"desligada. A rede de segurança não é só uma declaração no "
-              f"código — arranca e responde.")
-        return 0
-    if de_recurso:
-        print(f"AMARELO: tudo valorizado, mas {', '.join(de_recurso)} veio da "
-              f"fonte de recurso — a `{FONTE_PRINCIPAL}` nao serviu neste "
-              f"runner. O sistema publicaria CORRECTO na mesma. É a cascata a "
-              f"trabalhar.")
-        return 0
-    print(f"VERDE: os {len(tickers)} vieram da `{FONTE_PRINCIPAL}`. O acesso do "
-          f"runner esta bom.")
-    return 0
+    codigo, rotulo, texto = veredicto(modo, len(tickers), sem_preco, de_recurso)
+    print(f"{rotulo}: {texto}")
+    if codigo != 0:
+        # A ANOTAÇÃO, e não só o `print`. Um `print` vive dentro do passo e só
+        # se vê abrindo a corrida; um `::error::` aparece no resumo da corrida e
+        # na lista. A sentinela existe para avisar com 24 horas de antecedência,
+        # e um aviso que obriga a abrir o log é um aviso que ninguém lê — foi
+        # exactamente o que aconteceu a 15 e a 22 de Outubro de 2026.
+        print(f"::error title=Sentinela das cotações — {rotulo}::{texto}")
+    return codigo
 
 
 if __name__ == "__main__":
