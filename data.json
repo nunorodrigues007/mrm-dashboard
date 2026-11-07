@@ -1,11 +1,11 @@
 {
   "meta": {
-    "lastUpdated": "2026-11-06T22:28:56Z",
-    "generatedAt": "2026-11-06T22:28:56Z",
+    "lastUpdated": "2026-11-07T01:55:32Z",
+    "generatedAt": "2026-11-07T01:55:32Z",
     "source": "FRED API (Live)",
     "version": "3.1.0",
     "freshness": {
-      "generatedAt": "2026-11-06T22:28:56Z",
+      "generatedAt": "2026-11-07T01:55:32Z",
       "warnAfterHours": 30,
       "refuseAfterHours": 48,
       "degraded": false,
@@ -625,7 +625,7 @@
         "decides": "regime",
         "threshold": 0.5,
         "fired": false,
-        "ageDays": 36,
+        "ageDays": 37,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 120,
@@ -638,7 +638,7 @@
         "decides": "regime",
         "threshold": 0.81,
         "fired": false,
-        "ageDays": 219,
+        "ageDays": 220,
         "stale": false,
         "ndReason": null,
         "maxAgeDays": 330,
@@ -657,7 +657,7 @@
         "note": "3-month change in the 10Y, in basis points. Decides Flight-to-Quality against Stress-without-relief WITHIN Critical; it does not decide Critical itself."
       }
     },
-    "computedAt": "2026-11-06T22:28:56Z"
+    "computedAt": "2026-11-07T01:55:32Z"
   },
   "pillars": [
     {
@@ -734,7 +734,7 @@
         "basis": "earnings held from the reference date, price marked to the latest close",
         "indexRefDate": "2026-08-31",
         "earningsPerIndexUnit": 295.15,
-        "ageDays": 67,
+        "ageDays": 68,
         "stale": false
       },
       "trend": "compressed",
