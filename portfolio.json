@@ -2553,11 +2553,112 @@
       "alpha_vs_benchmark_pct": -6.52,
       "rebalance_triggered": false,
       "rebalance_reason": "hold"
+    },
+    {
+      "issue": 36,
+      "date": "2026-11-13",
+      "mrm_score": 6.97,
+      "score_nd_pillars": [],
+      "score_complete": true,
+      "regime": "Turbulence",
+      "regime_signalled": "Turbulence",
+      "critical_subregime": null,
+      "critical_subregime_signalled": null,
+      "critical_subregime_note": null,
+      "prices": {
+        "SPY": 754.37,
+        "BIL": 91.53,
+        "VNQ": 96.47,
+        "IEF": 90.04,
+        "PDBC": 18.34,
+        "LQD": 102.81
+      },
+      "prices_confirmed": {
+        "SPY": true,
+        "BIL": true,
+        "VNQ": true,
+        "IEF": true,
+        "PDBC": true,
+        "LQD": true
+      },
+      "data_stale": false,
+      "price_sources": {
+        "SPY": "alphavantage",
+        "BIL": "alphavantage",
+        "VNQ": "alphavantage",
+        "IEF": "alphavantage",
+        "PDBC": "alphavantage",
+        "LQD": "alphavantage"
+      },
+      "portfolio_value_pre_rebalance": 10484.92,
+      "bucket_allocation_pct": {
+        "US_EQUITIES": 41.45077720207254,
+        "US_TREASURIES": 19.689119170984455,
+        "IG_CREDIT": 15.544041450777202,
+        "COMMODITIES": 6.217616580310881,
+        "CASH": 14.507772020725387,
+        "ALTERNATIVES": 2.5906735751295336
+      },
+      "newsletter_bucket_allocation_pct": {
+        "US_EQUITIES": 41.5,
+        "US_TREASURIES": 19.7,
+        "IG_CREDIT": 15.5,
+        "COMMODITIES": 6.2,
+        "CASH": 14.5,
+        "ALTERNATIVES": 2.6
+      },
+      "newsletter_alloc_issue": 35,
+      "regime_weights_adopted": true,
+      "stress_gauge_active": false,
+      "stress_gauge_basis": "no trigger active",
+      "data_refused": false,
+      "valuation_frozen": [],
+      "valuation_frozen_days": {},
+      "valuation_frozen_dates": {},
+      "valuation_not_credible": [],
+      "price_frozen_after_days": 21,
+      "valuation_missing": [],
+      "valuation_complete": true,
+      "benchmark_frozen": false,
+      "score_basis": "data.json is 0.0h old",
+      "allocation_pct": {
+        "BIL": 14.507772020725387,
+        "IEF": 19.689119170984455,
+        "LQD": 15.544041450777202,
+        "PDBC": 6.217616580310881,
+        "SPY": 41.45077720207254,
+        "VNQ": 2.5906735751295336
+      },
+      "active_etf_map": {
+        "US_EQUITIES": "SPY",
+        "US_TREASURIES": "IEF",
+        "IG_CREDIT": "LQD",
+        "COMMODITIES": "PDBC",
+        "CASH": "BIL",
+        "ALTERNATIVES": "VNQ"
+      },
+      "shares": {
+        "SPY": 5.7659,
+        "IEF": 23.0,
+        "LQD": 15.8412,
+        "PDBC": 33.4017,
+        "BIL": 16.8566,
+        "VNQ": 2.9053
+      },
+      "transaction_cost_usd": 0.0,
+      "transaction_cost_detail": {},
+      "portfolio_value": 10484.92,
+      "portfolio_pnl_pct": 4.85,
+      "benchmark_spy_value": 11395.29,
+      "benchmark_spy_pnl_pct": 13.95,
+      "alpha_vs_benchmark_pct": -9.1,
+      "rebalance_triggered": false,
+      "rebalance_reason": "hold"
     }
   ],
   "current": {
-    "issue": 35,
-    "date": "2026-11-06",
+    "issue": 36,
+    "date": "2026-11-13",
     "regime": "Turbulence",
     "critical_subregime": null,
     "critical_subregime_note": null,
@@ -2586,7 +2687,7 @@
       "CASH": 14.5,
       "ALTERNATIVES": 2.6
     },
-    "newsletter_alloc_issue": 34,
+    "newsletter_alloc_issue": 35,
     "regime_weights_adopted": true,
     "allocation_pct": {
       "BIL": 14.507772020725387,
@@ -2612,34 +2713,34 @@
       "ALTERNATIVES": "VNQ"
     },
     "last_prices": {
-      "VNQ": 95.73,
-      "SPY": 735.29,
-      "BIL": 91.46,
-      "IEF": 91.86,
-      "PDBC": 18.77,
-      "LQD": 104.53
+      "VNQ": 96.47,
+      "SPY": 754.37,
+      "BIL": 91.53,
+      "IEF": 90.04,
+      "PDBC": 18.34,
+      "LQD": 102.81
     },
     "last_price_dates": {
-      "IEF": "2026-11-06",
-      "LQD": "2026-11-06",
-      "BIL": "2026-11-06",
-      "PDBC": "2026-11-06",
-      "SPY": "2026-11-06",
-      "VNQ": "2026-11-06"
+      "IEF": "2026-11-13",
+      "LQD": "2026-11-13",
+      "BIL": "2026-11-13",
+      "PDBC": "2026-11-13",
+      "SPY": "2026-11-13",
+      "VNQ": "2026-11-13"
     },
     "price_sources": {
-      "IEF": "alphavantage",
-      "LQD": "alphavantage",
       "SPY": "alphavantage",
-      "PDBC": "alphavantage",
+      "BIL": "alphavantage",
       "VNQ": "alphavantage",
-      "BIL": "alphavantage"
+      "IEF": "alphavantage",
+      "PDBC": "alphavantage",
+      "LQD": "alphavantage"
     },
-    "portfolio_value": 10455.05,
-    "portfolio_pnl_pct": 4.55,
+    "portfolio_value": 10484.92,
+    "portfolio_pnl_pct": 4.85,
     "benchmark_spy_shares": 15.1057,
-    "benchmark_spy_value": 11107.07,
-    "benchmark_spy_pnl_pct": 11.07,
-    "alpha_vs_benchmark_pct": -6.52
+    "benchmark_spy_value": 11395.29,
+    "benchmark_spy_pnl_pct": 13.95,
+    "alpha_vs_benchmark_pct": -9.1
   }
 }
