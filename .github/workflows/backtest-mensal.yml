@@ -1,0 +1,105 @@
+name: 📉 Backtest mensal (dados + página)
+
+# Uma vez por mês acrescenta ao backtest os meses que fecharam, corre-o e
+# regenera o backtest.html (separador Backtest do usmrm.net). O que faz, passo a
+# passo, e como o correr à mão sem este workflow: RUNBOOK.md, secção
+# "Backtest mensal".
+on:
+  schedule:
+    # Dia 3 às 07:23 UTC. A revisão do data.json que fecha o mês M pode aterrar no
+    # git nos dias 1 ou 2 de M+1 (a corrida de sexta 31 commita no sábado), e o
+    # estender_dados.py procura-a até dia 10. Fora do minuto zero pela mesma razão
+    # do pipeline de sexta: as corridas agendadas à hora certa ficam em fila.
+    - cron: "23 7 3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write        # o job de alerta abre um issue quando a corrida falha
+
+concurrency:
+  group: backtest-mensal
+  cancel-in-progress: false
+
+jobs:
+  backtest-mensal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: 🛸 Checkout (histórico completo — as revisões do data.json são os dados)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: ✅ Toda a suite, antes de mexer em dados
+        run: bash tests/portao.sh
+
+      - name: 📈 Acrescentar os meses fechados
+        run: python backtest/estender_dados.py
+
+      - name: 📝 Regenerar backtest.html
+        run: python backtest/gerar_relatorio.py
+
+      # Segunda passagem: valida os meses NOVOS (o test_scores_reconstruction
+      # recalcula-os pelas regras e recusa delinquência adiantada) e confirma que
+      # a página corresponde aos dados. Só depois disto há push.
+      - name: ✅ Toda a suite, sobre os dados novos
+        run: bash tests/portao.sh
+
+      - name: 📋 Commit e push
+        run: |
+          git config --local user.email "noreply@usmrm.net"
+          git config --local user.name "MRM Data Bot"
+          if git diff --quiet -- backtest/data; then
+            echo "Sem meses novos — nada a publicar."
+            exit 0
+          fi
+          git add backtest/data backtest.html
+          git commit -m "backtest: dados até $(python -c 'import json;print(json.load(open("backtest/data/scores.json"))[-1]["month"])')"
+          # Só toca em backtest/ e no backtest.html, que nenhum outro workflow
+          # escreve: um rebase sobre o pipeline de sexta não tem conflito.
+          for i in 1 2 3; do
+            if git pull --rebase origin main; then
+              git push && exit 0
+            fi
+            echo "pull ou push falhado (tentativa $i)"
+            sleep 15
+          done
+          echo "::error::o push falhou três vezes — os dados do mês ficaram por publicar"
+          exit 1
+
+  alert-on-failure:
+    needs: [backtest-mensal]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 🚨 Abrir issue com a falha
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const hoje = new Date().toISOString().slice(0, 10);
+            const corpo = [
+              `@${context.repo.owner}`,
+              ``,
+              `A actualização mensal do backtest de ${hoje} falhou. **Nada foi publicado**: o backtest.html e os dados ficam como estavam.`,
+              ``,
+              `Corrida: ${url}`,
+              ``,
+              `A linha \`::error::\` do log diz porquê. O que fazer em cada caso, e como correr à mão: \`RUNBOOK.md\`, secção "Backtest mensal".`,
+            ].join("\n");
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title: `🚨 Backtest mensal falhou — ${hoje}`, body: corpo, labels: ["pipeline-failure"],
+            });

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="pt" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backtest USMRM 2007–2026</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Serif:wght@600&display=swap">
+<style>
+/* Relatório técnico: coluna única medida, tabelas de dados densas, uma linha
+   temporal de regime à escala. Neutros frios (azul-ardósia), acento azul para o
+   sistema actual, âmbar para o anterior, vermelho só para quebras. */
+:root{
+  --bg:#fbfcfd; --surface:#ffffff; --line:#dfe4ea; --line-soft:#eceff3;
+  --fg:#15202b; --fg-dim:#5a6775; --fg-faint:#8b96a3;
+  --v2:#15607a; --v2-soft:#e2eef3;
+  --v1:#9a6414; --v1-soft:#f5ecdd;
+  --neg:#a32a24; --pos:#1f6b45;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --serif:"IBM Plex Serif",Georgia,serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e141a; --surface:#141c24; --line:#2a3642; --line-soft:#1d2831;
+  --fg:#e5ebf1; --fg-dim:#9fb0c0; --fg-faint:#6d7f90;
+  --v2:#6fc3e0; --v2-soft:#15303c;
+  --v1:#e0b06a; --v1-soft:#33280f;
+  --neg:#e97b72; --pos:#6cc495; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e141a; --surface:#141c24; --line:#2a3642; --line-soft:#1d2831;
+  --fg:#e5ebf1; --fg-dim:#9fb0c0; --fg-faint:#6d7f90;
+  --v2:#6fc3e0; --v2-soft:#15303c;
+  --v1:#e0b06a; --v1-soft:#33280f;
+  --neg:#e97b72; --pos:#6cc495; color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.55;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:60rem;margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:3rem 4rem}
+h1{font-family:var(--serif);font-size:clamp(1.9rem,1.3rem + 2.4vw,2.8rem);
+  line-height:1.12;letter-spacing:-.015em;text-wrap:balance;margin:0}
+h2{font-family:var(--serif);font-size:1.35rem;line-height:1.25;letter-spacing:-.01em;
+  text-wrap:balance;margin:0}
+h3{font-size:.95rem;font-weight:600;margin:0}
+p{margin:0;max-width:62ch}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--fg-faint);margin:0}
+.lede{font-size:1.05rem;color:var(--fg-dim);max-width:60ch}
+section{display:flex;flex-direction:column;gap:1rem;margin-block-start:3.25rem}
+.head{display:flex;flex-direction:column;gap:.9rem;
+  padding-block-end:1.5rem;border-bottom:1px solid var(--line)}
+.meta{display:flex;flex-wrap:wrap;gap:.35rem 1.5rem;font-family:var(--mono);
+  font-size:.75rem;color:var(--fg-faint)}
+.scroll{overflow-x:auto;min-width:0;border:1px solid var(--line);border-radius:3px;
+  background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{padding:.55rem .7rem;text-align:right;white-space:nowrap;
+  border-bottom:1px solid var(--line-soft)}
+th:first-child,td:first-child{text-align:left}
+thead th{font-family:var(--mono);font-size:.68rem;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--fg-faint);font-weight:500;
+  border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:0}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr.focus td{background:var(--v2-soft)}
+tr.focus td:first-child{font-weight:600;box-shadow:inset 3px 0 0 var(--v2)}
+tr.prev td:first-child{box-shadow:inset 3px 0 0 var(--v1)}
+.neg{color:var(--neg)} .pos{color:var(--pos)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.card{background:var(--surface);padding:1rem;display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.card .k{font-family:var(--mono);font-size:.68rem;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--fg-faint)}
+.card .v{font-family:var(--mono);font-size:1.5rem;font-weight:600;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.card .n{font-size:.78rem;color:var(--fg-dim)}
+.note{border-left:2px solid var(--line);padding-left:1rem;color:var(--fg-dim);font-size:.9rem;
+  display:flex;flex-direction:column;gap:.6rem}
+ul{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.5rem;
+  color:var(--fg-dim);font-size:.9rem;max-width:62ch}
+li strong{color:var(--fg);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:.35rem 1.25rem;font-family:var(--mono);font-size:.72rem;
+  color:var(--fg-dim)}
+.sw{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;vertical-align:-1px;
+  margin-right:.35rem}
+figure{margin:0;display:flex;flex-direction:column;gap:.6rem}
+figcaption{font-size:.8rem;color:var(--fg-faint);max-width:62ch}
+code{font-family:var(--mono);font-size:.86em;background:var(--line-soft);
+  padding:.1em .35em;border-radius:2px}
+.foot{margin-block-start:3.5rem;padding-block-start:1.25rem;border-top:1px solid var(--line);
+  font-size:.8rem;color:var(--fg-faint);display:flex;flex-direction:column;gap:.4rem}
+</style>
+</head>
+<body>
+<!-- GERADO por backtest/gerar_relatorio.py a partir de backtest/relatorio_modelo.html.
+     Nao editar o backtest.html a mao: a corrida mensal reescreve-o. -->
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow">USMRM · validação</p>
+    <h1>Backtest USMRM 2007–2026</h1>
+    <p class="lede">O sistema que decide a carteira todas as sextas, corrido sobre
+      237 meses de dados reais. O motor não está reimplementado: o backtest importa
+      o <code>mrm_rules.py</code> e o <code>mrm_gauge_b.py</code> do repositório e
+      chama as mesmas funções que correm em produção.</p>
+    <div class="meta">
+      <span>2007-02 → 2026-10</span><span>237 meses</span>
+      <span>$100.000 compostos</span><span>retorno total</span>
+      <span>corretagem $10 por abertura e $10 por fecho</span>
+      <span>actualizado a 2026-11-28</span>
+    </div>
+  </header>
+
+  <section>
+    <p class="eyebrow">Resultado</p>
+    <h2>Quatro estratégias, o mesmo período</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Estratégia</th><th>CAGR</th><th>Vol</th><th>Sharpe</th>
+          <th>Sortino</th><th>Quebra máx.</th><th>Mês</th><th>Final</th></tr></thead>
+        <tbody>
+          <tr class="focus"><td>v2 — sistema actual</td><td class="num">6,51%</td><td class="num">7,44%</td><td class="num">0,674</td><td class="num">1,016</td><td class="num neg">−16,4%</td><td class="num">2022-09</td><td class="num">345.518</td></tr>
+          <tr class="prev"><td>v1 — sistema anterior</td><td class="num">6,85%</td><td class="num">8,15%</td><td class="num">0,662</td><td class="num">0,977</td><td class="num neg">−23,9%</td><td class="num">2009-02</td><td class="num">367.982</td></tr>
+          <tr><td>SPY buy &amp; hold</td><td class="num">10,93%</td><td class="num">15,39%</td><td class="num">0,651</td><td class="num">0,973</td><td class="num neg">−50,8%</td><td class="num">2009-02</td><td class="num">769.132</td></tr>
+          <tr><td>60/40 SPY-IEF, anual</td><td class="num">8,26%</td><td class="num">9,35%</td><td class="num">0,729</td><td class="num">1,098</td><td class="num neg">−27,3%</td><td class="num">2009-02</td><td class="num">476.525</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cards">
+      <div class="card"><span class="k">Preço do seguro</span><span class="v">0,34 pp</span>
+        <span class="n">de CAGR, v1 menos v2, com corretagem</span></div>
+      <div class="card"><span class="k">Quebra poupada</span><span class="v">7,5 pp</span>
+        <span class="n">−16,4% no v2 contra −23,9% no v1</span></div>
+      <div class="card"><span class="k">Medidor B ligado</span><span class="v">48</span>
+        <span class="n">meses em 237, em 3 episódio(s)</span></div>
+      <div class="card"><span class="k">Corretagem total</span><span class="v">$540</span>
+        <span class="n">0,54% do capital inicial em 19,7 anos</span></div>
+    </div>
+    <div class="note">
+      <p>Contra o 60/40 estático: CAGR 6,51% contra 8,26%, Sharpe
+        0,674 contra 0,729, quebra máxima −16,4% (2022-09)
+        contra −27,3% (2009-02).</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Regime</p>
+    <h2>Quando o Critical dispara</h2>
+    <p>No sistema anterior o Critical era decidido pelo composto dos cinco pilares:
+      <strong>0 meses em 262</strong> com o composto no limiar.
+      No sistema actual decide-o o Medidor B, à parte do composto, com a regra de Sahm,
+      a aceleração da delinquência bancária e o 10Y a três meses.</p>
+    <figure>
+      <svg viewBox="0 0 960 118" width="100%" style="max-width:100%;height:auto"
+           role="img" aria-label="Linha temporal dos regimes de 2007-02 a 2026-10: 3 episódio(s) Critical.">
+        <rect x="0" y="34" width="960" height="30" fill="var(--line-soft)"/>
+        <g>
+          <rect x="52.7" y="34" width="24.3" height="30" fill="var(--v2)" opacity=".45"/>
+          <rect x="77.0" y="34" width="24.3" height="30" fill="var(--v2)"/>
+          <rect x="101.3" y="34" width="24.3" height="30" fill="var(--v2)" opacity=".45"/>
+          <rect x="125.6" y="34" width="12.2" height="30" fill="var(--v2)"/>
+          <rect x="137.7" y="34" width="20.3" height="30" fill="var(--v2)" opacity=".45"/>
+          <rect x="158.0" y="34" width="24.3" height="30" fill="var(--v2)"/>
+          <rect x="182.3" y="34" width="4.1" height="30" fill="var(--v2)" opacity=".45"/>
+          <rect x="644.1" y="34" width="4.1" height="30" fill="var(--v2)" opacity=".45"/>
+          <rect x="648.1" y="34" width="4.1" height="30" fill="var(--v2)"/>
+          <rect x="652.2" y="34" width="40.5" height="30" fill="var(--v2)" opacity=".45"/>
+          <rect x="850.6" y="34" width="4.1" height="30" fill="var(--v2)" opacity=".45"/>
+          <rect x="854.7" y="34" width="8.1" height="30" fill="var(--v2)"/>
+        </g>
+        <g font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">
+          <text x="0.0" y="80">2007</text>
+          <text x="190.4" y="80">2011</text>
+          <text x="384.8" y="80">2015</text>
+          <text x="579.2" y="80">2019</text>
+          <text x="773.7" y="80">2023</text>
+          <text x="935" y="80">2026</text>
+        </g>
+        <g font-family="var(--mono)" font-size="10" fill="var(--fg-dim)">
+          <text x="52.7" y="26">2008-03</text>
+          <text x="644.1" y="26">2020-05</text>
+          <text x="850.6" y="26">2024-08</text>
+        </g>
+        <g stroke="var(--fg-faint)" stroke-width="1" opacity=".5">
+          <line x1="52.7" y1="29" x2="52.7" y2="34"/>
+          <line x1="644.1" y1="29" x2="644.1" y2="34"/>
+          <line x1="850.6" y1="29" x2="850.6" y2="34"/>
+        </g>
+        <g font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">
+          <text x="0" y="108">Turbulence a cinzento · 15 mudanças de estado em 237 meses</text>
+        </g>
+      </svg>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--v2)"></i>Critical · FTQ (TLT mantido)</span>
+        <span><i class="sw" style="background:var(--v2);opacity:.45"></i>Critical · Stress sem alívio</span>
+        <span><i class="sw" style="background:var(--line-soft)"></i>Turbulence</span>
+      </div>
+      <figcaption>3 episódio(s) Critical: de Março 2008 à saída em Dezembro 2010; de Maio 2020 à saída em Maio 2021; de Agosto 2024 à saída em Novembro 2024. A porta entre FTQ e Stress é assimétrica: o TLT só
+        se reconquista com uma queda confirmada do 10Y.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">Ano a ano</p>
+    <h2>Onde o seguro paga e onde custa</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Ano</th><th>v1</th><th>v2</th><th>SPY</th><th>Medidor B</th></tr></thead>
+        <tbody>
+          <tr><td class="num">2007</td><td class="num pos">6,2%</td><td class="num pos">6,2%</td><td class="num pos">5,7%</td><td>—</td></tr>
+          <tr class="focus"><td class="num">2008</td><td class="num neg">−13,8%</td><td class="num pos">1,4%</td><td class="num neg">−36,8%</td><td>ON 10/12</td></tr>
+          <tr><td class="num">2009</td><td class="num pos">13,5%</td><td class="num pos">2,2%</td><td class="num pos">26,4%</td><td>ON 12/12</td></tr>
+          <tr><td class="num">2010</td><td class="num pos">11,4%</td><td class="num pos">9,7%</td><td class="num pos">15,1%</td><td>ON 11/12</td></tr>
+          <tr><td class="num">2011</td><td class="num pos">5,6%</td><td class="num pos">5,5%</td><td class="num pos">1,9%</td><td>—</td></tr>
+          <tr><td class="num">2012</td><td class="num pos">9,5%</td><td class="num pos">9,5%</td><td class="num pos">16,0%</td><td>—</td></tr>
+          <tr><td class="num">2013</td><td class="num pos">10,7%</td><td class="num pos">10,7%</td><td class="num pos">32,3%</td><td>—</td></tr>
+          <tr><td class="num">2014</td><td class="num pos">7,5%</td><td class="num pos">7,5%</td><td class="num pos">13,5%</td><td>—</td></tr>
+          <tr><td class="num">2015</td><td class="num neg">−0,8%</td><td class="num neg">−0,8%</td><td class="num pos">1,3%</td><td>—</td></tr>
+          <tr><td class="num">2016</td><td class="num pos">7,8%</td><td class="num pos">7,8%</td><td class="num pos">12,0%</td><td>—</td></tr>
+          <tr><td class="num">2017</td><td class="num pos">11,0%</td><td class="num pos">11,0%</td><td class="num pos">21,7%</td><td>—</td></tr>
+          <tr><td class="num">2018</td><td class="num neg">−2,6%</td><td class="num neg">−2,6%</td><td class="num neg">−4,6%</td><td>—</td></tr>
+          <tr><td class="num">2019</td><td class="num pos">18,5%</td><td class="num pos">18,5%</td><td class="num pos">31,2%</td><td>—</td></tr>
+          <tr><td class="num">2020</td><td class="num pos">11,2%</td><td class="num pos">5,9%</td><td class="num pos">18,4%</td><td>ON 8/12</td></tr>
+          <tr><td class="num">2021</td><td class="num pos">15,0%</td><td class="num pos">10,6%</td><td class="num pos">28,7%</td><td>ON 4/12</td></tr>
+          <tr><td class="num">2022</td><td class="num neg">−12,7%</td><td class="num neg">−12,8%</td><td class="num neg">−18,2%</td><td>—</td></tr>
+          <tr><td class="num">2023</td><td class="num pos">13,4%</td><td class="num pos">13,4%</td><td class="num pos">26,2%</td><td>—</td></tr>
+          <tr><td class="num">2024</td><td class="num pos">11,0%</td><td class="num pos">9,3%</td><td class="num pos">24,9%</td><td>ON 3/12</td></tr>
+          <tr><td class="num">2025</td><td class="num pos">11,3%</td><td class="num pos">11,3%</td><td class="num pos">17,7%</td><td>—</td></tr>
+          <tr><td class="num">2026</td><td class="num pos">7,7%</td><td class="num pos">7,7%</td><td class="num pos">11,7%</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <p><strong>Maior diferença a favor do v2: 2008</strong>, 1,4% contra −13,8% do v1 e −36,8% do SPY. <strong>Pior ano do v2: 2022</strong>, −12,8%, com o Medidor B desligado o ano todo (v1 −12,7%, SPY −18,2%). Fora dos episódios de stress o v1 e o v2 detêm a mesma carteira. (2026 vai até 2026-10.)</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Custos</p>
+    <h2>Comissão fixa e deslize</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Modelo</th><th>Rebal.</th><th>Custo total</th><th>% capital</th>
+          <th>CAGR</th><th>vs sem custos</th></tr></thead>
+        <tbody>
+          <tr class="focus"><td>v2 sem custos</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">6,53%</td><td class="num">—</td></tr>
+          <tr><td>v2 · abertura e fecho</td><td class="num">54</td><td class="num">$540</td><td class="num">0,54%</td><td class="num">6,51%</td><td class="num">−0,02 pp</td></tr>
+          <tr><td>v2 · cada transacção</td><td class="num">54</td><td class="num">$3.300</td><td class="num">3,30%</td><td class="num">6,42%</td><td class="num">−0,11 pp</td></tr>
+          <tr class="prev"><td>v1 · abertura e fecho</td><td class="num">42</td><td class="num">$220</td><td class="num">0,22%</td><td class="num">6,85%</td><td class="num">−0,00 pp</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Spread + deslize</th><th>v2 CAGR</th><th>v2 custo</th>
+          <th>v1 CAGR</th><th>v1 custo</th><th>Preço do seguro</th></tr></thead>
+        <tbody>
+          <tr><td class="num">0 bp</td><td class="num">6,42%</td><td class="num">$3.300</td><td class="num">6,77%</td><td class="num">$2.600</td><td class="num">0,35 pp</td></tr>
+          <tr><td class="num">5 bp</td><td class="num">6,37%</td><td class="num">$4.834</td><td class="num">6,76%</td><td class="num">$3.312</td><td class="num">0,38 pp</td></tr>
+          <tr><td class="num">10 bp</td><td class="num">6,33%</td><td class="num">$6.352</td><td class="num">6,74%</td><td class="num">$4.022</td><td class="num">0,41 pp</td></tr>
+          <tr><td class="num">20 bp</td><td class="num">6,24%</td><td class="num">$9.343</td><td class="num">6,71%</td><td class="num">$5.434</td><td class="num">0,47 pp</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:.9rem;color:var(--fg-dim)">O spread não está medido: está
+      modelado como sensibilidade, sobre o modelo de cada transacção. Entre 0 e
+      20 pontos base o preço do seguro vai de 0,35 a 0,47 pp.
+      <strong>Impostos não estão modelados em nenhuma jurisdição</strong>, e num regime
+      que tribute mais-valias realizadas cada saída de stress é um evento fiscal.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">Desvios declarados</p>
+    <h2>O que esta corrida não é</h2>
+    <ul>
+      <li><strong>Só meses fechados.</strong> O último mês da série é 2026-10; o mês
+        corrente entra na corrida do mês seguinte.</li>
+      <li><strong>Duas origens de dados.</strong> Até 2026-08, a reconstrução original,
+        com percentis em janela expansiva e os desfasamentos de publicação reais. Depois,
+        um mês de cada vez: os valores macro saem da última revisão do
+        <code>data.json</code> com dados desse mês (o vintage verdadeiro, não uma consulta
+        ao FRED hoje, que traria valores revistos), e os preços são o fecho ajustado
+        encadeado pelo retorno sobre a série commitada, que não é reescrita.</li>
+      <li><strong>Substituições de instrumento.</strong> PDBC→DBC, BIL e SGOV→SHV,
+        USMV→SPY. A última penaliza o v2: em Critical fica com beta total em vez de um
+        factor defensivo.</li>
+      <li><strong>Os limiares foram calibrados em 2026</strong>, logo o teste é
+        parcialmente in-sample. O limiar da delinquência é o decil 90 da sua própria
+        história desde 1987.</li>
+      <li><strong>Frequência mensal</strong>, enquanto a produção decide à semana.</li>
+      <li><strong>Retorno total</strong>, com dividendos reinvestidos. A produção publica
+        retorno de preço. Não são a mesma medida e não se comparam directamente.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="eyebrow">Verificação</p>
+    <h2>O que sustenta estes números</h2>
+    <ul>
+      <li>O backtest <strong>não reimplementa a lógica</strong>: importa
+        <code>mrm_rules.py</code> e <code>mrm_gauge_b.py</code> e chama
+        <code>classify_regime</code>, <code>subregime_from_gauge</code>,
+        <code>decide_rebalance</code> e <code>effective_bucket_alloc</code>.</li>
+      <li>Esta página é gerada pelo <code>backtest/gerar_relatorio.py</code> e
+        publicada pelo workflow mensal <strong>só depois de a suite inteira</strong>
+        (<code>tests/portao.sh</code>) passar sobre os dados novos. Nenhum número da
+        página está escrito à mão.</li>
+      <li>O <code>tests/test_scores_reconstruction.py</code> recalcula cada mês da série,
+        os novos incluídos, a partir dos valores em bruto e das regras de produção, e
+        recusa delinquência usada antes de estar publicada.</li>
+      <li>O <code>tests/test_backtest.py</code> prende os números da janela 2007-02 a
+        2026-08: se uma regra mudar, falha, e a página não é publicada.</li>
+      <li>A regra de Sahm usa o <strong>vintage real-time</strong>, não a série revista.
+        A observação de Outubro de 2025 não existe na série publicada e é interpolada.</li>
+    </ul>
+  </section>
+
+  <div class="foot">
+    <span>Gerado a 2026-11-28 · dados até 2026-10 · Python 3.11.18 · <code>backtest/final_backtest.py</code></span>
+    <span>Repositório <code>nunorodrigues007/mrm-dashboard</code> · site usmrm.net</span>
+    <span>Isto é o registo de um backtest, não uma recomendação de investimento.</span>
+  </div>
+</div>
+
+</body></html>

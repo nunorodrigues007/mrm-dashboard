@@ -7834,5 +7834,65 @@
    "solvency": 2.5,
    "debt": 5.5
   }
+ },
+ {
+  "month": "2026-09",
+  "spread": 0.46,
+  "buffett_pct": 100.0,
+  "buffett": 335.5,
+  "npl": 1.38,
+  "dsr": 11.111439,
+  "y10": 5.29,
+  "ep_real": 3.86,
+  "erp_frozen": -0.74,
+  "score_frozen": 6.97,
+  "regime_frozen": "Turbulence",
+  "pillars_frozen": {
+   "cycle": 5.5,
+   "liquidity": 9.5,
+   "premium": 10.0,
+   "solvency": 2.5,
+   "debt": 5.5
+  },
+  "erp_real": -1.43,
+  "score_real": 6.97,
+  "regime_real": "Turbulence",
+  "pillars_real": {
+   "cycle": 5.5,
+   "liquidity": 9.5,
+   "premium": 10.0,
+   "solvency": 2.5,
+   "debt": 5.5
+  }
+ },
+ {
+  "month": "2026-10",
+  "spread": 0.32,
+  "buffett_pct": 100.0,
+  "buffett": 335.5,
+  "npl": 1.38,
+  "dsr": 11.111439,
+  "y10": 4.94,
+  "ep_real": 3.89,
+  "erp_frozen": -0.39,
+  "score_frozen": 6.97,
+  "regime_frozen": "Turbulence",
+  "pillars_frozen": {
+   "cycle": 5.5,
+   "liquidity": 9.5,
+   "premium": 10.0,
+   "solvency": 2.5,
+   "debt": 5.5
+  },
+  "erp_real": -1.05,
+  "score_real": 6.97,
+  "regime_real": "Turbulence",
+  "pillars_real": {
+   "cycle": 5.5,
+   "liquidity": 9.5,
+   "premium": 10.0,
+   "solvency": 2.5,
+   "debt": 5.5
+  }
  }
 ]

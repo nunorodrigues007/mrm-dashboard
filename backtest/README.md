@@ -10,6 +10,19 @@ python tests/test_backtest.py         # fixa os números publicados (corre no CI
 python tests/test_costs.py            # a aritmética dos custos, verificada à mão
 ```
 
+## Actualização mensal
+
+Os dados crescem um mês de cada vez: `estender_dados.py` acrescenta os meses
+fechados (macro das revisões do `data.json`, preços do yfinance encadeados pelo
+retorno) e `gerar_relatorio.py` escreve o `backtest.html` da raiz, que o site
+mostra no separador Backtest. O workflow `backtest-mensal.yml` faz as duas coisas
+no dia 3 de cada mês, com a suite a correr antes e depois. Os passos para o fazer
+à mão estão no `RUNBOOK.md`, secção "Backtest mensal".
+
+Os números da secção **Resultados** abaixo são os da janela 2007-02 a 2026-08,
+os que o `tests/test_backtest.py` prende (`BACKTEST_FIM=2026-08`). Os números
+correntes, com todos os meses, estão no `backtest.html`.
+
 ## O que está a ser testado
 
 O ponto essencial: **a lógica não está reimplementada aqui**. O

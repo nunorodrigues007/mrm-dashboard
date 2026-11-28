@@ -41,7 +41,13 @@ def close(got, want, tol, what):
     ok += 1
 def true(c, what): eq(bool(c), True, what)
 
-eq(len(SC), 260, "260 meses de 2005-01 a 2026-08")
+# Os primeiros 260 meses sao a reconstrucao original (2005-01 a 2026-08). Os
+# seguintes sao acrescentados todos os meses pelo backtest/estender_dados.py, e
+# TODAS as verificacoes abaixo correm sobre eles tambem — e isso que valida cada
+# mes novo antes de o workflow o publicar.
+eq(len(SC) >= 260, True, "pelo menos os 260 meses da reconstrucao original")
+eq((SC[0]["month"], SC[259]["month"]), ("2005-01", "2026-08"),
+   "a reconstrucao original vai de 2005-01 a 2026-08, e nao foi tocada")
 
 # ── 6. serie mensal, continua, ordenada ─────────────────────────────────────
 meses = [r["month"] for r in SC]
@@ -179,6 +185,6 @@ eq(verifica(mutado), [], "e volta a passar quando o dado e reposto")
 mm = {row["month"]: float(row["y10"])
       for row in csv.DictReader(open(ROOT / "backtest" / "data" / "monthly.csv"))}
 iguais = sum(1 for r in SC if r["month"] in mm and abs(mm[r["month"]] - r["y10"]) < 1e-9)
-true(iguais > 250, f"o 10Y de cada mes e o do proprio mes, nao o de outro ({iguais}/260)")
+true(iguais > 250, f"o 10Y de cada mes e o do proprio mes, nao o de outro ({iguais}/{len(SC)})")
 
 print(f"TODOS OS {ok} TESTES PASSARAM")

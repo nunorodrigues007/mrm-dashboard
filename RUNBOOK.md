@@ -302,6 +302,50 @@ cosmética. Por isso:
 
 ---
 
+## Backtest mensal — o separador Backtest do site
+
+O workflow `📉 Backtest mensal` corre no dia 3 de cada mês. Acrescenta ao backtest
+os meses que fecharam, corre o `backtest/final_backtest.py` e regenera o
+`backtest.html`. Não toca na carteira nem na newsletter: se falhar, a única
+consequência é a página ficar com os números do mês anterior.
+
+**Correr à mão** (sem o workflow, com qualquer agente ou sem nenhum): num clone
+COMPLETO do repositório (`git clone` sem `--depth`), Python 3.11, e
+`pip install -r requirements.txt`:
+
+```
+python backtest/estender_dados.py --verificar   # mostra o que acrescentaria, não escreve
+python backtest/estender_dados.py               # acrescenta os meses fechados em falta
+python backtest/gerar_relatorio.py              # regenera o backtest.html
+bash tests/portao.sh                            # tem de ficar verde antes do commit
+git add backtest/data backtest.html && git commit -m "backtest: dados até AAAA-MM" && git push
+```
+
+Python 3.11, não 3.12+: o `sum()` do CPython 3.12 move alguns compostos uma
+centésima e o teste de reconstrução falha.
+
+**Se o issue `Backtest mensal falhou` abrir**, a linha `::error::` do log diz
+qual destes é:
+
+- `nenhuma revisao do data.json com dados desse mes` — o pipeline não publicou
+  dados nesse mês. Não há vintage, e o mês não se inventa: corrigir o pipeline
+  primeiro; a corrida seguinte apanha os meses em atraso.
+- `o clone e raso` — o checkout perdeu o `fetch-depth: 0`.
+- `... vem nulo no data.json` — a revisão do fim do mês tinha um pilar em n/d.
+  Ver se há outra revisão válida nesse mês; se não houver, o mês fica por
+  acrescentar até se decidir o que fazer, e essa decisão é do dono.
+- `a aceleracao da delinquencia ... nao bate com a da producao` — a série
+  trimestral do backtest e a da produção divergiram (revisão do FRED). Não
+  editar a série à mão sem registar a decisão.
+- `o yfinance nao devolveu nada` / `nao tem <mes>` — a Yahoo falhou. Voltar a
+  correr mais tarde (`workflow_dispatch`).
+- portão vermelho na segunda passagem — um mês novo não sai das regras, ou a
+  página não corresponde aos dados. O nome do teste diz qual.
+
+Os números presos no `tests/test_backtest.py` são os da janela 2007-02 a
+2026-08 (`BACKTEST_FIM`) e **não** se actualizam todos os meses: provam que o
+código não mudou. Só mudam quando uma regra muda, e aí é a regra que se discute.
+
 ## O que NÃO fazer, nunca
 
 - **Apagar a entrada do `sent_issues.json` para "forçar o reenvio".** Reenvia a
