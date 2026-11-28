@@ -78,8 +78,11 @@ eq(len(W), len(_FICHEIROS_WF),
 # repositorio, e um que sume leva com ele o que quer que garantisse.
 # O `smoke-precos` entrou a 26 de Setembro de 2026: arranque manual, so
 # leitura, responde se as cotacoes chegam ao runner sem publicar nada.
-eq(sorted(W), ["friday-pipeline", "smoke-precos", "test", "update"],
-   "os quatro workflows existem, e nenhum entrou ou saiu em silencio")
+# O `backtest-mensal` entrou a 28 de Novembro de 2026: dia 3 de cada mes acrescenta
+# os meses fechados ao backtest e regenera o backtest.html, com o portao antes de
+# mexer em dados e outra vez antes do push.
+eq(sorted(W), ["backtest-mensal", "friday-pipeline", "smoke-precos", "test", "update"],
+   "os cinco workflows existem, e nenhum entrou ou saiu em silencio")
 
 # ── todos os jobs tem prazo ─────────────────────────────────────────────────
 for nome, doc in W.items():

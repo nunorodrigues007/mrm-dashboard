@@ -13,6 +13,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+# Os numeros abaixo sao os da janela publicada de 2007-02 a 2026-08. Os dados
+# continuam a crescer todos os meses; a janela fica fixa para o teste provar que o
+# CODIGO nao mudou, e nao ter de ser reescrito a cada mes acrescentado.
+import os
+os.environ["BACKTEST_FIM"] = "2026-08"
 spec = importlib.util.spec_from_file_location("fb", ROOT / "backtest" / "final_backtest.py")
 fb = importlib.util.module_from_spec(spec)
 with contextlib.redirect_stdout(io.StringIO()):

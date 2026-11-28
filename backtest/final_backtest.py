@@ -69,7 +69,14 @@ sub = lambda t: SUBSTITUTIONS.get(t, t)
 # ── scores reconstruidos e series dos gatilhos ───────────────────────────────
 SC = json.load(open(DATA / "scores.json"))
 S = {r["month"]: r for r in SC}
-MONTHS = [r["month"] for r in SC if r["month"] >= "2007-02"]
+# BACKTEST_FIM corta o periodo num mes (AAAA-MM). Os dados crescem todos os
+# meses (backtest/estender_dados.py, workflow backtest-mensal.yml), mas os testes
+# prendem os numeros de uma janela FIXA — 2007-02 a 2026-08 — para continuarem a
+# provar que o codigo nao mudou, sem terem de ser reescritos a cada mes novo.
+# Sem a variavel, corre sobre todos os dados que existem.
+import os as _os_fim
+FIM = _os_fim.environ.get("BACKTEST_FIM") or None
+MONTHS = [r["month"] for r in SC if r["month"] >= "2007-02" and (FIM is None or r["month"] <= FIM)]
 mm = {r["month"]: float(r["y10"]) for r in csv.DictReader(open(DATA / "monthly.csv"))}
 
 # Serie real-time da regra de Sahm (vintages, nao revista). 2025-10 nao existe na
