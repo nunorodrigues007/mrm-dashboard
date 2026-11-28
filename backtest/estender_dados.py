@@ -350,7 +350,7 @@ def main(argv=None):
     for r in novas_scores:
         print(f"  {r['month']}: score {r['score_real']} ({r['regime_real']}) "
               f"y10 {r['y10']} ERP {r['erp_real']} npl {r['npl']}")
-    print(f"  SPY: " + ", ".join(f"{m} {v}" for m, v in novos_px["SPY"].items()))
+    print("  SPY: " + ", ".join(f"{m} {v}" for m, v in novos_px["SPY"].items()))
     if novas_q:
         print(f"  trimestres novos na delinquencia: {novas_q}")
     if novas_sahm:

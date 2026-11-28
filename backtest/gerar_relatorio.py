@@ -121,18 +121,18 @@ def svg_regime(fb, est, eps, n_mudancas):
     descr = (f"Linha temporal dos regimes de {fb.MONTHS[0]} a {fb.MONTHS[-1]}: "
              f"{len(eps)} episódio(s) Critical.")
     return "\n".join([
-        f'      <svg viewBox="0 0 960 118" width="100%" style="max-width:100%;height:auto"',
+        '      <svg viewBox="0 0 960 118" width="100%" style="max-width:100%;height:auto"',
         f'           role="img" aria-label="{descr}">',
-        f'        <rect x="0" y="34" width="960" height="30" fill="var(--line-soft)"/>',
-        f'        <g>', *rects, f'        </g>',
-        f'        <g font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">', *tx, f'        </g>',
-        f'        <g font-family="var(--mono)" font-size="10" fill="var(--fg-dim)">', *lab, f'        </g>',
-        f'        <g stroke="var(--fg-faint)" stroke-width="1" opacity=".5">', *lin, f'        </g>',
-        f'        <g font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">',
+        '        <rect x="0" y="34" width="960" height="30" fill="var(--line-soft)"/>',
+        '        <g>', *rects, '        </g>',
+        '        <g font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">', *tx, '        </g>',
+        '        <g font-family="var(--mono)" font-size="10" fill="var(--fg-dim)">', *lab, '        </g>',
+        '        <g stroke="var(--fg-faint)" stroke-width="1" opacity=".5">', *lin, '        </g>',
+        '        <g font-family="var(--mono)" font-size="10" fill="var(--fg-faint)">',
         f'          <text x="0" y="108">Turbulence a cinzento · {n_mudancas} mudanças de estado '
         f'em {n} meses</text>',
-        f'        </g>',
-        f'      </svg>'])
+        '        </g>',
+        '      </svg>'])
 
 
 def linha_res(nome, s, classe=""):
