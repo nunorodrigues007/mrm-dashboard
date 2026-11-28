@@ -1,11 +1,11 @@
 {
   "meta": {
-    "lastUpdated": "2026-11-28T00:46:15Z",
-    "generatedAt": "2026-11-28T00:46:15Z",
+    "lastUpdated": "2026-11-28T03:54:23Z",
+    "generatedAt": "2026-11-28T03:54:23Z",
     "source": "FRED API (Live)",
     "version": "3.1.0",
     "freshness": {
-      "generatedAt": "2026-11-28T00:46:15Z",
+      "generatedAt": "2026-11-28T03:54:23Z",
       "warnAfterHours": 30,
       "refuseAfterHours": 48,
       "degraded": false,
@@ -657,7 +657,7 @@
         "note": "3-month change in the 10Y, in basis points. Decides Flight-to-Quality against Stress-without-relief WITHIN Critical; it does not decide Critical itself."
       }
     },
-    "computedAt": "2026-11-28T00:46:15Z"
+    "computedAt": "2026-11-28T03:54:22Z"
   },
   "pillars": [
     {
