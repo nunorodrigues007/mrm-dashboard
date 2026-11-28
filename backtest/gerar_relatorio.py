@@ -171,6 +171,8 @@ def calcula(fb):
     v["quebra_poupada"] = num((s2["mdd"] - s1["mdd"]) * 100, 1)
     v["v2_mdd"], v["v1_mdd"] = pct(s2["mdd"], 1), pct(s1["mdd"], 1)
     v["v2_mdd_m"] = s2["mdd_m"]
+    v["spy_mdd"] = pct(sspy["mdd"], 1)
+    v["v2_final"], v["v1_final"] = inteiro(s2["final"]), inteiro(s1["final"])
     v["v2_cagr"], v["v2_sharpe"] = pct(s2["cagr"]), num(s2["sharpe"], 3)
     v["b6040_cagr"], v["b6040_sharpe"] = pct(s64["cagr"]), num(s64["sharpe"], 3)
     v["b6040_mdd"], v["b6040_mdd_m"] = pct(s64["mdd"], 1), s64["mdd_m"]
@@ -212,6 +214,10 @@ def calcula(fb):
                       f'<td class="num {cls_sinal(a2)}">{pct(a2, 1)}</td>'
                       f'<td class="num {cls_sinal(asp)}">{pct(asp, 1)}</td><td>{b}</td></tr>')
     v["linhas_anos"] = "\n".join(linhas)
+    # quadro resumo: o ano de maior diferenca a favor do v2, escolhido pelos dados
+    v["ano_chave"] = melhor[0]
+    v["ano_chave_v2"] = ("+" if melhor[2] > 0 else "") + pct(melhor[2], 1)
+    v["ano_chave_v1"], v["ano_chave_spy"] = pct(melhor[1], 1), pct(melhor[3], 1)
     pior = min(anos, key=lambda t: t[2])
     parcial = f" ({anos[-1][0]} vai até {M[-1]}.)" if anos[-1][5] < 12 else ""
     v["nota_anos"] = (
