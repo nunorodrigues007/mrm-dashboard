@@ -114,7 +114,21 @@ code{font-family:var(--mono);font-size:.86em;background:var(--line-soft);
 
   <section>
     <p class="eyebrow">Resultado</p>
-    <h2>Quatro estratégias, o mesmo período</h2>
+    <h2>O seguro funciona, e tem preço</h2>
+    <p>Duas versões do mesmo framework, sobre os mesmos preços e as mesmas
+      percentagens de alocação. A única diferença é quem decide o regime Critical: no
+      sistema anterior (v1), o Global Resilience Score; no actual (v2), o Medidor B —
+      a regra de Sahm e a aceleração da delinquência bancária.</p>
+    <div class="cards">
+      <div class="card"><span class="k">Valor final</span><span class="v">${{v2_final}}</span>
+        <span class="n">De $100.000 em {{mes_ini}}. O sistema anterior teria dado ${{v1_final}}.</span></div>
+      <div class="card"><span class="k">Quebra máxima</span><span class="v">{{v2_mdd}}</span>
+        <span class="n">Contra {{v1_mdd}} do sistema anterior e {{spy_mdd}} do SPY. Em {{v2_mdd_m}}.</span></div>
+      <div class="card"><span class="k">{{ano_chave}}</span><span class="v">{{ano_chave_v2}}</span>
+        <span class="n">O ano de maior diferença a favor do v2: o anterior fez {{ano_chave_v1}} e o SPY {{ano_chave_spy}}.</span></div>
+      <div class="card"><span class="k">Preço do seguro</span><span class="v">{{seguro_pp}} pp</span>
+        <span class="n">De CAGR que o v2 abdica face ao v1, com corretagem.</span></div>
+    </div>
     <div class="scroll">
       <table>
         <thead><tr><th>Estratégia</th><th>CAGR</th><th>Vol</th><th>Sharpe</th>
@@ -125,10 +139,8 @@ code{font-family:var(--mono);font-size:.86em;background:var(--line-soft);
       </table>
     </div>
     <div class="cards">
-      <div class="card"><span class="k">Preço do seguro</span><span class="v">{{seguro_pp}} pp</span>
-        <span class="n">de CAGR, v1 menos v2, com corretagem</span></div>
       <div class="card"><span class="k">Quebra poupada</span><span class="v">{{quebra_poupada}} pp</span>
-        <span class="n">{{v2_mdd}} no v2 contra {{v1_mdd}} no v1</span></div>
+        <span class="n">Na pior perda acumulada, v2 face ao v1</span></div>
       <div class="card"><span class="k">Medidor B ligado</span><span class="v">{{meses_b}}</span>
         <span class="n">meses em {{n_meses}}, em {{n_episodios}} episódio(s)</span></div>
       <div class="card"><span class="k">Corretagem total</span><span class="v">${{custo_v2}}</span>
